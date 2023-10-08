@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Migration Options</title>
+    <!-- Include Tailwind CSS via CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 font-sans">
+
+    <div class="container mx-auto py-8 flex flex-col items-center min-h-screen">
+        <!-- Reddit Logo -->
+        <img src="assets/reddit-logo.svg" alt="Reddit Logo" class="w-16 h-16 mb-4">
+
+        <div class="bg-white rounded-lg p-8 shadow-md max-w-md w-full">
+            <!-- Reddit-Styled Header -->
+            <h1 class="text-3xl font-semibold text-red-500 mb-6">Reddit Data Migration</h1>
+
+            <!-- Old Account Access Token Field -->
+            <div class="mb-4">
+                <label for="oldAccessToken" class="block text-gray-700 font-bold mb-2">Old Account Access Token:</label>
+                <input type="text" id="oldAccessToken" name="oldAccessToken"
+                    class="w-full bg-gray-200 border border-gray-300 rounded px-4 py-2 focus:outline-none focus:border-orange-500">
+            </div>
+
+            <!-- New Account Access Token Field -->
+            <div class="mb-4">
+                <label for="newAccessToken" class="block text-gray-700 font-bold mb-2">New Account Access Token:</label>
+                <input type="text" id="newAccessToken" name="newAccessToken"
+                    class="w-full bg-gray-200 border border-gray-300 rounded px-4 py-2 focus:outline-none focus:border-orange-500">
+            </div>
+
+            <!-- Reddit-Styled Data Migration Options -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-bold mb-2">Migrate All Subreddits:</label>
+                <div class="flex items-center">
+                    <input type="radio" id="migrateSubredditYes" name="migrateSubreddit" value="yes" class="mr-2"
+                        onclick="toggleDeleteSubreddits(true)">
+                    <label for="migrateSubredditYes" class="mr-4 text-gray-700">Yes</label>
+                    <input type="radio" id="migrateSubredditNo" name="migrateSubreddit" value="no" class="mr-2"
+                        onclick="toggleDeleteSubreddits(false)">
+                    <label for="migrateSubredditNo" class="text-gray-700">No</label>
+                </div>
+
+                <!-- Sub-Radio Buttons for Subreddits -->
+                <div id="deleteSubreddits" class="mt-2 hidden">
+                    <label class="block text-gray-700 font-bold mb-2">Delete Old Account Subreddits:</label>
+                    <div class="flex items-center">
+                        <input type="radio" id="deleteSubredditsYes" name="deleteSubreddits" value="yes" class="mr-2">
+                        <label for="deleteSubredditsYes" class="mr-4 text-gray-700">Yes</label>
+                        <input type="radio" id="deleteSubredditsNo" name="deleteSubreddits" value="no" class="mr-2">
+                        <label for="deleteSubredditsNo" class="text-gray-700">No</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reddit-Styled Post Migration Options -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-bold mb-2">Migrate All Saved Posts:</label>
+                <div class="flex items-center">
+                    <input type="radio" id="migratePostYes" name="migratePost" value="yes" class="mr-2"
+                        onclick="toggleDeletePosts(true)">
+                    <label for="migratePostYes" class="mr-4 text-gray-700">Yes</label>
+                    <input type="radio" id="migratePostNo" name="migratePost" value="no" class="mr-2"
+                        onclick="toggleDeletePosts(false)">
+                    <label for="migratePostNo" class="text-gray-700">No</label>
+                </div>
+
+                <!-- Sub-Radio Buttons for Posts -->
+                <div class="mt-2 hidden" id="deletePosts">
+                    <label class="block text-gray-700 font-bold mb-2">Delete Old Account Saved Posts:</label>
+                    <div class="flex items-center">
+                        <input type="radio" id="deletePostsYes" name="deletePosts" value="yes" class="mr-2">
+                        <label for="deletePostsYes" class="mr-4 text-gray-700">Yes</label>
+                        <input type="radio" id="deletePostsNo" name="deletePosts" value="no" class="mr-2">
+                        <label for="deletePostsNo" class="text-gray-700">No</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reddit-Styled Submit Button -->
+            <button
+                class="px-4 py-2 bg-red-500 text-white rounded hover:bg-orange-600 focus:outline-none">Submit</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center bg-blue-100 text-gray-600 py-4">
+        <div class="text-blue-500 flex items-center justify-center mb-2">
+            <span class="mr-2 text-red-400"> For Fellow Redditors </span>
+            <img src="assets/reddit-logo.svg" alt="Reddit Logo" class="w-5 h-5 mr-2">
+        </div>
+
+        <a href="https://github.com/nileshnk/reddit-migrate" class="text-black-200  flex items-center justify-center">
+            <img src="assets/github-logo.svg" alt="GitHub Logo" class="w-5 h-5 mr-2">
+            <span>GitHub</span>
+        </a>
+    </footer>
+
+    <script>
+        function toggleDeleteSubreddits(show) {
+            const deleteSubredditsDiv = document.getElementById('deleteSubreddits');
+            deleteSubredditsDiv.style.display = show ? 'block' : 'none';
+        }
+
+        function toggleDeletePosts(show) {
+            const deletePostsDiv = document.getElementById('deletePosts');
+            deletePostsDiv.style.display = show ? 'block' : 'none';
+        }
+    </script>
+</body>
+
+</html>
