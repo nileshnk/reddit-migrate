@@ -151,17 +151,16 @@ document.getElementById("copy-button").addEventListener("click", (e) => {
   }, 2000);
 });
 async function verifyToken(token) {
-  console.log(token);
-  // const response = await fetch("https://ifconfig.me/ip");
-  const response = await fetch("https://oauth.reddit.com/api/me.json", {
+  const response = await fetch("/api/verify-token", {
+    body: JSON.stringify({ access_token: token }),
+    method: "POST",
     headers: {
-      Authentication: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    method: "GET",
     // mode: "no-cors",
   });
-  console.log(response);
+  const body = await response.json();
+
   if (response.status !== 200) {
     return {
       success: false,
@@ -169,15 +168,8 @@ async function verifyToken(token) {
       data: {},
     };
   }
-  const data = await response.json();
-  console.log(data);
-  return {
-    success: true,
-    message: "Valid access token",
-    data: {
-      username: data.data.name,
-    },
-  };
+
+  return body;
 }
 
 function getCookieObject(cookie) {
