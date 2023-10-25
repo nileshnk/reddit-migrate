@@ -14,18 +14,27 @@ func main() {
 
 	// chi router
 	router := chi.NewRouter()
-	// A good base middleware stack
-	router.Use(middleware.RequestID)
-	router.Use(middleware.RealIP)
+
 	router.Use(middleware.Logger)
-	router.Use(middleware.Recoverer)
 
 	router.Route("/", mainRouter)
-	HOST := os.Getenv("HOST")
-	if(HOST == "") {
-		HOST = "localhost:5005"
+
+	args := os.Args;
+	// Priority 1
+	ADDR := os.Getenv("GO_ADDR")
+	// Priority 2
+	for _, a := range args {
+		str := strings.Split(a, "=");
+		if(str[0]=="--addr"){
+			ADDR = str[1]
+		}
 	}
-	http.ListenAndServe(HOST, router)
+	
+	if(ADDR == "") {
+		// Priority 3
+		ADDR = "localhost:5005"
+	}
+	http.ListenAndServe(ADDR, router)
 }
 
 func mainRouter(r chi.Router){
