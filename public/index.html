@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Data Migration Options</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.png" />
     <!-- Include Tailwind CSS via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
     <!-- Include the Flowbite library's CSS and JS: -->
@@ -27,7 +28,7 @@
 
             <!-- Old Account Access Token Field -->
             <div class="mb-4">
-                <label for="oldAccessToken" class="mb-2 block font-bold text-gray-700">Old Account Access Token:</label>
+                <label for="oldAccessToken" class="mb-2 block font-bold text-gray-700">Old Account Cookie:</label>
                 <div class="flex items-center">
                     <input type="text" id="oldAccessToken" name="oldAccessToken"
                         class="bg-white-200 block w-full rounded border border-gray-300 px-4 py-2 text-sm text-gray-500 focus:border-orange-500 focus:outline-none" />
@@ -35,19 +36,19 @@
                         id="oldTokenVerifyBtn">Verify</button>
                 </div>
                 <p class="mt-2 text-sm text-green-600 dark:text-green-500 hidden" id="oldTokenVerifySuccessMessage">
-                    <span class="font-medium">Token
+                    <span class="font-medium">Cookie
                         Verified ✓
                     </span><span>User Name: </span> <span id="oldAccountUserId"></span>
                 </p>
                 <p class="mt-2 text-sm text-red-600 dark:text-red-500 hidden" id="oldTokenVerifyFailMessage"><span
                         class="font-medium">Oh,
-                        snapp!</span> Token
+                        snapp!</span> Cookie
                     Invalid ✘</p>
             </div>
 
             <!-- New Account Access Token Field -->
             <div class="mb-4">
-                <label for="newAccessToken" class="mb-2 block font-bold text-gray-700">New Account Access Token:</label>
+                <label for="newAccessToken" class="mb-2 block font-bold text-gray-700">New Account Cookie:</label>
                 <div class="flex items-center">
                     <input type="text" id="newAccessToken" name="newAccessToken"
                         class="bg-white-100 w-full rounded border border-gray-300 px-4 py-2 text-sm text-gray-500 focus:border-orange-500 focus:outline-none" />
@@ -55,19 +56,19 @@
                         id="newTokenVerifyBtn">Verify</button>
                 </div>
                 <p class="mt-2 text-sm text-green-600 dark:text-green-500 hidden" id="newTokenVerifySuccessMessage">
-                    <span class="font-medium">Token
+                    <span class="font-medium">Cookie
                         Verified ✓
                     </span><span>User Name: </span> <span id="newAccountUserId"></span>
                 </p>
                 <p class="mt-2 text-sm text-red-600 dark:text-red-500 hidden" id="newTokenVerifyFailMessage"><span
                         class="font-medium">Oh,
-                        snapp!</span> Token
+                        snapp!</span> Cookie
                     Invalid ✘</p>
             </div>
 
-            <div class="flex flex-col items-center mb-4">
+            <div class="flex flex-col items-center mb-4 hidden">
                 <span class="flex items-center">
-                    <p class="text-sm">Have cookie?</p>
+                    <p class="text-sm">Verify cookie</p>
                     <button data-modal-target="cookie-parse-modal" data-modal-toggle="cookie-parse-modal"
                         class="ml-2 rounded bg-red-500 px-2 py-1 text-sm text-white hover:bg-orange-600 focus:outline-none"
                         id="oldTokenVerifyBtn">Parse</button>
@@ -105,17 +106,17 @@
                             <p class="mt-2 text-sm text-green-600 dark:text-green-500 hidden"
                                 id="cookie-parse-success-message">
                                 <span class="font-medium">
-                                    Success ✓
+                                    Success! Cookie is Valid ✓
                             </p>
                             <p class="mt-2 text-sm text-red-600 dark:text-red-500 hidden"
                                 id="cookie-parse-fail-message"><span class="font-medium">Oh,
                                     snapp!</span> Cookie
                                 Invalid ✘</p>
                             <textarea id="parsedTokenBox" rows="4"
-                                class="block mt-6 p-2.5 select-text w-full text-xs text-gray-400 bg-gray-200 rounded-lg border border-gray-300 focus:ring-0 focus:border-green-600 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                class="hidden block mt-6 p-2.5 select-text w-full text-xs text-gray-400 bg-gray-200 rounded-lg border border-gray-300 focus:ring-0 focus:border-green-600 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                                 placeholder="parsed token" readonly> token </textarea>
                             <button id="copy-button"
-                                class="w-auto ml-2 mt-3 rounded bg-red-500 px-2 py-1 text-sm text-white hover:bg-orange-600 focus:outline-none"
+                                class="hidden w-auto ml-2 mt-3 rounded bg-red-500 px-2 py-1 text-sm text-white hover:bg-orange-600 focus:outline-none"
                                 data-clipboard-target="#parsedTokenBox">
                                 Copy
                             </button>
@@ -177,7 +178,65 @@
 
             <!-- Reddit-Styled Submit Button -->
             <button class="rounded bg-red-500 px-4 py-2 text-white hover:bg-orange-600 focus:outline-none"
-                id="option-submit">Submit</button>
+                id="option-submit">Submit
+            </button>
+            <button class="hidden rounded bg-red-500 px-4 py-2 text-white hover:bg-orange-600 focus:outline-none"
+                id="loading-btn">
+                <svg aria-hidden="true" role="status" class="inline w-4 h-4 mr-3 text-white animate-spin"
+                    viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                        fill="#E5E7EB" />
+                    <path
+                        d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                        fill="currentColor" />
+                </svg>
+                Processing...
+            </button>
+
+
+            <div class="block max-w-lg mt-4 p-6 bg-white border border-gray-200 rounded-lg shadow hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 hidden"
+                id="migrate-response-block">
+                <h1 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Response Status</h1>
+                <ul id="migrate-response-data" class="space-y-4 text-left text-gray-500 dark:text-gray-400">
+                    <li id="subscribe-subreddit" class="flex items-center space-x-3">
+                        <svg class="flex-shrink-0 w-3.5 h-3.5 text-green-500 dark:text-green-400" aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M1 5.917 5.724 10.5 15 1.5" />
+                        </svg>
+                        <span class="text-sm"></span>
+
+                    </li>
+                    <li id="unsubscribe-subreddit" class="flex items-center space-x-3">
+                        <svg class="flex-shrink-0 w-3.5 h-3.5 text-green-500 dark:text-green-400" aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M1 5.917 5.724 10.5 15 1.5" />
+                        </svg>
+                        <span class="text-sm"></span>
+
+                    </li>
+                    <li id="save-post" class="flex items-center space-x-3">
+                        <svg class="flex-shrink-0 w-3.5 h-3.5 text-green-500 dark:text-green-400" aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M1 5.917 5.724 10.5 15 1.5" />
+                        </svg>
+                        <span class="text-sm"></span>
+
+                    </li>
+                    <li id="unsave-post" class="flex items-center space-x-3">
+                        <svg class="flex-shrink-0 w-3.5 h-3.5 text-green-500 dark:text-green-400" aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M1 5.917 5.724 10.5 15 1.5" />
+                        </svg>
+                        <span class="text-sm"></span>
+
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -197,12 +256,14 @@
     <script>
         function toggleDeleteSubreddits(show) {
             const deleteSubredditsDiv = document.getElementById('deleteSubreddits');
-            deleteSubredditsDiv.style.display = show ? 'block' : 'none';
+            // deleteSubredditsDiv.style.display = show ? 'block' : 'none';
+            deleteSubredditsDiv.style.display = show ? 'block' : 'block';
         }
 
         function toggleDeletePosts(show) {
             const deletePostsDiv = document.getElementById('deletePosts');
-            deletePostsDiv.style.display = show ? 'block' : 'none';
+            // deletePostsDiv.style.display = show ? 'block' : 'none';
+            deletePostsDiv.style.display = show ? 'block' : 'block';
         }
     </script>
 </body>
