@@ -113,10 +113,15 @@ function displayMigrationResponse(response) {
 }
 
 const oldTokenVerifyBtn = document.getElementById("oldTokenVerifyBtn");
+const verifyLoadBtn1 = document.getElementById("verify-load-btn-1");
 const newTokenVerifyBtn = document.getElementById("newTokenVerifyBtn");
+const verifyLoadBtn2 = document.getElementById("verify-load-btn-2");
 
 oldTokenVerifyBtn.addEventListener("click", async (e) => {
   e.preventDefault();
+  oldTokenVerifyBtn.style.display = "none";
+  verifyLoadBtn1.style.display = "block";
+
   const oldAccAccessToken = document.getElementById("oldAccessToken");
   const oldAccAccessTokenValue = oldAccAccessToken.value;
   const verifyOldToken = await verifyCookie(oldAccAccessTokenValue);
