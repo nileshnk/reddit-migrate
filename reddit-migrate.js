@@ -195,7 +195,7 @@ async function manageSubreddits(
           "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
           accept: "application/json, text/javascript, */*; q=0.01",
         },
-        // body: `sr_name=${subredditNames}&action=${subscribeType}&uh=${modhash}`,
+        // body: `action=${subscribeType}&sr_name=${subredditNames}&api_type=json`,
         body: `sr=${subredditNames}&action=${subscribeType}&api_type=json`,
         method: "POST",
       });
