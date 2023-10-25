@@ -13,14 +13,14 @@ import (
 )
 
 func testRouter(r chi.Router) {
-	r.Get("/test", func(w http.ResponseWriter, r *http.Request){
+	r.Get("/test", func(w http.ResponseWriter, _ *http.Request){
 		fmt.Fprintf(w, "Hello World! I'm Nilesh")
 	});
 }
 
 func apiRouter(router chi.Router) {
 	
-	router.Get("/test", func(w http.ResponseWriter, r *http.Request){
+	router.Get("/test", func(w http.ResponseWriter, _ *http.Request){
 		type test_data struct {
 			Hello string `json:"hello"`
 		}
@@ -435,7 +435,7 @@ func fetchAllFullNames(require_uri string, token string, is_subreddit bool) redd
 		res, err := http.DefaultClient.Do(createReq)
 
 		if err != nil {
-			fmt.Println("Error in Fetching Saved Posts");
+			fmt.Println("Error in Fetching Subreddits / Saved Posts");
 			fmt.Println(err)
 		}
 
