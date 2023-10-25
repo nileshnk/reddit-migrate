@@ -1,8 +1,4 @@
-// package main is the entry point of the program
 package main
-
-// import fmt package to print to console
-// import net/http package to create http web server
 
 import (
 	"net/http"
@@ -14,8 +10,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-// main function is the entry point of the program
-
 func main() {
 
 	// chi router
@@ -23,16 +17,20 @@ func main() {
 	// A good base middleware stack
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
-	// router.Use(middleware.Logger)
+	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 
 	router.Route("/", mainRouter)
-
-	http.ListenAndServe("localhost:5000", router)
+	HOST := os.Getenv("HOST")
+	if(HOST == "") {
+		HOST = "localhost:5005"
+	}
+	http.ListenAndServe(HOST, router)
 }
 
 func mainRouter(r chi.Router){
 
+	// serving static files
 	workDir, _ := os.Getwd()
 	filesDir := http.Dir(filepath.Join(workDir, "public"))
 	FileServer(r, "/", filesDir)
