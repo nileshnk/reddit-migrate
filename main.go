@@ -1,9 +1,13 @@
 package main
 
 import (
+	"fmt"
+	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -34,7 +38,24 @@ func main() {
 		// Priority 3
 		ADDR = "localhost:5005"
 	}
-	http.ListenAndServe(ADDR, router)
+	listener, errListen := net.Listen("tcp",ADDR)
+	if errListen != nil {
+		fmt.Println("Could not start the application. Check if port are available!")
+	} else {
+		var urlAddr string
+		if strings.Split(ADDR, ":")[0] != ""{
+			urlAddr = fmt.Sprintf("http://%s", ADDR)
+		}else {
+			urlAddr = fmt.Sprintf("http://localhost%s", ADDR)
+		}
+		openInBrowser(urlAddr)
+		fmt.Printf("Application is running on %s 🚀\n", urlAddr)
+	}
+
+	errServe := http.Serve(listener, router)
+	if errServe != nil {
+		fmt.Println("Error while serving the application:", errServe)
+	}
 }
 
 func mainRouter(r chi.Router){
@@ -68,3 +89,20 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 	})
 }
 
+// function which opens a browser with provided URL
+func openInBrowser(url string) error {
+    var cmd string
+    var args []string
+
+    switch runtime.GOOS {
+    case "windows":
+        cmd = "cmd"
+        args = []string{"/c", "start"}
+    case "darwin":
+        cmd = "open"
+    default: // "linux", "freebsd", "openbsd", "netbsd"
+        cmd = "xdg-open"
+    }
+    args = append(args, url)
+    return exec.Command(cmd, args...).Start()
+}
