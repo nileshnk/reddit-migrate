@@ -6,7 +6,7 @@ COPY . .
 
 RUN go mod tidy
 
-ENV ADDR=":5005"
+ENV GO_ADDR=":5005"
 ENTRYPOINT [ "go", "run", "." ]
 
 EXPOSE 5005
