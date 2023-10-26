@@ -10,12 +10,6 @@ import (
 	"strings"
 )
 
-type migration_request_type struct {
-	Old_account_cookie string `json:"old_account_cookie"`
-	New_account_cookie string `json:"new_account_cookie"`
-	Preferences preferences_type `json:"preferences"`
-}
-
 // It is the core migrate handler, calling all required methods.
 func MigrationHandler(w http.ResponseWriter, r *http.Request){
 	
@@ -56,25 +50,6 @@ func MigrationHandler(w http.ResponseWriter, r *http.Request){
 	w.Write(jsonResp)
 	
 	return
-}
-
-
-type preferences_type struct {
-	Migrate_subreddit_bool bool `json:"migrate_subreddit_bool"`
-	Migrate_post_bool bool `json:"migrate_post_bool"`
-	Delete_post_bool bool `json:"delete_post_bool"`
-	Delete_subreddit_bool bool `json:"delete_subreddit_bool"`
-}
-
-type migration_response_type struct {
-	Success bool `json:"success"`
-	Message string `json:"message"`
-	Data struct {
-		SubscribeSubreddit manage_subreddit_response_type `json:"subscribeSubreddit"`
-		UnsubscribeSubreddit manage_subreddit_response_type `json:"unsubscribeSubreddit"`
-		SavePost manage_post_type `json:"savePost"`
-		UnsavePost manage_post_type `json:"unsavePost"`
-	} `json:"data"`
 }
 
 // main function to handle migration
@@ -160,22 +135,6 @@ func initializeMigration(old_account_cookie string, new_account_cookie string, p
 	// fmt.Println(FinalResponse)
 
 	return FinalResponse
-}
-
-
-// create an enum for subscribe and unsubscribe
-type subscribe_type string
-const (
-	subscribe subscribe_type = "sub"
-	unsubscribe subscribe_type = "unsub"
-)
-
-type manage_subreddit_response_type struct{
-	Error bool
-	StatusCode int
-	SuccessCount int
-	FailedCount int 
-	FailedSubreddits []string
 }
 
 // function to manage the subreddits
@@ -302,17 +261,6 @@ func manageFollowedUsers(token string, userList []string, subscribeType subscrib
 	return FinalResponse
 }
 
-type post_save_type string 
-const (
-	SAVE post_save_type = "save"
-	UNSAVE post_save_type = "unsave"
-)
-
-type manage_post_type struct {
-	SuccessCount int
-	FailedCount int
-}
-
 // function to manage saved posts
 func manageSavedPosts(token string, postIds []string, saveType post_save_type) manage_post_type {
 	var failedSavePostIds []string
@@ -379,12 +327,6 @@ func fetchSubredditFullNames(token string) reddit_name_type {
 	return subredditFullNamesList;
 }
 
-type reddit_name_type struct {
-	fullNamesList []string;
-	displayNamesList []string;
-	userDisplayNameList []string;
-}
-
 func fetchAllFullNames(require_uri string, token string, is_subreddit bool) reddit_name_type {
 	var fullNamesList []string;
 	var displayNamesList []string;
@@ -410,21 +352,6 @@ func fetchAllFullNames(require_uri string, token string, is_subreddit bool) redd
 		if err != nil {
 			fmt.Println("Error in Fetching Subreddits / Saved Posts");
 			fmt.Println(err)
-		}
-
-		type full_name_list_type struct {
-			Kind string `json:"kind"`
-			Data struct {
-				After string `json:"after"`
-				Children []struct {
-					Kind string `json:"kind"`
-					Data struct {
-						Name string `json:"name"`
-						Display_name string `json:"display_name"`
-						Subreddit_type string `json:"subreddit_type"`
-					} `json:"data"`
-				} `json:"children"`
-			} `json:"data"`
 		}
 
 		var fullNameSingleList full_name_list_type;
@@ -465,27 +392,6 @@ func fetchAllFullNames(require_uri string, token string, is_subreddit bool) redd
 
 	// fmt.Printf("Users subscribed: %v\n", len(FollowedUsers))
 	return FinalResponse
-}
-
-type verify_cookie_type struct {
-	Cookie string `json:"cookie"`
-}
-
-type profile_response_type struct {
-	Type string `json:"type"`
-	Data struct {
-		Name string `json:"name"`
-		Is_employee bool `json:"is_employee"`
-		Is_friend bool `json:"is_friend"`
-	} `json:"data"`
-}
-
-type token_response_type struct {
-	Success bool `json:"success"`
-	Message string `json:"message"`
-	Data struct {
-		Username string `json:"username"`
-	} `json:"data"`
 }
 
 // sends a response with username if token is valid
@@ -553,11 +459,6 @@ func verifyCookie(cookie string) token_response_type {
 	var FinalResponse token_response_type;
 
 	if(res.StatusCode != 200){
-
-		type error_response_type struct {
-			Error string `json:"error"`
-			Message string `json:"message"`
-		}
 
 		var errorResponse error_response_type
 		response, errResponseRead := ioutil.ReadAll(res.Body);
