@@ -37,7 +37,7 @@ After installation, open this site in browser http://localhost:5005 . Follow the
 
 - Retrieve the cookie of both accounts (old and new).
 
-  - You can watch [this video](https://www.google.com) to follow along.
+  - You can watch [this video](https://raw.githubusercontent.com/nileshnk/reddit-migrate/main/assets/capture-cookie.mp4) to follow along.
   - Login to Reddit in the desktop web browser
   - Open a new tab.
   - Open the Network tab through developer tools. (You can right click and go to Inspect.)
