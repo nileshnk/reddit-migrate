@@ -126,6 +126,8 @@ oldTokenVerifyBtn.addEventListener("click", async (e) => {
   const oldAccAccessTokenValue = oldAccAccessToken.value;
   const verifyOldToken = await verifyCookie(oldAccAccessTokenValue);
   console.log(verifyOldToken);
+  oldTokenVerifyBtn.style.display = "block";
+  verifyLoadBtn1.style.display = "none";
   if (verifyOldToken.success) {
     BOOL_OLD_TOKEN_VERIFIED = true;
     oldAccAccessToken.disabled = true;
@@ -152,10 +154,15 @@ oldTokenVerifyBtn.addEventListener("click", async (e) => {
 
 newTokenVerifyBtn.addEventListener("click", async (e) => {
   e.preventDefault();
+  newTokenVerifyBtn.style.display = "none";
+  verifyLoadBtn2.style.display = "block";
+
   const newAccAccessToken = document.getElementById("newAccessToken");
   const newAccAccessTokenValue = newAccAccessToken.value;
   const verifynewToken = await verifyCookie(newAccAccessTokenValue);
   if (verifynewToken.success) {
+    newTokenVerifyBtn.style.display = "block";
+    verifyLoadBtn2.style.display = "none";
     BOOL_NEW_TOKEN_VERIFIED = true;
     newAccAccessToken.disabled = true;
     newAccAccessToken.style.borderColor = "#00cc00";
