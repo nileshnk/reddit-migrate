@@ -1,78 +1,108 @@
-# reddit-migrate
+# Reddit-Migrate
 
-A simple interface to migrate Reddit account data from Old account to New account using Reddit API's.
+A simple interface to migrate Reddit account data from an old account to a new account using Reddit APIs.
 
-:warning:
+![Home](./assets/app_home.png)
 
-> Note: This requires cookie of both Old Account & New Account (which also contains Authorization access token). Cookies contains sensitive data(credentials), therefore, make sure you never share it with anyone. ⚠️
+> **Caution** :warning: : This tool requires cookies from both the old and new Reddit accounts, which contain sensitive data (credentials). Never share these cookies with anyone.
+
+## Demo
+
+Check out the demo on YouTube: [Watch Demo](https://youtu.be/cpwPjjkW2O4)
 
 ## Installation
 
-You can run the application locally or through Docker.
+You can run the application either locally or using Docker.
 
-#### Local
+### Local Installation
 
-Make sure golang is installed in your system. [Install here](https://go.dev/dl/) if not installed.
+1. Make sure you have Go installed on your system. If not, you can install it [here](https://go.dev/dl/).
 
-```
-go mod tidy
-go run .
+2. Clone this repository and navigate to the project directory:
 
-# Assign different address by passing --addr flag.
-go run . --addr=":3000"
-```
+   ```bash
+   git clone https://github.com/nileshnk/reddit-migrate.git
+   cd reddit-migrate
+   ```
 
-#### Docker
+3. Install the necessary Go dependencies:
 
-Make sure docker is installed and running in background.
+   ```bash
+   go mod tidy
+   ```
 
-```
-docker build -t "reddit-migrate" .
-docker run -it -d -p 5005:5005 --name "migrate" reddit-migrate
-```
+4. Run the application:
 
-After installation, open this site in browser http://localhost:5005 . Follow the below steps.
+   ```bash
+   go run .
+   ```
+
+5. You can also specify a custom address using the `--addr` flag:
+
+   ```bash
+   go run . --addr=":3000"
+   ```
+
+### Docker Installation
+
+1. Make sure Docker is installed and running on your system.
+
+2. Build the Docker image:
+
+   ```bash
+   docker build -t reddit-migrate-img .
+   ```
+
+3. Run the Docker container:
+
+   ```bash
+   docker run -it -d -p 5005:5005 --name reddit-migrate reddit-migrate-img
+   ```
+
+After setup, open the application in your browser at [http://localhost:5005](http://localhost:5005) or the custom address you provided during setup. Follow the steps below.
+
+## Usage
 
 ### Steps:
 
-- Retrieve the cookie of both accounts (old and new).
+1. **Retrieve Cookies**: Obtain the cookies for both your old and new Reddit accounts. You can follow this [video guide](./assets/cookie-retrieval.gif) for assistance.
 
-  - You can watch [this video](https://raw.githubusercontent.com/nileshnk/reddit-migrate/main/assets/capture-cookie.mp4) to follow along.
-  - Login to Reddit in the desktop web browser
-  - Open a new tab.
-  - Open the Network tab through developer tools. (You can right click and go to Inspect.)
-  - Go to this url https://www.reddit.com/api/me.json or any other reddit page.
-  - Go to that new request that just popped in network tab.
-  - Scroll below to find cookie. Copy whole cookie by triple clicking on it.
-  - Find cookie for other account similarly.
+   - Log in to Reddit in a desktop web browser.
+   - Open a new tab and access the Network tab through developer tools (right-click and select Inspect).
+   - Visit the URL [https://www.reddit.com/api/me.json](https://www.reddit.com/api/me.json) or any other Reddit page.
+   - Locate the new request that appeared in the network tab.
+   - Find the cookie and copy it by triple-clicking on it.
+   - Repeat the same process for the other Reddit account.
 
-- Paste both cookies accordingly and verify.
-- Once verified, select options according to requirement.
-- Submit
+2. **Paste Cookies**: Paste both cookies accordingly and verify their correctness.
 
-### Code Description
+3. **Select Options**: Choose the migration options based on your requirements.
 
-I've used Reddit's API's to make request to Reddit using the cookies of the respective user account.
-First on clicking the verify button,
+4. **Submit**: Click the submit button to initiate the migration.
 
-- Verifies the cookie. Checks if access token is present in the cookie, and if Reddit responds with user data.
-- Access Token is extracted from cookie.
+## Code Description
 
-For subreddit migrations, following steps are done:
+This tool uses Reddit's APIs to interact with Reddit servers using cookies from respective user accounts. Here's a brief overview:
 
-- Makes a request to list all the subreddits. Display Names of subreddits are stored in array.
-- Names are passed to a function that subscribes given subreddits.
-- It processess the subreddits in chunks of 100 names per request.
-- Separates the user accounts that are subscribed. Handles it separately.
-- Returns success and failure Count.
+- **Verification**: Clicking the verify button verifies the cookies. It checks for the presence of an access token in the cookie and validates the response from Reddit.
 
-For saved-posts migrations, following steps are done:
+For subreddit migrations, the following steps are performed:
 
-- Makes a request to list all the saved posts. Full Names of the posts are stored.
-- They are passed to function that saves the post.
-- The function call an API of reddit that only allows saving one post per request. This can causes issues in some cases where Reddit blocks request after rate limit is hit (100 Requests / Minute is the current limit by Reddit)
-- Returns success and failure count.
+- Request a list of all subscribed subreddits and store their display names.
+- Pass the names to a function that subscribes to the specified subreddits.
+- Process subreddits in chunks of 100 names per request.
+- Handle user accounts that are subscribed separately.
+- Return success and failure counts.
 
-This was first written in JS. Then switched to golang, as an exercise to get familiar with golang. I might write the code in JS for NodeJS in future.
+For saved-posts migrations, these steps are followed:
 
-Contact me for any queries / suggestion: mail@inilesh.com
+- Request a list of all saved posts and store their full names.
+- Pass the full names to a function that saves the posts.
+- The function makes one API request per saved post, which may be subject to rate limits.
+- Return success and failure counts.
+
+Initially, this tool was written in JavaScript but was later rewritten in Go as an exercise to become familiar with the language.
+
+## Contact
+
+For any queries or suggestions, please feel free to contact me at [mail@inilesh.com](mailto:mail@inilesh.com).
