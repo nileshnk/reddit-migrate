@@ -47,13 +47,20 @@ You can run the application either locally or using Docker.
 
 1. Make sure Docker is installed and running on your system.
 
-2. Build the Docker image:
+2. Clone this repository and navigate to the project directory:
+
+   ```bash
+   git clone https://github.com/nileshnk/reddit-migrate.git
+   cd reddit-migrate
+   ```
+
+3. Build the Docker image:
 
    ```bash
    docker build -t reddit-migrate-img .
    ```
 
-3. Run the Docker container:
+4. Run the Docker container:
 
    ```bash
    docker run -it -d -p 5005:5005 --name reddit-migrate reddit-migrate-img
