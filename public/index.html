@@ -181,7 +181,23 @@
 
             <!-- Reddit-Styled Post Migration Options -->
             <div class="mb-6" id="saved-posts-options">
-                <label class="mb-2 block font-bold text-gray-700">Migrate All Saved Posts:</label>
+                <label class="mb-2 font-bold text-gray-700 flex items-center">
+                    Migrate All Saved Posts:
+                    <span class="ml-2 relative">
+                        <svg onclick="toggleTooltip(event)" class="w-5 h-5 text-gray-500 cursor-pointer"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 1 1-10 10A10 10 0 0 1 12 2z" />
+                        </svg>
+                        <div id="tooltip"
+                            class="hidden absolute left-6 top-0 bg-gray-800 text-white text-sm rounded-lg p-2 w-48 shadow-md">
+                            Migrating more than 50 saved posts may take additional time, with approximately 10 extra
+                            minutes required for every additional 50 posts. For example, migrating 100 posts could take
+                            around 10-15 minutes. Please leave the tab open without refreshing until you get a
+                            response.
+                        </div>
+                    </span>
+                </label>
                 <div class="flex items-center">
                     <input type="radio" id="migrateSavedPostsYes" name="migratePost" value="yes" class="mr-2"
                         onclick="toggleDeletePosts(true)" />
@@ -282,6 +298,20 @@
     </footer>
 
     <script>
+
+        function toggleTooltip(event) {
+            event.stopPropagation();
+            const tooltip = document.getElementById('tooltip');
+            tooltip.classList.toggle('hidden');
+        }
+
+        document.addEventListener('click', function (event) {
+            const tooltip = document.getElementById('tooltip');
+            if (!tooltip.classList.contains('hidden') && !event.target.closest('svg')) {
+                tooltip.classList.add('hidden');
+            }
+        });
+
         function toggleDeleteSubreddits(show) {
             const deleteSubredditsDiv = document.getElementById('deleteSubreddits');
             // deleteSubredditsDiv.style.display = show ? 'block' : 'none';
