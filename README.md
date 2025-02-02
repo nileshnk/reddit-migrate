@@ -63,12 +63,14 @@ You can run the application either locally or using Docker.
 4. Run the Docker container:
 
    ```bash
-   docker run -it -d -p 5005:5005 --name reddit-migrate reddit-migrate-img
+   docker run -d -p 5005:5005 --name reddit-migrate reddit-migrate-img
    ```
 
 After setup, open the application in your browser at [http://localhost:5005](http://localhost:5005) or the custom address you provided during setup. Follow the steps below.
 
 ## Usage
+
+> Migrating more than 50 saved posts may take additional time, with approximately 10 extra minutes required for every additional 50 posts. For example, migrating 100 posts could take around 10-15 minutes. Please leave the tab open without refreshing until you get a response. This is because of Reddit's Rate Limiting
 
 ### Steps:
 
@@ -78,7 +80,8 @@ After setup, open the application in your browser at [http://localhost:5005](htt
    - Open a new tab and access the Network tab through developer tools (right-click and select Inspect).
    - Visit the URL [https://www.reddit.com/api/me.json](https://www.reddit.com/api/me.json) or any other Reddit page.
    - Locate the new request that appeared in the network tab.
-   - Find the cookie and copy it by triple-clicking on it.
+   - Find and select the whole cookie (you can use triple-click to select).
+   - Copy the cookie.
    - Repeat the same process for the other Reddit account.
 
 2. **Paste Cookies**: Paste both cookies accordingly and verify their correctness.
