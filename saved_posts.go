@@ -23,6 +23,12 @@ type Result struct {
 	Error   error
 }
 
+const (
+	RATE_LIMIT_SLEEP_INTERVAL = 5
+	RATE_LIMIT                = 2
+	MAX_TOKENS                = 50
+)
+
 func init() {
 	InfoLogger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lmicroseconds)
 	ErrorLogger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lmicroseconds)
@@ -142,7 +148,7 @@ func manageSavedPosts(token string, postIds []string, saveType post_save_type, c
 		concurrency = 1
 	}
 
-	rateLimiter := NewRateLimiter(50, 2*time.Minute)
+	rateLimiter := NewRateLimiter(MAX_TOKENS, RATE_LIMIT*time.Minute)
 	jobs := make(chan string, len(postIds))
 	results := make(chan Result, len(postIds))
 	rateLimitControl := make(chan bool, 1)
@@ -161,13 +167,13 @@ func manageSavedPosts(token string, postIds []string, saveType post_save_type, c
 			if shouldPause {
 				InfoLogger.Println("Rate limit triggered - initiating pause sequence")
 				rateLimiter.Pause()
-				InfoLogger.Println("Waiting 10 minutes for rate limit reset")
-				time.Sleep(10 * time.Minute)
+				InfoLogger.Printf("Waiting %d minutes for rate limit reset", RATE_LIMIT_SLEEP_INTERVAL)
+				time.Sleep(RATE_LIMIT_SLEEP_INTERVAL * time.Minute)
 
 				success := testRequest(token, saveType)
 				for !success {
 					InfoLogger.Println("Rate limit still active - waiting additional interval")
-					time.Sleep(10 * time.Minute)
+					time.Sleep(RATE_LIMIT_SLEEP_INTERVAL * time.Minute)
 					success = testRequest(token, saveType)
 				}
 				InfoLogger.Println("Rate limit cleared - resuming operations")

@@ -48,7 +48,7 @@ func main() {
 		} else {
 			urlAddr = fmt.Sprintf("http://localhost%s", ADDR)
 		}
-		// openInBrowser(urlAddr)
+		openInBrowser(urlAddr)
 		fmt.Printf("Application is running on %s 🚀\n", urlAddr)
 	}
 
