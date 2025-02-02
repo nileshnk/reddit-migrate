@@ -11,8 +11,8 @@ import (
 )
 
 // It is the core migrate handler, calling all required methods.
-func MigrationHandler(w http.ResponseWriter, r *http.Request){
-	
+func MigrationHandler(w http.ResponseWriter, r *http.Request) {
+
 	// extract tokens and preferences from request body
 	headerContentTtype := r.Header.Get("Content-Type")
 	if headerContentTtype != "application/json" {
@@ -27,7 +27,6 @@ func MigrationHandler(w http.ResponseWriter, r *http.Request){
 	decoder := json.NewDecoder(r.Body)
 	// decoder.DisallowUnknownFields()
 
-
 	err := decoder.Decode(&requestBody)
 	if err != nil {
 		if errors.As(err, &unmarshalErr) {
@@ -39,52 +38,49 @@ func MigrationHandler(w http.ResponseWriter, r *http.Request){
 	}
 	FinalResponse := initializeMigration(requestBody.Old_account_cookie, requestBody.New_account_cookie, requestBody.Preferences)
 
-
-
-	jsonResp, jsonMarshalErr := json.Marshal(FinalResponse);
+	jsonResp, jsonMarshalErr := json.Marshal(FinalResponse)
 	if jsonMarshalErr != nil {
-		fmt.Println("Error in Marshalling Response Body");
+		fmt.Println("Error in Marshalling Response Body")
 		fmt.Println(jsonMarshalErr)
 	}
-	fmt.Println(string(jsonResp)); 
+	fmt.Println(string(jsonResp))
 	w.Write(jsonResp)
-	
+
 	return
 }
 
 // main function to handle migration
 func initializeMigration(old_account_cookie string, new_account_cookie string, preferences preferences_type) migration_response_type {
 
-	var FinalResponse migration_response_type;
+	var FinalResponse migration_response_type
 
-	oldAccountUsername := verifyCookie(old_account_cookie).Data.Username;
-	newAccountUsername := verifyCookie(new_account_cookie).Data.Username;
+	oldAccountUsername := verifyCookie(old_account_cookie).Data.Username
+	newAccountUsername := verifyCookie(new_account_cookie).Data.Username
 
 	old_account_token := parseTokenFromCookie(old_account_cookie)
 	new_account_token := parseTokenFromCookie(new_account_cookie)
 
 	fmt.Println(preferences)
 
-	
-	if (preferences.Migrate_subreddit_bool || preferences.Delete_subreddit_bool) {
+	if preferences.Migrate_subreddit_bool || preferences.Delete_subreddit_bool {
 		fmt.Println("Fetching all subreddits full names...")
 		subredditNameList := fetchSubredditFullNames(old_account_token)
-		
+
 		subredditChunkSize := 100
 		if preferences.Migrate_subreddit_bool == true {
 			fmt.Println("Migrations of subreddits started...")
-			
+
 			fmt.Println("Total subreddits in Old Account is", len(subredditNameList.fullNamesList))
 
 			subscribeData := manageSubreddits(new_account_token, subredditNameList.displayNamesList, subscribe_type(subscribe), subredditChunkSize)
 			fmt.Println("Subscribed from Old Account with following data")
-			fmt.Println(subscribeData);
+			fmt.Println(subscribeData)
 			retryMigrate := subscribeData
 			retryAttempts := 1
 			for retryMigrate.FailedCount > 0 {
-				if(retryAttempts >= 5){
+				if retryAttempts >= 5 {
 					fmt.Printf("Retry Failed. %v subreddits failed to migrate! \n", retryMigrate.FailedCount)
-					break;
+					break
 				}
 				fmt.Printf("Total subreddits failed to migrate: %v. Retrying... \n", retryMigrate.FailedCount)
 				retryMigrate = manageSubreddits(new_account_token, retryMigrate.FailedSubreddits, subscribe_type(subscribe), subredditChunkSize/retryAttempts)
@@ -92,12 +88,12 @@ func initializeMigration(old_account_cookie string, new_account_cookie string, p
 			}
 
 			fmt.Printf("Total followed users in \"%v\" account: %v \n", oldAccountUsername, len(subredditNameList.userDisplayNameList))
-			fmt.Printf("Following users in %v account...\n", newAccountUsername);
+			fmt.Printf("Following users in %v account...\n", newAccountUsername)
 
 			followUsersData := manageFollowedUsers(new_account_token, subredditNameList.userDisplayNameList, subscribe_type(subscribe))
 			fmt.Println(followUsersData)
 
-			FinalResponse.Data.SubscribeSubreddit = subscribeData	
+			FinalResponse.Data.SubscribeSubreddit = subscribeData
 		}
 
 		if preferences.Delete_subreddit_bool == true {
@@ -107,54 +103,54 @@ func initializeMigration(old_account_cookie string, new_account_cookie string, p
 			FinalResponse.Data.UnsubscribeSubreddit = unsubscribeData
 		}
 	}
-	
-	if (preferences.Migrate_post_bool || preferences.Delete_post_bool) {
-	
+
+	if preferences.Migrate_post_bool || preferences.Delete_post_bool {
+
 		savedPostsFullNamesList := fetchSavedPostsFullNames(old_account_token, oldAccountUsername)
 		// fmt.Println(savedPostsFullNamesList)
 		if preferences.Migrate_post_bool == true {
 			// oldAccountUsername := verifyToken()
 			fmt.Printf("Found %v posts from Old Account %v. Migrating...\n", len(savedPostsFullNamesList), oldAccountUsername)
 
-			savePostsResponse := manageSavedPosts(new_account_token, savedPostsFullNamesList, post_save_type(SAVE))
+			savePostsResponse := manageSavedPosts(new_account_token, savedPostsFullNamesList, post_save_type(SAVE), 50)
 			fmt.Printf("Saved %v posts to New Account %v \n", savePostsResponse.SuccessCount, newAccountUsername)
 			FinalResponse.Data.SavePost = savePostsResponse
 		}
 
 		if preferences.Delete_post_bool == true {
-			fmt.Printf("Unsaving %v Posts from Old Account %v \n",len(savedPostsFullNamesList), oldAccountUsername)
-			unsavePostsResponse := manageSavedPosts(old_account_token, savedPostsFullNamesList, post_save_type(UNSAVE))
+			fmt.Printf("Unsaving %v Posts from Old Account %v \n", len(savedPostsFullNamesList), oldAccountUsername)
+			unsavePostsResponse := manageSavedPosts(old_account_token, savedPostsFullNamesList, post_save_type(UNSAVE), 50)
 			FinalResponse.Data.UnsavePost = unsavePostsResponse
 			fmt.Printf("Unsaved %v Posts from %v \n", unsavePostsResponse.SuccessCount, oldAccountUsername)
 		}
 	}
-	
+
 	FinalResponse.Success = true
 	FinalResponse.Message = "Migration Successful"
-	
+
 	// fmt.Println(FinalResponse)
 
 	return FinalResponse
 }
 
 // function to manage the subreddits
-func manageSubreddits(token string, subredditFullNamesList []string, subscribeType subscribe_type, chunkSize int  ) manage_subreddit_response_type {
-	// split the subredditFullNamesList into chunks 
+func manageSubreddits(token string, subredditFullNamesList []string, subscribeType subscribe_type, chunkSize int) manage_subreddit_response_type {
+	// split the subredditFullNamesList into chunks
 
-	chunks := chunkArray(subredditFullNamesList, chunkSize);
-	var FinalResponse manage_subreddit_response_type;
-	var responses []manage_subreddit_response_type;
+	chunks := chunkArray(subredditFullNamesList, chunkSize)
+	var FinalResponse manage_subreddit_response_type
+	var responses []manage_subreddit_response_type
 	// iterate over the chunks and manage the subreddits
 	for _, chunk := range chunks {
 		response := manageSubredditsChunk(token, chunk, subscribeType)
-		responses = append(responses, response);
+		responses = append(responses, response)
 		if response.Error == true {
 			FinalResponse.Error = true
 			FinalResponse.StatusCode = 500
-			FinalResponse.FailedCount += response.FailedCount 
+			FinalResponse.FailedCount += response.FailedCount
 			FinalResponse.FailedSubreddits = append(FinalResponse.FailedSubreddits, chunk...)
 		} else {
-			FinalResponse.SuccessCount += len(chunk);
+			FinalResponse.SuccessCount += len(chunk)
 		}
 	}
 
@@ -163,44 +159,43 @@ func manageSubreddits(token string, subredditFullNamesList []string, subscribeTy
 
 // function to manage the subreddits in chunks
 func manageSubredditsChunk(token string, subredditFullNamesList []string, subscribeType subscribe_type) manage_subreddit_response_type {
-	
-	subredditNames := strings.Join(subredditFullNamesList, ",");
 
-	requiredUri := "https://oauth.reddit.com/api/subscribe";
+	subredditNames := strings.Join(subredditFullNamesList, ",")
+
+	requiredUri := "https://oauth.reddit.com/api/subscribe"
 	// requiredBody := "sr=" + subredditNames + "&action=" + string(subscribeType) + "&api_type=json";
 	stringifiedBody := fmt.Sprintf("sr_name=%v&action=%v&api_type=json", subredditNames, string(subscribeType))
 
-	requiredBody := []byte (stringifiedBody);
+	requiredBody := []byte(stringifiedBody)
 	// body, err := ioutil.ReadAll(requiredBody);
-	modifySubredditReq, modifySubredditReqErr := http.NewRequest(http.MethodPost, requiredUri,bytes.NewBuffer(requiredBody));
+	modifySubredditReq, modifySubredditReqErr := http.NewRequest(http.MethodPost, requiredUri, bytes.NewBuffer(requiredBody))
 	modifySubredditReq.Header = http.Header{
 		"Authorization": []string{"Bearer " + token},
-		"Content-Type": []string{"application/x-www-form-urlencoded"},
-		"User-Agent": []string{"Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0"},
+		"Content-Type":  []string{"application/x-www-form-urlencoded"},
+		"User-Agent":    []string{"Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0"},
 		// "User-Agent": []string{"this is a sample string to test user-agent"},
 	}
 
 	if modifySubredditReqErr != nil {
-		fmt.Println("Error in creating request for modifying subreddits");
+		fmt.Println("Error in creating request for modifying subreddits")
 	}
 
-	modifySubredditRes, modifySubredditResErr := http.DefaultClient.Do(modifySubredditReq);
+	modifySubredditRes, modifySubredditResErr := http.DefaultClient.Do(modifySubredditReq)
 
 	if modifySubredditResErr != nil {
-		fmt.Println("Error from server for modifying subreddits");
-		fmt.Println(modifySubredditResErr);
+		fmt.Println("Error from server for modifying subreddits")
+		fmt.Println(modifySubredditResErr)
 	}
 
 	body, _ := ioutil.ReadAll(modifySubredditRes.Body)
 
 	fmt.Println(string(body))
-	
 
 	response := manage_subreddit_response_type{
-		Error: false,
-		StatusCode: modifySubredditRes.StatusCode,
-		SuccessCount: len(subredditFullNamesList),
-		FailedCount: 0,
+		Error:            false,
+		StatusCode:       modifySubredditRes.StatusCode,
+		SuccessCount:     len(subredditFullNamesList),
+		FailedCount:      0,
 		FailedSubreddits: nil,
 	}
 
@@ -218,7 +213,7 @@ func manageFollowedUsers(token string, userList []string, subscribeType subscrib
 	var FinalResponse manage_subreddit_response_type
 	FinalResponse.Error = false
 
-	var requestMethod string = (map[bool]string{true: http.MethodPut, false: http.MethodDelete })[subscribeType == subscribe_type(subscribe)] 
+	var requestMethod string = (map[bool]string{true: http.MethodPut, false: http.MethodDelete})[subscribeType == subscribe_type(subscribe)]
 
 	var FailedResponseData []string
 
@@ -229,15 +224,15 @@ func manageFollowedUsers(token string, userList []string, subscribeType subscrib
 		requiredUri := fmt.Sprintf("https://oauth.reddit.com/api/v1/me/friends/%v", username)
 		jsonBody := map[string]string{"name": username}
 		requiredBody, _ := json.Marshal(jsonBody)
-		createReq, _ := http.NewRequest(requestMethod, requiredUri, bytes.NewBuffer( requiredBody))
+		createReq, _ := http.NewRequest(requestMethod, requiredUri, bytes.NewBuffer(requiredBody))
 
 		createReq.Header = http.Header{
 			"Authorization": []string{"Bearer " + token},
-			"Content-Type": []string{"application/json"},
-			"User-Agent": []string{"Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0"},
+			"Content-Type":  []string{"application/json"},
+			"User-Agent":    []string{"Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0"},
 		}
 
-		followResponse, followResponseErr := http.DefaultClient.Do(createReq);
+		followResponse, followResponseErr := http.DefaultClient.Do(createReq)
 		if followResponseErr != nil {
 			fmt.Println("Error in follow request response")
 		}
@@ -253,51 +248,49 @@ func manageFollowedUsers(token string, userList []string, subscribeType subscrib
 		}
 	}
 	FinalResponse = manage_subreddit_response_type{
-		SuccessCount:len(userList) - len(FailedResponseData),
-		FailedCount: len(FailedResponseData),
+		SuccessCount:     len(userList) - len(FailedResponseData),
+		FailedCount:      len(FailedResponseData),
 		FailedSubreddits: FailedResponseData,
 	}
 
 	return FinalResponse
 }
 
-// function to manage saved posts
-func manageSavedPosts(token string, postIds []string, saveType post_save_type) manage_post_type {
-	var failedSavePostIds []string
-	failedCount := 0
-	var requiredUri string  =  fmt.Sprintf("https://oauth.reddit.com/api/%v", saveType);
-	
+// // function to manage saved posts
+// func manageSavedPosts(token string, postIds []string, saveType post_save_type) manage_post_type {
+// 	var failedSavePostIds []string
+// 	failedCount := 0
+// 	var requiredUri string  =  fmt.Sprintf("https://oauth.reddit.com/api/%v", saveType);
 
+// 	for _, postId := range postIds {
+// 		var requiredBody = []byte (fmt.Sprintf("id=%v", postId));
+// 		managePostReq, managePostReqErr := http.NewRequest(http.MethodPost, requiredUri, bytes.NewBuffer(requiredBody));
+// 		managePostReq.Header = http.Header{
+// 			"Authorization": []string{"Bearer " + token},
+// 			"User-Agent": []string{"Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0"},
+// 			// "User-Agent": []string{"this is a sample string to test user-agent"},
+// 		}
+// 		if managePostReqErr != nil {
+// 			fmt.Printf("Error %v post with full name: %v \n", saveType ,postId)
+// 		}
 
-	for _, postId := range postIds {
-		var requiredBody = []byte (fmt.Sprintf("id=%v", postId));	
-		managePostReq, managePostReqErr := http.NewRequest(http.MethodPost, requiredUri, bytes.NewBuffer(requiredBody));
-		managePostReq.Header = http.Header{
-			"Authorization": []string{"Bearer " + token},
-			"User-Agent": []string{"Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0"},
-			// "User-Agent": []string{"this is a sample string to test user-agent"},
-		}
-		if managePostReqErr != nil {
-			fmt.Printf("Error %v post with full name: %v \n", saveType ,postId)
-		}
+// 		managePostRes, managePostResErr := http.DefaultClient.Do(managePostReq);
 
-		managePostRes, managePostResErr := http.DefaultClient.Do(managePostReq);
+// 		if managePostResErr != nil {
+// 			fmt.Printf("Error response while %v post: %v \n", saveType ,postId)
+// 		}
 
-		if managePostResErr != nil {
-			fmt.Printf("Error response while %v post: %v \n", saveType ,postId)
-		}
+// 		if managePostRes.StatusCode != 200 {
+// 			failedSavePostIds = append(failedSavePostIds, postId)
+// 			failedCount += 1
+// 		}
+// 	}
 
-		if managePostRes.StatusCode != 200 {
-			failedSavePostIds = append(failedSavePostIds, postId)
-			failedCount += 1
-		}
-	}
-	
-	var FinalResponse manage_post_type 
-	FinalResponse.FailedCount = failedCount
-	FinalResponse.SuccessCount = len(postIds) - failedCount
-	return FinalResponse
-}
+// 	var FinalResponse manage_post_type
+// 	FinalResponse.FailedCount = failedCount
+// 	FinalResponse.SuccessCount = len(postIds) - failedCount
+// 	return FinalResponse
+// }
 
 // split array into chunks
 func chunkArray(array []string, chunkSize int) [][]string {
@@ -315,77 +308,75 @@ func chunkArray(array []string, chunkSize int) [][]string {
 // function to fetch all the posts from the subreddit
 func fetchSavedPostsFullNames(token string, username string) []string {
 
-	require_uri := "https://oauth.reddit.com/user/" + username + "/saved.json";
+	require_uri := "https://oauth.reddit.com/user/" + username + "/saved.json"
 	savedPostsFullNamesList := fetchAllFullNames(require_uri, token, false)
-	return append(savedPostsFullNamesList.fullNamesList, savedPostsFullNamesList.userDisplayNameList...) ;
+	return append(savedPostsFullNamesList.fullNamesList, savedPostsFullNamesList.userDisplayNameList...)
 }
 
 func fetchSubredditFullNames(token string) reddit_name_type {
-	
-	require_uri := "https://oauth.reddit.com/subreddits/mine.json";
+
+	require_uri := "https://oauth.reddit.com/subreddits/mine.json"
 	subredditFullNamesList := fetchAllFullNames(require_uri, token, true)
-	return subredditFullNamesList;
+	return subredditFullNamesList
 }
 
 func fetchAllFullNames(require_uri string, token string, is_subreddit bool) reddit_name_type {
-	var fullNamesList []string;
-	var displayNamesList []string;
+	var fullNamesList []string
+	var displayNamesList []string
 
-	lastFullName := "";
+	lastFullName := ""
 	var FollowedUsers []string
 
 	for true {
-		listing_uri := require_uri + "?limit=100&after=" + lastFullName;
-		createReq, createReqErr := http.NewRequest(http.MethodGet, listing_uri, 
-		nil)
+		listing_uri := require_uri + "?limit=100&after=" + lastFullName
+		createReq, createReqErr := http.NewRequest(http.MethodGet, listing_uri,
+			nil)
 		createReq.Header = http.Header{
 			"Authorization": []string{"Bearer " + token},
-			"User-Agent": []string{"Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0"},
+			"User-Agent":    []string{"Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0"},
 		}
 		if createReqErr != nil {
-			fmt.Println("Error Creating Request");
+			fmt.Println("Error Creating Request")
 			fmt.Println(createReqErr)
 		}
 
 		res, err := http.DefaultClient.Do(createReq)
 
 		if err != nil {
-			fmt.Println("Error in Fetching Subreddits / Saved Posts");
+			fmt.Println("Error in Fetching Subreddits / Saved Posts")
 			fmt.Println(err)
 		}
 
-		var fullNameSingleList full_name_list_type;
+		var fullNameSingleList full_name_list_type
 
 		body, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			fmt.Println("Error in Reading Body");
+			fmt.Println("Error in Reading Body")
 			fmt.Println(err)
 		}
 
-		json.Unmarshal(body, &fullNameSingleList);
+		json.Unmarshal(body, &fullNameSingleList)
 		// fmt.Println(string(body))
 		// fmt.Println(fullNameSingleList)
 
-		
-
 		for _, child := range fullNameSingleList.Data.Children {
-			if (child.Data.Subreddit_type == "user" && is_subreddit == true) {
+			if child.Data.Subreddit_type == "user" && is_subreddit == true {
 				FollowedUsers = append(FollowedUsers, child.Data.Display_name)
 				continue
 			}
-			fullNamesList = append(fullNamesList, child.Data.Name);
-			displayNamesList = append(displayNamesList, child.Data.Display_name);
+			fullNamesList = append(fullNamesList, child.Data.Name)
+			displayNamesList = append(displayNamesList, child.Data.Display_name)
 		}
 
 		if fullNameSingleList.Data.After == "" {
-			break;
+			break
 		}
 
-		lastFullName = fullNameSingleList.Data.After;
+		lastFullName = fullNameSingleList.Data.After
 
 	}
-	
-	var FinalResponse reddit_name_type;
+
+	var FinalResponse reddit_name_type
 	FinalResponse.displayNamesList = displayNamesList
 	FinalResponse.fullNamesList = fullNamesList
 	FinalResponse.userDisplayNameList = FollowedUsers
@@ -418,13 +409,13 @@ func verifyTokenResponse(w http.ResponseWriter, r *http.Request) {
 			errorResponse(w, "Bad Request "+err.Error(), http.StatusBadRequest)
 		}
 		return
-	}	
+	}
 
 	FinalResponse := verifyCookie(requestBody.Cookie)
 
-	jsonResp, jsonMarshalErr :=  json.Marshal(FinalResponse);
+	jsonResp, jsonMarshalErr := json.Marshal(FinalResponse)
 	if jsonMarshalErr != nil {
-		fmt.Println("Error in Marshalling Response Body");
+		fmt.Println("Error in Marshalling Response Body")
 		fmt.Println(jsonMarshalErr)
 	}
 
@@ -432,7 +423,7 @@ func verifyTokenResponse(w http.ResponseWriter, r *http.Request) {
 	// tokenFromCookie := parseTokenFromCookie(t.Access_token)
 	// fmt.Println(tokenFromCookie)
 
-	return 	
+	return
 }
 
 func verifyCookie(cookie string) token_response_type {
@@ -449,58 +440,57 @@ func verifyCookie(cookie string) token_response_type {
 	// fmt.Println(t.Access_token);
 	// req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
 	if err != nil {
-		fmt.Println("Error Creating Request");
+		fmt.Println("Error Creating Request")
 		fmt.Println(err)
 	}
 
 	res, err := http.DefaultClient.Do(req)
 	// fmt.Println(res);
 
-	var FinalResponse token_response_type;
+	var FinalResponse token_response_type
 
-	if(res.StatusCode != 200){
+	if res.StatusCode != 200 {
 
 		var errorResponse error_response_type
-		response, errResponseRead := ioutil.ReadAll(res.Body);
+		response, errResponseRead := ioutil.ReadAll(res.Body)
 		if err != nil {
-			fmt.Println("Error in Reading Response Body");
+			fmt.Println("Error in Reading Response Body")
 			fmt.Println(errResponseRead)
 		}
-		errResponse := json.Unmarshal(response, &errorResponse);
+		errResponse := json.Unmarshal(response, &errorResponse)
 		if errResponse != nil {
-			fmt.Println("Error in Marshalling Response Body");
+			fmt.Println("Error in Marshalling Response Body")
 			fmt.Println(errResponse)
 		}
 
-
-		FinalResponse.Success = false;
-		FinalResponse.Message = "Invalid Token/Cookie";
-		FinalResponse.Data.Username = errorResponse.Message;
+		FinalResponse.Success = false
+		FinalResponse.Message = "Invalid Token/Cookie"
+		FinalResponse.Data.Username = errorResponse.Message
 		return FinalResponse
 	}
 
 	if err != nil {
-		fmt.Println("Error in Parsing Response");
+		fmt.Println("Error in Parsing Response")
 		fmt.Println(err)
 	}
 	var profile profile_response_type
 
-	profileResponse, errReadResponse := ioutil.ReadAll(res.Body);
+	profileResponse, errReadResponse := ioutil.ReadAll(res.Body)
 	if errReadResponse != nil {
-		fmt.Println("Error in Reading Response Body");
+		fmt.Println("Error in Reading Response Body")
 		fmt.Println(errReadResponse)
 	}
 	// fmt.Println(string(profileResponse))
 
-	errGet := json.Unmarshal(profileResponse, &profile);
+	errGet := json.Unmarshal(profileResponse, &profile)
 	if errGet != nil {
-		fmt.Println("Error in Marshalling Response Body");
+		fmt.Println("Error in Marshalling Response Body")
 		fmt.Println(errGet)
 	}
 
-	FinalResponse.Success = true;
-	FinalResponse.Message = "Valid Token/Cookie";
-	FinalResponse.Data.Username = profile.Data.Name;
+	FinalResponse.Success = true
+	FinalResponse.Message = "Valid Token/Cookie"
+	FinalResponse.Data.Username = profile.Data.Name
 
 	return FinalResponse
 }
@@ -508,10 +498,10 @@ func verifyCookie(cookie string) token_response_type {
 func parseTokenFromCookie(cookie string) string {
 
 	token := strings.Split(cookie, ";")
-	var access_token string = "";
+	var access_token string = ""
 	for i := 0; i < len(token); i++ {
 		str := strings.TrimSpace(token[i])
-		if(strings.HasPrefix(str, "token_v2")){
+		if strings.HasPrefix(str, "token_v2") {
 			access_token = strings.Split(token[i], "=")[1]
 		}
 	}
@@ -526,4 +516,3 @@ func errorResponse(w http.ResponseWriter, message string, httpStatusCode int) {
 	jsonResp, _ := json.Marshal(resp)
 	w.Write(jsonResp)
 }
-

@@ -23,32 +23,32 @@ func main() {
 
 	router.Route("/", mainRouter)
 
-	args := os.Args;
+	args := os.Args
 	// Priority 1
 	ADDR := os.Getenv("GO_ADDR")
 	// Priority 2
 	for _, a := range args {
-		str := strings.Split(a, "=");
-		if(str[0]=="--addr"){
+		str := strings.Split(a, "=")
+		if str[0] == "--addr" {
 			ADDR = str[1]
 		}
 	}
-	
-	if(ADDR == "") {
+
+	if ADDR == "" {
 		// Priority 3
 		ADDR = "localhost:5005"
 	}
-	listener, errListen := net.Listen("tcp",ADDR)
+	listener, errListen := net.Listen("tcp", ADDR)
 	if errListen != nil {
 		fmt.Println("Could not start the application. Check if port are available!")
 	} else {
 		var urlAddr string
-		if strings.Split(ADDR, ":")[0] != ""{
+		if strings.Split(ADDR, ":")[0] != "" {
 			urlAddr = fmt.Sprintf("http://%s", ADDR)
-		}else {
+		} else {
 			urlAddr = fmt.Sprintf("http://localhost%s", ADDR)
 		}
-		openInBrowser(urlAddr)
+		// openInBrowser(urlAddr)
 		fmt.Printf("Application is running on %s 🚀\n", urlAddr)
 	}
 
@@ -58,17 +58,15 @@ func main() {
 	}
 }
 
-func mainRouter(r chi.Router){
+func mainRouter(r chi.Router) {
 
 	// serving static files
 	workDir, _ := os.Getwd()
 	filesDir := http.Dir(filepath.Join(workDir, "public"))
 	FileServer(r, "/", filesDir)
 
-
 	r.Route("/api", apiRouter)
 }
-
 
 func FileServer(r chi.Router, path string, root http.FileSystem) {
 	if strings.ContainsAny(path, "{}*") {
@@ -91,18 +89,18 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 
 // function which opens a browser with provided URL
 func openInBrowser(url string) error {
-    var cmd string
-    var args []string
+	var cmd string
+	var args []string
 
-    switch runtime.GOOS {
-    case "windows":
-        cmd = "cmd"
-        args = []string{"/c", "start"}
-    case "darwin":
-        cmd = "open"
-    default: // "linux", "freebsd", "openbsd", "netbsd"
-        cmd = "xdg-open"
-    }
-    args = append(args, url)
-    return exec.Command(cmd, args...).Start()
+	switch runtime.GOOS {
+	case "windows":
+		cmd = "cmd"
+		args = []string{"/c", "start"}
+	case "darwin":
+		cmd = "open"
+	default: // "linux", "freebsd", "openbsd", "netbsd"
+		cmd = "xdg-open"
+	}
+	args = append(args, url)
+	return exec.Command(cmd, args...).Start()
 }
