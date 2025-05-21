@@ -112,6 +112,16 @@ function displayMigrationResponse(response) {
   });
 }
 
+function updateSubmitButtonState() {
+  if (BOOL_OLD_TOKEN_VERIFIED && BOOL_NEW_TOKEN_VERIFIED) {
+    optionSubmit.disabled = false;
+    optionSubmit.classList.remove("cursor-not-allowed", "opacity-50");
+  } else {
+    optionSubmit.disabled = true;
+    optionSubmit.classList.add("cursor-not-allowed", "opacity-50");
+  }
+}
+
 const oldTokenVerifyBtn = document.getElementById("oldTokenVerifyBtn");
 const verifyLoadBtn1 = document.getElementById("verify-load-btn-1");
 const newTokenVerifyBtn = document.getElementById("newTokenVerifyBtn");
@@ -142,8 +152,8 @@ oldTokenVerifyBtn.addEventListener("click", async (e) => {
     document.getElementById("oldTokenVerifyFailMessage").style.display = "none";
     document.getElementById("oldAccountUserId").innerHTML =
       verifyOldToken.data.username;
-    // verifyOldToken.data.username;
     console.log("Old access token verified");
+    updateSubmitButtonState();
   } else {
     oldAccAccessToken.style.borderColor = "#ff0000";
     document.getElementById("oldTokenVerifyFailMessage").style.display =
@@ -177,8 +187,8 @@ newTokenVerifyBtn.addEventListener("click", async (e) => {
 
     document.getElementById("newAccountUserId").innerHTML =
       verifynewToken.data.username;
-    // verifynewToken.data.username;
     console.log("New access token verified");
+    updateSubmitButtonState();
   } else {
     newAccAccessToken.style.borderColor = "#ff0000";
     document.getElementById("newTokenVerifyFailMessage").style.display =
@@ -310,4 +320,5 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("deleteSubredditsNo").checked = true;
   document.getElementById("migrateSavedPostsNo").checked = true;
   document.getElementById("deletePostsNo").checked = true;
+  updateSubmitButtonState();
 });
