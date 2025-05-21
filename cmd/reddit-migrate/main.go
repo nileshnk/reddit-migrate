@@ -11,6 +11,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/nileshnk/reddit-migrate/internal/api"
+	"github.com/nileshnk/reddit-migrate/internal/config"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -23,11 +26,11 @@ const DefaultAddress = "localhost:5005"
 
 func main() {
 	// Initialize loggers
-	InfoLogger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lmicroseconds)
-	ErrorLogger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lmicroseconds)
-	DebugLogger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lmicroseconds)
+	config.InfoLogger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lmicroseconds)
+	config.ErrorLogger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lmicroseconds)
+	config.DebugLogger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lmicroseconds)
 
-	InfoLogger.Printf("Application version: %s", Version) // Print the version
+	config.InfoLogger.Printf("Application version: %s", Version) // Print the version
 
 	// Create a new Chi router.
 	router := chi.NewRouter()
@@ -44,24 +47,24 @@ func main() {
 	// Start listening on the specified address.
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		ErrorLogger.Fatalf("Could not start the application. Check if port is available: %v", err)
+		config.ErrorLogger.Fatalf("Could not start the application. Check if port is available: %v", err)
 	}
 
 	// Construct the URL for browser opening.
 	urlAddr := constructURL(addr)
-	InfoLogger.Printf("Application is attempting to run on %s", urlAddr)
+	config.InfoLogger.Printf("Application is attempting to run on %s", urlAddr)
 
 	// Attempt to open the URL in the default browser.
 	if err := openInBrowser(urlAddr); err != nil {
-		ErrorLogger.Printf("Failed to open URL in browser: %v. Please open it manually.", err)
+		config.ErrorLogger.Printf("Failed to open URL in browser: %v. Please open it manually.", err)
 	} else {
-		InfoLogger.Printf("Application is running on %s 🚀", urlAddr)
+		config.InfoLogger.Printf("Application is running on %s 🚀", urlAddr)
 	}
 
 	// Start the HTTP server.
-	InfoLogger.Printf("Starting server on %s", addr)
+	config.InfoLogger.Printf("Starting server on %s", addr)
 	if err := http.Serve(listener, router); err != nil {
-		ErrorLogger.Fatalf("Error while serving the application: %v", err)
+		config.ErrorLogger.Fatalf("Error while serving the application: %v", err)
 	}
 }
 
@@ -70,7 +73,7 @@ func main() {
 func getServerAddress() string {
 	// Priority 1: Environment variable GO_ADDR.
 	if addr := os.Getenv("GO_ADDR"); addr != "" {
-		InfoLogger.Printf("Using address from GO_ADDR environment variable: %s", addr)
+		config.InfoLogger.Printf("Using address from GO_ADDR environment variable: %s", addr)
 		return addr
 	}
 
@@ -79,14 +82,14 @@ func getServerAddress() string {
 		if strings.HasPrefix(arg, "--addr=") {
 			addr := strings.TrimPrefix(arg, "--addr=")
 			if addr != "" {
-				InfoLogger.Printf("Using address from --addr command-line argument: %s", addr)
+				config.InfoLogger.Printf("Using address from --addr command-line argument: %s", addr)
 				return addr
 			}
 		}
 	}
 
 	// Priority 3: Default address.
-	InfoLogger.Printf("Using default address: %s", DefaultAddress)
+	config.InfoLogger.Printf("Using default address: %s", DefaultAddress)
 	return DefaultAddress
 }
 
@@ -100,7 +103,7 @@ func constructURL(addr string) string {
 			return fmt.Sprintf("http://localhost%s", addr)
 		}
 		// Fallback for other malformed cases, though getServerAddress should prevent this.
-		ErrorLogger.Printf("Malformed address string: %s. Defaulting to localhost.", addr)
+		config.ErrorLogger.Printf("Malformed address string: %s. Defaulting to localhost.", addr)
 		return fmt.Sprintf("http://%s", DefaultAddress)
 	}
 
@@ -112,18 +115,20 @@ func constructURL(addr string) string {
 
 // mainRouter sets up routes for the main application, including static file serving and API routes.
 func mainRouter(r chi.Router) {
-	// Serve static files from the "public" directory.
+	// Serve static files from the "web/static" directory.
 	workDir, err := os.Getwd()
 	if err != nil {
-		ErrorLogger.Fatalf("Failed to get current working directory: %v", err)
+		config.ErrorLogger.Fatalf("Failed to get current working directory: %v", err)
 	}
-	filesDir := http.Dir(filepath.Join(workDir, "public"))
+	filesDir := http.Dir(filepath.Join(workDir, "web/static"))
 	FileServer(r, "/", filesDir)
-	InfoLogger.Printf("Serving static files from %s", filesDir)
+	config.InfoLogger.Printf("Serving static files from %s", filesDir)
 
 	// Register API routes under the "/api" prefix.
-	r.Route("/api", apiRouter)
-	InfoLogger.Println("API routes registered under /api")
+	// TODO: Update this to call the new api.Router function from the internal/api package
+	// For example: r.Route("/api", newAPIPackage.Router)
+	r.Route("/api", api.Router) // This will need to be changed
+	config.InfoLogger.Println("API routes registered under /api")
 }
 
 // FileServer conveniently sets up a static file handler for a given path prefix.
@@ -167,7 +172,7 @@ func openInBrowser(url string) error {
 		cmd = "xdg-open"
 		args = []string{url}
 	}
-	DebugLogger.Printf("Attempting to open browser with command: %s %v", cmd, args)
+	config.DebugLogger.Printf("Attempting to open browser with command: %s %v", cmd, args)
 	// Use exec.CommandContext for better control if needed in the future (e.g., timeouts).
 	return exec.Command(cmd, args...).Start()
 }

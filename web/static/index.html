@@ -5,10 +5,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Data Migration Options</title>
+    <!-- Adjusted path for favicon -->
     <link rel="icon" type="image/x-icon" href="assets/favicon.png" />
-    <!-- Include Tailwind CSS via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <!-- Include the Flowbite library's CSS and JS: -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.css" rel="stylesheet" />
     <style>
         #parsedTokenBox::selection {
@@ -19,14 +18,12 @@
 
 <body class="bg-gray-100 font-sans">
     <div class="container mx-auto flex min-h-screen flex-col items-center py-8">
-        <!-- Reddit Logo -->
+        <!-- Adjusted path for reddit logo -->
         <img src="assets/reddit-logo.svg" alt="Reddit Logo" class="mb-4 h-16 w-16" />
 
         <div class="w-full max-w-xl rounded-lg bg-white p-8 shadow-md">
-            <!-- Reddit-Styled Header -->
             <h1 class="mb-6 text-3xl font-semibold text-red-500">Reddit Data Migration</h1>
 
-            <!-- Old Account Access Token Field -->
             <div class="mb-4">
                 <label for="oldAccessToken" class="mb-2 block font-bold text-gray-700">Old Account Cookie:</label>
                 <div class="flex items-center">
@@ -60,7 +57,6 @@
                     Invalid ✘</p>
             </div>
 
-            <!-- New Account Access Token Field -->
             <div class="mb-4">
                 <label for="newAccessToken" class="mb-2 block font-bold text-gray-700">New Account Cookie:</label>
                 <div class="flex items-center">
@@ -103,11 +99,9 @@
                 </span>
             </div>
 
-            <!-- Cookie parser modal -->
             <div id="cookie-parse-modal" tabindex="-1" aria-hidden="true"
                 class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
                 <div class="relative w-full max-w-md max-h-full">
-                    <!-- Modal content -->
                     <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
                         <button type="button"
                             class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
@@ -153,7 +147,6 @@
                 </div>
             </div>
 
-            <!-- Reddit-Styled Data Migration Options -->
             <div class="mb-6" id="subreddit-options">
                 <label class="mb-2 block font-bold text-gray-700">Migrate All Subreddits:</label>
                 <div class="flex items-center">
@@ -165,7 +158,6 @@
                     <label for="migrateSubredditNo" class="text-gray-700">No</label>
                 </div>
 
-                <!-- Sub-Radio Buttons for Subreddits -->
                 <div id="deleteSubreddits" class="mt-2">
                     <label class="mb-2 block text-sm font-bold text-gray-700">Delete Old Account Subreddits:</label>
                     <div class="flex items-center">
@@ -179,7 +171,6 @@
                 </div>
             </div>
 
-            <!-- Reddit-Styled Post Migration Options -->
             <div class="mb-6" id="saved-posts-options">
                 <label class="mb-2 font-bold text-gray-700 flex items-center">
                     Migrate All Saved Posts:
@@ -207,7 +198,6 @@
                     <label for="migrateSavedPostsNo" class="text-gray-700">No</label>
                 </div>
 
-                <!-- Sub-Radio Buttons for Posts -->
                 <div class="mt-2" id="deletePosts">
                     <label class="mb-2 block text-sm font-bold text-gray-700">Delete Old Account Saved Posts:</label>
                     <div class="flex items-center">
@@ -220,7 +210,6 @@
                 </div>
             </div>
 
-            <!-- Reddit-Styled Submit Button -->
             <button class="rounded bg-red-500 px-4 py-2 text-white hover:bg-orange-600 focus:outline-none"
                 id="option-submit">Submit
             </button>
@@ -249,87 +238,18 @@
                             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M1 5.917 5.724 10.5 15 1.5" />
                         </svg>
-                        <span class="text-sm"></span>
-
-                    </li>
-                    <li id="unsubscribe-subreddit" class="flex items-center space-x-3">
-                        <svg class="flex-shrink-0 w-3.5 h-3.5 text-green-500 dark:text-green-400" aria-hidden="true"
-                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M1 5.917 5.724 10.5 15 1.5" />
-                        </svg>
-                        <span class="text-sm"></span>
-
-                    </li>
-                    <li id="save-post" class="flex items-center space-x-3">
-                        <svg class="flex-shrink-0 w-3.5 h-3.5 text-green-500 dark:text-green-400" aria-hidden="true"
-                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M1 5.917 5.724 10.5 15 1.5" />
-                        </svg>
-                        <span class="text-sm"></span>
-
-                    </li>
-                    <li id="unsave-post" class="flex items-center space-x-3">
-                        <svg class="flex-shrink-0 w-3.5 h-3.5 text-green-500 dark:text-green-400" aria-hidden="true"
-                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M1 5.917 5.724 10.5 15 1.5" />
-                        </svg>
-                        <span class="text-sm"></span>
-
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Subreddit migration
+                            status</span>
                     </li>
                 </ul>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-blue-100 py-4 text-center text-gray-600">
-        <div class="mb-2 flex items-center justify-center text-blue-500">
-            <span class="mr-2 text-red-400"> For Fellow Redditors </span>
-            <img src="assets/reddit-logo.svg" alt="Reddit Logo" class="mr-2 h-5 w-5" />
-        </div>
+    <!-- Adjusted path for index.js -->
+    <script src="index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js"></script>
 
-        <a href="https://github.com/nileshnk/reddit-migrate" class="text-black-200 flex items-center justify-center">
-            <img src="assets/github-logo.svg" alt="GitHub Logo" class="mr-2 h-5 w-5" />
-            <span>GitHub</span>
-        </a>
-    </footer>
-
-    <script>
-
-        function toggleTooltip(event) {
-            event.stopPropagation();
-            const tooltip = document.getElementById('tooltip');
-            tooltip.classList.toggle('hidden');
-        }
-
-        document.addEventListener('click', function (event) {
-            const tooltip = document.getElementById('tooltip');
-            if (!tooltip.classList.contains('hidden') && !event.target.closest('svg')) {
-                tooltip.classList.add('hidden');
-            }
-        });
-
-        function toggleDeleteSubreddits(show) {
-            const deleteSubredditsDiv = document.getElementById('deleteSubreddits');
-            // deleteSubredditsDiv.style.display = show ? 'block' : 'none';
-            deleteSubredditsDiv.style.display = show ? 'block' : 'block';
-        }
-
-        function toggleDeletePosts(show) {
-            const deletePostsDiv = document.getElementById('deletePosts');
-            // deletePostsDiv.style.display = show ? 'block' : 'none';
-            deletePostsDiv.style.display = show ? 'block' : 'block';
-        }
-    </script>
 </body>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.8/clipboard.min.js"></script>
-<script>
-    new ClipboardJS('#copy-button');
-</script>
-<script src="index.js"></script>
 
 </html>
