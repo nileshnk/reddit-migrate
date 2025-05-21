@@ -1,0 +1,136 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*" # Trigger on tags like v1.0.0, v0.2.1-alpha
+
+permissions:
+  contents: write # Needed to create releases and upload assets
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for all tags and branches
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # Specify your Go version
+
+      - name: Get Project Name
+        id: project_name
+        run: |
+          PROJECT_NAME=$(grep '^module' go.mod | awk '{print $2}' | sed 's|.*/||')
+          if [ -z "$PROJECT_NAME" ]; then
+            PROJECT_NAME="reddit-sub"
+          fi
+          echo "name=$PROJECT_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Extract version and release notes
+        id: extract_info
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME}"
+          # Remove 'v' prefix for the version variable
+          VERSION=$(echo "$TAG_NAME" | sed 's/^v//')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          # Get the annotated tag message for release notes
+          # Ensure the tag is an annotated tag (git tag -a vX.Y.Z -m "Release notes")
+          RELEASE_NOTES=$(git tag -l "$TAG_NAME" -n --format='%(contents:body)')
+          if [ -z "$RELEASE_NOTES" ]; then
+            RELEASE_NOTES="Release $TAG_NAME"
+          fi
+          # Escape special characters for JSON compatibility in release notes
+          RELEASE_NOTES=$(echo "$RELEASE_NOTES" | sed 's/"/\\"/g' | sed ":a;N;\$!ba;s/\n/\\n/g")
+          echo "notes=$RELEASE_NOTES" >> "$GITHUB_OUTPUT"
+          echo "TAG_NAME: $TAG_NAME"
+          echo "VERSION: $VERSION"
+          echo "RELEASE_NOTES: $RELEASE_NOTES"
+
+      - name: Make build script executable
+        run: chmod +x build.sh
+
+      - name: Build artifacts
+        run: ./build.sh ${{ steps.extract_info.outputs.version }}
+
+      # Make sure Unix-like binaries are executable
+      - name: Set executable permissions
+        run: |
+          chmod +x builds/*-linux-* builds/*-darwin-* builds/*-freebsd-*
+          chmod +x builds/*-macos-* # Added for the new macos naming
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }} # e.g., v1.0.0
+          release_name: Release ${{ github.ref_name }}
+          body: ${{ steps.extract_info.outputs.notes }}
+          draft: false
+          prerelease: false # Set to true if it's a pre-release
+
+      - name: Upload Linux amd64 Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./builds/${{ steps.project_name.outputs.name }}-linux-amd64
+          asset_name: ${{ steps.project_name.outputs.name }}-${{ steps.extract_info.outputs.version }}-linux-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows amd64 Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./builds/${{ steps.project_name.outputs.name }}-windows-amd64.exe
+          asset_name: ${{ steps.project_name.outputs.name }}-${{ steps.extract_info.outputs.version }}-windows-amd64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS amd64 Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./builds/${{ steps.project_name.outputs.name }}-macos-amd64.app
+          asset_name: ${{ steps.project_name.outputs.name }}-${{ steps.extract_info.outputs.version }}-macos-amd64.app
+          asset_content_type: application/zip # Changed to zip for .app bundles
+
+      - name: Upload macOS arm64 Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./builds/${{ steps.project_name.outputs.name }}-macos-arm64.app
+          asset_name: ${{ steps.project_name.outputs.name }}-${{ steps.extract_info.outputs.version }}-macos-arm64.app
+          asset_content_type: application/zip # Changed to zip for .app bundles
+
+      - name: Upload FreeBSD amd64 Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./builds/${{ steps.project_name.outputs.name }}-freebsd-amd64
+          asset_name: ${{ steps.project_name.outputs.name }}-${{ steps.extract_info.outputs.version }}-freebsd-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload FreeBSD arm64 Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./builds/${{ steps.project_name.outputs.name }}-freebsd-arm64
+          asset_name: ${{ steps.project_name.outputs.name }}-${{ steps.extract_info.outputs.version }}-freebsd-arm64
+          asset_content_type: application/octet-stream

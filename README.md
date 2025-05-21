@@ -6,15 +6,65 @@ A simple interface to migrate Reddit account data from an old account to a new a
 
 > **Caution** :warning: : This tool requires cookies from both the old and new Reddit accounts, which contain sensitive data (credentials). Never share these cookies with anyone.
 
+:warning: This tool uses Reddit's public API via official OAuth. It is intended for personal use only. You must use your own Reddit API credentials. Use responsibly and within Reddit's [API Terms](https://www.reddit.com/dev/api/) and [Content Policy](https://redditinc.com/policies).
+
 ## Demo
 
 Check out the demo on YouTube: [Watch Demo](https://youtu.be/cpwPjjkW2O4)
 
 ## Installation
 
-You can run the application either locally or using Docker.
+The easiest way to run Reddit-Migrate is by downloading the latest pre-compiled binary for your operating system from the [**GitHub Releases page**](https://github.com/nileshnk/reddit-migrate/releases).
 
-### Local Installation
+### Running a Release Binary
+
+1.  Go to the [Releases page](https://github.com/nileshnk/reddit-migrate/releases).
+2.  Download the appropriate executable for your operating system and architecture:
+
+    - Windows: `reddit-migrate-x.y.z-windows-amd64.exe`
+    - Linux: `reddit-migrate-x.y.z-linux-amd64`
+    - macOS Intel: `reddit-migrate-x.y.z-macos-amd64.app`
+    - macOS Apple Silicon: `reddit-migrate-x.y.z-macos-arm64.app`
+    - FreeBSD: `reddit-migrate-x.y.z-freebsd-amd64` or `reddit-migrate-x.y.z-freebsd-arm64`
+
+    (where `x.y.z` is the version number)
+
+3.  Make the binary executable (for Linux/macOS/FreeBSD):
+    For macOS `.app` bundles, you might need to right-click and select "Open" if you encounter security warnings. For other Unix-like systems:
+
+    ```bash
+    chmod +x ./reddit-migrate-x.y.z-your-os-your-arch
+    ```
+
+    **For macOS users**: If you get a security warning or "unidentified developer" message when opening the `.app` bundle:
+
+    1. Right-click (or Control-click) the application in Finder
+    2. Select "Open" from the context menu
+    3. Click "Open" in the security dialog that appears
+    4. The app will now be saved as an exception to your security settings
+
+4.  Run the application:
+
+    ```bash
+    # For Linux/macOS/FreeBSD:
+    ./reddit-migrate-x.y.z-your-os-your-arch
+    # For macOS .app bundles, navigate into the .app folder if running from terminal:
+    # ./reddit-migrate-macos-amd64.app/Contents/MacOS/reddit-migrate
+    # or simply double-click the .app bundle in Finder.
+
+    # For Windows:
+    # Double-click the .exe file or run from command prompt
+    ```
+
+    By default, the application will start on `http://localhost:5005`. You can specify a custom address using the `--addr` flag:
+
+    ```bash
+    ./reddit-migrate-x.y.z-your-os-your-arch --addr=":3000"
+    ```
+
+### Building from Source
+
+If you prefer to build the application from source:
 
 1. Make sure you have Go installed on your system. If not, you can install it [here](https://go.dev/dl/).
 
@@ -37,17 +87,28 @@ You can run the application either locally or using Docker.
    go run .
    ```
 
-5. You can also specify a custom address using the `--addr` flag:
+   Or build a binary:
+
+   ```bash
+   go build -o reddit-migrate
+   ./reddit-migrate
+   ```
+
+5. You can also specify a custom address using the `--addr` flag when running:
 
    ```bash
    go run . --addr=":3000"
+   # or if built:
+   ./reddit-migrate --addr=":3000"
    ```
 
-### Docker Installation
+### Using Docker (for development or specific deployments)
+
+While pre-compiled releases are recommended for most users, you can still use Docker.
 
 1. Make sure Docker is installed and running on your system.
 
-2. Clone this repository and navigate to the project directory:
+2. Clone this repository and navigate to the project directory (if you haven't already):
 
    ```bash
    git clone https://github.com/nileshnk/reddit-migrate.git
