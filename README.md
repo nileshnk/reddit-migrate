@@ -2,7 +2,7 @@
 
 A simple interface to migrate Reddit account data from an old account to a new account using Reddit APIs.
 
-![Home](./assets/app_home.png)
+![Home](./docs/assets/app_home.png)
 
 > **Caution** :warning: : This tool requires cookies from both the old and new Reddit accounts, which contain sensitive data (credentials). Never share these cookies with anyone.
 
@@ -144,7 +144,7 @@ After setup, open the application in your browser at [http://localhost:5005](htt
 
 ### Steps:
 
-1. **Retrieve Cookies**: Obtain the cookies for both your old and new Reddit accounts. You can follow this [video guide](./assets/cookie-retrieval.gif) for assistance.
+1. **Retrieve Cookies**: Obtain the cookies for both your old and new Reddit accounts. You can follow this [video guide](./docs/assets/cookie-retrieval.gif) for assistance.
 
    - Log in to Reddit in a desktop web browser.
    - Open a new tab and access the Network tab through developer tools (right-click and select Inspect).
