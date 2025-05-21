@@ -121,7 +121,7 @@ package_build() {
   fi
 
   # public folder path relative to project root
-  local root_public_dir="../public"
+  local root_public_dir="web"
   if [ -d "${root_public_dir}" ]; then
     echo "Copying ${root_public_dir} folder to staging..."
     cp -R "${root_public_dir}" "${package_content_root}/" # Copies 'public' into 'PROJECT_NAME/public' in staging

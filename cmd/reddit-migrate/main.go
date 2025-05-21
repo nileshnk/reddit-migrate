@@ -115,18 +115,62 @@ func constructURL(addr string) string {
 
 // mainRouter sets up routes for the main application, including static file serving and API routes.
 func mainRouter(r chi.Router) {
-	// Serve static files from the "web/static" directory.
-	workDir, err := os.Getwd()
+	// Determine the path to static files relative to the executable.
+	exePath, err := os.Executable()
 	if err != nil {
-		config.ErrorLogger.Fatalf("Failed to get current working directory: %v", err)
+		config.ErrorLogger.Fatalf("Failed to get executable path: %v", err)
 	}
-	filesDir := http.Dir(filepath.Join(workDir, "web/static"))
+	exeDir := filepath.Dir(exePath)
+	cleanedExeDir := filepath.Clean(exeDir)
+
+	var baseResourcePath string
+
+	// Check for macOS .app structure: AppName.app/Contents/MacOS/
+	// If the executable is in AppName.app/Contents/MacOS, baseResourcePath is the dir containing AppName.app.
+	if filepath.Base(cleanedExeDir) == "MacOS" &&
+		filepath.Base(filepath.Dir(cleanedExeDir)) == "Contents" &&
+		strings.HasSuffix(filepath.Base(filepath.Dir(filepath.Dir(cleanedExeDir))), ".app") {
+		baseResourcePath = filepath.Dir(filepath.Dir(filepath.Dir(cleanedExeDir)))
+	} else if filepath.Base(cleanedExeDir) == "bin" {
+		// Executable is in a 'bin' subdirectory of the distribution root (e.g., for macOS raw binaries).
+		// baseResourcePath is the parent directory of 'bin'.
+		baseResourcePath = filepath.Dir(cleanedExeDir)
+	} else {
+		// Executable is directly in the distribution root.
+		baseResourcePath = cleanedExeDir
+	}
+
+	staticFilesPath := filepath.Join(baseResourcePath, "web", "static")
+
+	// Check if the directory exists at the executable-relative path.
+	_, errStat := os.Stat(staticFilesPath)
+	if os.IsNotExist(errStat) {
+		config.InfoLogger.Printf("Static files directory not found at executable-relative path: %s. Executable was at: %s", staticFilesPath, exePath)
+		// Fallback for development: try CWD-relative path.
+		workDir, errWd := os.Getwd()
+		if errWd != nil {
+			config.ErrorLogger.Fatalf("Failed to get current working directory for fallback: %v", errWd)
+		}
+		cwdStaticPath := filepath.Join(workDir, "web", "static")
+		if _, errStatCwd := os.Stat(cwdStaticPath); os.IsNotExist(errStatCwd) {
+			config.ErrorLogger.Fatalf("Static files directory 'web/static' also not found relative to CWD (%s at %s). Please ensure 'web/static' exists.", cwdStaticPath, workDir)
+		} else if errStatCwd != nil {
+			config.ErrorLogger.Fatalf("Error checking CWD-relative static files directory at %s: %v", cwdStaticPath, errStatCwd)
+		} else {
+			config.InfoLogger.Printf("Using CWD-relative path for static files: %s", cwdStaticPath)
+			staticFilesPath = cwdStaticPath
+		}
+	} else if errStat != nil {
+		// Another error occurred with os.Stat (e.g., permissions).
+		config.ErrorLogger.Fatalf("Error checking static files directory at %s: %v", staticFilesPath, errStat)
+	}
+
+	filesDir := http.Dir(staticFilesPath)
 	FileServer(r, "/", filesDir)
-	config.InfoLogger.Printf("Serving static files from %s", filesDir)
+	config.InfoLogger.Printf("Serving static files from %s", staticFilesPath)
 
 	// Register API routes under the "/api" prefix.
 	// TODO: Update this to call the new api.Router function from the internal/api package
-	// For example: r.Route("/api", newAPIPackage.Router)
 	r.Route("/api", api.Router) // This will need to be changed
 	config.InfoLogger.Println("API routes registered under /api")
 }
