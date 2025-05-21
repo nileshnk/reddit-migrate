@@ -15,6 +15,9 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
+// Version is the application version, injected at build time.
+var Version = "dev" // Default to "dev" if not built with version info
+
 // DefaultAddress is the address the server will listen on if no other address is specified.
 const DefaultAddress = "localhost:5005"
 
@@ -23,6 +26,8 @@ func main() {
 	InfoLogger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lmicroseconds)
 	ErrorLogger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lmicroseconds)
 	DebugLogger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lmicroseconds)
+
+	InfoLogger.Printf("Application version: %s", Version) // Print the version
 
 	// Create a new Chi router.
 	router := chi.NewRouter()
