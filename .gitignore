@@ -2,3 +2,4 @@
 temp/
 tmp/
 ./go.sum
+builds/
