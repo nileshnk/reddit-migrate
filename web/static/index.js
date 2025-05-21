@@ -250,15 +250,64 @@ async function verifyCookie(cookie) {
 }
 
 function getCookieObject(cookie) {
-  const cookieArray = cookie.split(";");
+  const pairs = cookie.split(";");
   const cookieObject = {};
-  try {
-    cookieArray.forEach((cookie) => {
-      const cookieSplit = cookie.split("=");
-      cookieObject[cookieSplit[0].trim()] = cookieSplit[1].trim();
-    });
-  } catch (err) {
-    return {};
+  for (const pair of pairs) {
+    const [name, value] = pair.trim().split("=");
+    cookieObject[name] = value;
   }
   return cookieObject;
 }
+
+function toggleDeleteSubreddits(show) {
+  const deleteSubredditsDiv = document.getElementById("deleteSubreddits");
+  deleteSubredditsDiv.style.display = show ? "block" : "none";
+  if (!show) {
+    // Uncheck "Yes" and check "No" for deleteSubreddits if migration is No
+    document.getElementById("deleteSubredditsYes").checked = false;
+    document.getElementById("deleteSubredditsNo").checked = true;
+  }
+}
+
+function toggleDeletePosts(show) {
+  const deletePostsDiv = document.getElementById("deletePosts");
+  deletePostsDiv.style.display = show ? "block" : "none";
+  if (!show) {
+    // Uncheck "Yes" and check "No" for deletePosts if migration is No
+    document.getElementById("deleteSavedPostsYes").checked = false;
+    document.getElementById("deletePostsNo").checked = true;
+  }
+}
+
+function toggleTooltip(event) {
+  event.stopPropagation(); // Prevent click from bubbling up to document
+  const tooltip = document.getElementById("tooltip");
+  tooltip.classList.toggle("hidden");
+}
+
+// Close tooltip if clicked outside
+document.addEventListener("click", function (event) {
+  const tooltip = document.getElementById("tooltip");
+  const tooltipButton = tooltip.previousElementSibling; // The SVG icon
+  if (
+    !tooltip.classList.contains("hidden") &&
+    !tooltip.contains(event.target) &&
+    !tooltipButton.contains(event.target)
+  ) {
+    tooltip.classList.add("hidden");
+  }
+});
+
+// Initialize the delete sections based on initial state of migrate radio buttons
+document.addEventListener("DOMContentLoaded", () => {
+  toggleDeleteSubreddits(
+    document.getElementById("migrateSubredditYes").checked
+  );
+  toggleDeletePosts(document.getElementById("migrateSavedPostsYes").checked);
+
+  // Set default for radio buttons
+  document.getElementById("migrateSubredditNo").checked = true;
+  document.getElementById("deleteSubredditsNo").checked = true;
+  document.getElementById("migrateSavedPostsNo").checked = true;
+  document.getElementById("deletePostsNo").checked = true;
+});

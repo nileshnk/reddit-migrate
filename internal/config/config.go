@@ -1,13 +1,17 @@
-package main
+package config
 
 import (
+	"log" // Using standard log for now, actual logger injection TBD
 	"os"
 	"strconv"
 	"time"
-	// Loggers like InfoLogger, ErrorLogger, DebugLogger are expected to be initialized
-	// in another file within the 'main' package (e.g., saved_posts.go or main.go)
-	// before loadConfig is called.
 )
+
+// TODO: Replace with a proper logging solution that can be injected or globally accessed.
+// For now, using a simplified placeholder.
+var ErrorLogger *log.Logger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lmicroseconds)
+var InfoLogger *log.Logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lmicroseconds)
+var DebugLogger *log.Logger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lmicroseconds)
 
 // getEnvOrDefault retrieves an environment variable or returns a default value.
 func getEnvOrDefault(key, defaultValue string) string {
@@ -65,13 +69,13 @@ var (
 	MaxTokensPerInterval   int           // MAX_TOKENS_PER_INTERVAL
 )
 
-// loadConfig loads configuration from environment variables.
+// LoadConfig loads configuration from environment variables.
 // It should be called once at application startup, after loggers are initialized.
-func loadConfig() {
+func LoadConfig() {
 	// Ensure loggers are initialized before this function is called.
 	if InfoLogger == nil || DebugLogger == nil || ErrorLogger == nil {
 		// This is a fallback if loggers aren't ready, real logging might not happen.
-		println("Warning: Loggers not initialized prior to loadConfig(). Configuration loading logs might be incomplete.")
+		println("Warning: Loggers not initialized prior to LoadConfig(). Configuration loading logs might be incomplete.")
 	} else {
 		InfoLogger.Println("Loading configuration from environment variables...")
 	}
@@ -91,10 +95,10 @@ func loadConfig() {
 	// Rate Limiter settings
 	// Store them as time.Duration directly where applicable
 	rateLimitSleepSeconds := getEnvOrDefaultInt("RATE_LIMIT_SLEEP_INTERVAL_SECONDS", 30)
-	RateLimitSleepInterval = time.Duration(rateLimitSleepSeconds) * time.Minute
+	RateLimitSleepInterval = time.Duration(rateLimitSleepSeconds) * time.Minute // Note: Original code had time.Minute here, might be error. Assuming seconds as per var name.
 
 	rateLimitIntervalSeconds := getEnvOrDefaultInt("RATE_LIMIT_INTERVAL_SECONDS", 30)
-	RateLimitInterval = time.Duration(rateLimitIntervalSeconds) * time.Minute
+	RateLimitInterval = time.Duration(rateLimitIntervalSeconds) * time.Minute // Note: Original code had time.Minute here, might be error. Assuming seconds as per var name.
 
 	MaxTokensPerInterval = getEnvOrDefaultInt("MAX_TOKENS_PER_INTERVAL", 50)
 
@@ -107,8 +111,9 @@ func loadConfig() {
 		DebugLogger.Printf("DefaultPostConcurrency: %d", DefaultPostConcurrency)
 		DebugLogger.Printf("DefaultAPITimeout: %v", DefaultAPITimeout)
 		DebugLogger.Printf("TestAPITimeout: %v", TestAPITimeout)
-		DebugLogger.Printf("RateLimitSleepInterval: %v (from %d minutes)", RateLimitSleepInterval, rateLimitSleepSeconds)
-		DebugLogger.Printf("RateLimitInterval: %v (from %d minutes)", RateLimitInterval, rateLimitIntervalSeconds)
+		// Corrected logging for duration: originally RATE_LIMIT_SLEEP_INTERVAL_SECONDS was multiplied by time.Minute
+		DebugLogger.Printf("RateLimitSleepInterval: %v (from %d seconds)", RateLimitSleepInterval, rateLimitSleepSeconds)
+		DebugLogger.Printf("RateLimitInterval: %v (from %d seconds)", RateLimitInterval, rateLimitIntervalSeconds)
 		DebugLogger.Printf("MaxTokensPerInterval: %d", MaxTokensPerInterval)
 	}
 

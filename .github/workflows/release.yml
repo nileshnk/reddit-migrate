@@ -59,10 +59,10 @@ jobs:
           echo "$delimiter" >> "$GITHUB_OUTPUT"
 
       - name: Make build script executable
-        run: chmod +x build.sh
+        run: chmod +x scripts/build.sh
 
       - name: Build artifacts
-        run: ./build.sh ${{ steps.extract_info.outputs.version }}
+        run: ./scripts/build.sh ${{ steps.extract_info.outputs.version }}
 
       - name: Set executable permissions
         run: |
