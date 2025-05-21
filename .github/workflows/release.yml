@@ -38,18 +38,25 @@ jobs:
           # Remove 'v' prefix for the version variable
           VERSION=$(echo "$TAG_NAME" | sed 's/^v//')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
           # Get the annotated tag message for release notes
           # Ensure the tag is an annotated tag (git tag -a vX.Y.Z -m "Release notes")
           RELEASE_NOTES=$(git tag -l "$TAG_NAME" -n --format='%(contents:body)')
           if [ -z "$RELEASE_NOTES" ]; then
             RELEASE_NOTES="Release $TAG_NAME"
           fi
-          # Escape special characters for JSON compatibility in release notes
-          RELEASE_NOTES=$(echo "$RELEASE_NOTES" | sed 's/"/\\"/g' | sed ":a;N;\$!ba;s/\n/\\n/g")
-          echo "notes=$RELEASE_NOTES" >> "$GITHUB_OUTPUT"
+
           echo "TAG_NAME: $TAG_NAME"
           echo "VERSION: $VERSION"
-          echo "RELEASE_NOTES: $RELEASE_NOTES"
+          echo "--- Raw Release Notes Start ---"
+          echo "$RELEASE_NOTES"
+          echo "--- Raw Release Notes End ---"
+
+          # Correctly set multi-line output for GITHUB_OUTPUT
+          delimiter="GH_DELIMITER_$(uuidgen)"
+          echo "notes<<$delimiter" >> "$GITHUB_OUTPUT"
+          echo "$RELEASE_NOTES" >> "$GITHUB_OUTPUT"
+          echo "$delimiter" >> "$GITHUB_OUTPUT"
 
       - name: Make build script executable
         run: chmod +x build.sh
