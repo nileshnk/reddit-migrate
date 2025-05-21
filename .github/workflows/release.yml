@@ -64,12 +64,12 @@ jobs:
       - name: Build artifacts
         run: ./build.sh ${{ steps.extract_info.outputs.version }}
 
-      # Make sure Unix-like binaries are executable
       - name: Set executable permissions
         run: |
-          chmod +x builds/*-linux-* builds/*-darwin-* builds/*-freebsd-* # This might be redundant now if build.sh handles it
-          # For .app bundles, the executable is inside Contents/MacOS/
-          # find builds -name "*.app" -exec chmod +x {}/Contents/MacOS/* \;
+          find builds -type f -name '*-linux-*' -exec chmod +x {} \;
+          find builds -type f -name '*-darwin-*' -exec chmod +x {} \;
+          find builds -type f -name '*-freebsd-*' -exec chmod +x {} \;
+          echo "Executable permissions set for existing builds."
 
       - name: Create Release
         id: create_release
