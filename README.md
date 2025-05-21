@@ -19,47 +19,56 @@ The easiest way to run Reddit-Migrate is by downloading the latest pre-compiled 
 ### Running a Release Binary
 
 1.  Go to the [Releases page](https://github.com/nileshnk/reddit-migrate/releases).
-2.  Download the appropriate executable for your operating system and architecture:
+2.  Download the appropriate ZIP archive for your operating system and architecture (e.g., `reddit-migrate-x.y.z-linux-amd64.zip`).
 
-    - Windows: `reddit-migrate-x.y.z-windows-amd64.exe`
-    - Linux: `reddit-migrate-x.y.z-linux-amd64`
-    - macOS Intel: `reddit-migrate-x.y.z-macos-amd64.app`
-    - macOS Apple Silicon: `reddit-migrate-x.y.z-macos-arm64.app`
-    - FreeBSD: `reddit-migrate-x.y.z-freebsd-amd64` or `reddit-migrate-x.y.z-freebsd-arm64`
+    - Windows: `reddit-migrate-x.y.z-windows-amd64.zip`, `reddit-migrate-x.y.z-windows-arm64.zip`
+    - Linux: `reddit-migrate-x.y.z-linux-amd64.zip`, `reddit-migrate-x.y.z-linux-arm64.zip`
+    - macOS (Intel & Apple Silicon): `reddit-migrate-x.y.z-macos-amd64.zip`, `reddit-migrate-x.y.z-macos-arm64.zip`
+    - FreeBSD: `reddit-migrate-x.y.z-freebsd-amd64.zip`, `reddit-migrate-x.y.z-freebsd-arm64.zip`
 
     (where `x.y.z` is the version number)
 
-3.  Make the binary executable (for Linux/macOS/FreeBSD):
-    For macOS `.app` bundles, you might need to right-click and select "Open" if you encounter security warnings. For other Unix-like systems:
+3.  Extract the ZIP archive. This will create a folder (e.g., `reddit-migrate/`) containing the application executable (e.g., `reddit-migrate`, `reddit-migrate.exe`, or `reddit-migrate.app`) and a `public` folder with necessary UI assets.
+
+4.  Make the binary executable (for Linux/macOS/FreeBSD if needed, though it should already have execute permissions from the build process):
 
     ```bash
-    chmod +x ./reddit-migrate-x.y.z-your-os-your-arch
+    # Navigate into the extracted folder first
+    cd reddit-migrate
+    chmod +x ./reddit-migrate # Or ./reddit-migrate.app/Contents/MacOS/reddit-migrate for the .app bundle executable
     ```
 
     **For macOS users**: If you get a security warning or "unidentified developer" message when opening the `.app` bundle:
 
-    1. Right-click (or Control-click) the application in Finder
-    2. Select "Open" from the context menu
-    3. Click "Open" in the security dialog that appears
-    4. The app will now be saved as an exception to your security settings
+    1. Right-click (or Control-click) the `reddit-migrate.app` bundle in Finder.
+    2. Select "Open" from the context menu.
+    3. Click "Open" in the security dialog that appears.
+    4. The app will now be saved as an exception to your security settings.
 
-4.  Run the application:
+5.  Run the application from within the extracted folder:
 
     ```bash
-    # For Linux/macOS/FreeBSD:
-    ./reddit-migrate-x.y.z-your-os-your-arch
-    # For macOS .app bundles, navigate into the .app folder if running from terminal:
-    # ./reddit-migrate-macos-amd64.app/Contents/MacOS/reddit-migrate
-    # or simply double-click the .app bundle in Finder.
+    # For Linux/FreeBSD:
+    ./reddit-migrate
+
+    # For macOS .app bundles, you can usually double-click the .app bundle in Finder.
+    # Alternatively, to run the raw macOS binary from terminal (ensure you are in the extracted 'reddit-migrate' directory):
+    # ./bin/reddit-migrate
+    # Or to run the .app bundle from terminal:
+    # ./reddit-migrate.app/Contents/MacOS/reddit-migrate
 
     # For Windows:
-    # Double-click the .exe file or run from command prompt
+    # Double-click the reddit-migrate.exe file or run from command prompt:
+    .\reddit-migrate.exe
     ```
 
     By default, the application will start on `http://localhost:5005`. You can specify a custom address using the `--addr` flag:
 
     ```bash
-    ./reddit-migrate-x.y.z-your-os-your-arch --addr=":3000"
+    ./reddit-migrate --addr=":3000" # For Linux/FreeBSD
+    ./bin/reddit-migrate --addr=":3000" # For macOS raw binary
+    # Or for Windows:
+    .\reddit-migrate.exe --addr=":3000"
     ```
 
 ### Building from Source

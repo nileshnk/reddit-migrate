@@ -148,7 +148,7 @@ func (rl *RateLimiter) Wait() {
 			case <-rl.pauseSignal: // If pauseSignal is triggered while waiting for a token.
 				DebugLogger.Println("RateLimiter: Notified by pauseSignal while attempting to acquire token. Re-evaluating state.")
 				continue // Re-check pause status.
-			case <-time.After(500 * time.Millisecond): // Periodically re-evaluate if no token or signal.
+			case <-time.After(RateLimitSleepInterval): // Periodically re-evaluate if no token or signal.
 				DebugLogger.Printf("RateLimiter: Timed out waiting for token/pause signal, re-checking state.")
 				continue
 			}
@@ -158,7 +158,7 @@ func (rl *RateLimiter) Wait() {
 			case <-rl.resumeSignal: // If resumeSignal is triggered while paused.
 				DebugLogger.Println("RateLimiter: Notified by resumeSignal while paused. Re-evaluating state.")
 				continue // Re-check pause status, should now be unpaused.
-			case <-time.After(500 * time.Millisecond): // Periodically re-evaluate if still paused.
+			case <-time.After(RateLimitInterval): // Periodically re-evaluate if still paused.
 				DebugLogger.Printf("RateLimiter: Timed out waiting for resume signal, re-checking pause state.")
 				continue
 			}

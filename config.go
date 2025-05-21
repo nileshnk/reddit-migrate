@@ -90,11 +90,11 @@ func loadConfig() {
 
 	// Rate Limiter settings
 	// Store them as time.Duration directly where applicable
-	rateLimitSleepMinutes := getEnvOrDefaultInt("RATE_LIMIT_SLEEP_INTERVAL_MINUTES", 5)
-	RateLimitSleepInterval = time.Duration(rateLimitSleepMinutes) * time.Minute
+	rateLimitSleepSeconds := getEnvOrDefaultInt("RATE_LIMIT_SLEEP_INTERVAL_SECONDS", 30)
+	RateLimitSleepInterval = time.Duration(rateLimitSleepSeconds) * time.Minute
 
-	rateLimitIntervalMinutes := getEnvOrDefaultInt("RATE_LIMIT_INTERVAL_MINUTES", 2)
-	RateLimitInterval = time.Duration(rateLimitIntervalMinutes) * time.Minute
+	rateLimitIntervalSeconds := getEnvOrDefaultInt("RATE_LIMIT_INTERVAL_SECONDS", 30)
+	RateLimitInterval = time.Duration(rateLimitIntervalSeconds) * time.Minute
 
 	MaxTokensPerInterval = getEnvOrDefaultInt("MAX_TOKENS_PER_INTERVAL", 50)
 
@@ -107,8 +107,8 @@ func loadConfig() {
 		DebugLogger.Printf("DefaultPostConcurrency: %d", DefaultPostConcurrency)
 		DebugLogger.Printf("DefaultAPITimeout: %v", DefaultAPITimeout)
 		DebugLogger.Printf("TestAPITimeout: %v", TestAPITimeout)
-		DebugLogger.Printf("RateLimitSleepInterval: %v (from %d minutes)", RateLimitSleepInterval, rateLimitSleepMinutes)
-		DebugLogger.Printf("RateLimitInterval: %v (from %d minutes)", RateLimitInterval, rateLimitIntervalMinutes)
+		DebugLogger.Printf("RateLimitSleepInterval: %v (from %d minutes)", RateLimitSleepInterval, rateLimitSleepSeconds)
+		DebugLogger.Printf("RateLimitInterval: %v (from %d minutes)", RateLimitInterval, rateLimitIntervalSeconds)
 		DebugLogger.Printf("MaxTokensPerInterval: %d", MaxTokensPerInterval)
 	}
 
