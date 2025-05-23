@@ -131,3 +131,206 @@ type ErrorResponseType struct { // Renamed from error_response_type
 	Error   string `json:"error"`
 	Message string `json:"message"`
 }
+
+// New types for enhanced selection feature
+
+// PostImageData holds image/media information for a Reddit post
+type PostImageData struct {
+	ThumbnailURL string `json:"thumbnail_url"`
+	PreviewURL   string `json:"preview_url"`
+	HighResURL   string `json:"high_res_url"`
+	MediaType    string `json:"media_type"` // "image", "video", "link", "text", "gallery"
+	Width        int    `json:"width"`
+	Height       int    `json:"height"`
+}
+
+// SavedPostInfo contains detailed information about a saved post for UI display
+type SavedPostInfo struct {
+	ID          string        `json:"id"`        // Reddit post ID (without t3_ prefix)
+	FullName    string        `json:"full_name"` // Full Reddit name (t3_xxxxx)
+	Title       string        `json:"title"`
+	Subreddit   string        `json:"subreddit"`
+	Author      string        `json:"author"`
+	URL         string        `json:"url"`
+	Permalink   string        `json:"permalink"`
+	Created     int64         `json:"created_utc"`
+	Score       int           `json:"score"`
+	NumComments int           `json:"num_comments"`
+	PostHint    string        `json:"post_hint"` // "image", "link", "self", etc.
+	Domain      string        `json:"domain"`
+	SelfText    string        `json:"selftext"` // For text posts
+	IsVideo     bool          `json:"is_video"`
+	IsSelf      bool          `json:"is_self"` // True for text posts
+	NSFW        bool          `json:"over_18"`
+	Spoiler     bool          `json:"spoiler"`
+	ImageData   PostImageData `json:"image_data"`
+}
+
+// SubredditInfo contains detailed information about a subreddit for UI display
+type SubredditInfo struct {
+	Name          string `json:"name"`         // Full name (t5_xxxxx)
+	DisplayName   string `json:"display_name"` // r/subredditname
+	Title         string `json:"title"`
+	Description   string `json:"public_description"`
+	Subscribers   int    `json:"subscribers"`
+	IconURL       string `json:"icon_img"`
+	BannerURL     string `json:"banner_img"`
+	PrimaryColor  string `json:"primary_color"`
+	KeyColor      string `json:"key_color"`
+	SubredditType string `json:"subreddit_type"` // "public", "private", "restricted"
+	NSFW          bool   `json:"over18"`
+	Created       int64  `json:"created_utc"`
+}
+
+// GetSavedPostsRequest defines the request structure for fetching saved posts with details
+type GetSavedPostsRequest struct {
+	Cookie string `json:"cookie"`
+}
+
+// GetSavedPostsResponse defines the response structure for saved posts with full details
+type GetSavedPostsResponse struct {
+	Success bool            `json:"success"`
+	Message string          `json:"message"`
+	Posts   []SavedPostInfo `json:"posts"`
+	Count   int             `json:"count"`
+}
+
+// GetSubredditsRequest defines the request structure for fetching subreddits with details
+type GetSubredditsRequest struct {
+	Cookie string `json:"cookie"`
+}
+
+// GetSubredditsResponse defines the response structure for subreddits with full details
+type GetSubredditsResponse struct {
+	Success    bool            `json:"success"`
+	Message    string          `json:"message"`
+	Subreddits []SubredditInfo `json:"subreddits"`
+	Count      int             `json:"count"`
+}
+
+// CustomMigrationRequest defines the structure for custom selection migration
+type CustomMigrationRequest struct {
+	OldAccountCookie    string   `json:"old_account_cookie"`
+	NewAccountCookie    string   `json:"new_account_cookie"`
+	SelectedSubreddits  []string `json:"selected_subreddits"` // List of display names
+	SelectedPosts       []string `json:"selected_posts"`      // List of full names (t3_xxxxx)
+	DeleteOldSubreddits bool     `json:"delete_old_subreddits"`
+	DeleteOldPosts      bool     `json:"delete_old_posts"`
+}
+
+// DetailedPostData represents the full Reddit post data structure for parsing API responses
+type DetailedPostData struct {
+	Kind string `json:"kind"`
+	Data struct {
+		ID                    string  `json:"id"`
+		Name                  string  `json:"name"`
+		Title                 string  `json:"title"`
+		Subreddit             string  `json:"subreddit"`
+		SubredditNamePrefixed string  `json:"subreddit_name_prefixed"`
+		Author                string  `json:"author"`
+		URL                   string  `json:"url"`
+		Permalink             string  `json:"permalink"`
+		CreatedUTC            float64 `json:"created_utc"`
+		Score                 int     `json:"score"`
+		NumComments           int     `json:"num_comments"`
+		PostHint              string  `json:"post_hint"`
+		Domain                string  `json:"domain"`
+		SelfText              string  `json:"selftext"`
+		IsVideo               bool    `json:"is_video"`
+		IsSelf                bool    `json:"is_self"`
+		Over18                bool    `json:"over_18"`
+		Spoiler               bool    `json:"spoiler"`
+		Thumbnail             string  `json:"thumbnail"`
+		ThumbnailWidth        int     `json:"thumbnail_width"`
+		ThumbnailHeight       int     `json:"thumbnail_height"`
+
+		// Preview data for images
+		Preview struct {
+			Images []struct {
+				Source struct {
+					URL    string `json:"url"`
+					Width  int    `json:"width"`
+					Height int    `json:"height"`
+				} `json:"source"`
+				Resolutions []struct {
+					URL    string `json:"url"`
+					Width  int    `json:"width"`
+					Height int    `json:"height"`
+				} `json:"resolutions"`
+			} `json:"images"`
+			Enabled bool `json:"enabled"`
+		} `json:"preview"`
+
+		// Media data for videos/gifs
+		Media struct {
+			Type   string `json:"type"`
+			Height int    `json:"height"`
+			Width  int    `json:"width"`
+		} `json:"media"`
+
+		// Gallery data for image galleries
+		IsGallery     bool `json:"is_gallery"`
+		MediaMetadata map[string]struct {
+			Status string `json:"status"`
+			E      string `json:"e"` // "Image" for images
+			M      string `json:"m"` // MIME type
+			S      struct {
+				Y int    `json:"y"` // height
+				X int    `json:"x"` // width
+				U string `json:"u"` // URL
+			} `json:"s"`
+		} `json:"media_metadata"`
+
+		GalleryData struct {
+			Items []struct {
+				MediaID string `json:"media_id"`
+				ID      int    `json:"id"`
+			} `json:"items"`
+		} `json:"gallery_data"`
+	} `json:"data"`
+}
+
+// DetailedSubredditData represents the full Reddit subreddit data structure
+type DetailedSubredditData struct {
+	Kind string `json:"kind"`
+	Data struct {
+		Name                string  `json:"name"`
+		DisplayName         string  `json:"display_name"`
+		DisplayNamePrefixed string  `json:"display_name_prefixed"`
+		Title               string  `json:"title"`
+		PublicDescription   string  `json:"public_description"`
+		Description         string  `json:"description"`
+		Subscribers         int     `json:"subscribers"`
+		IconImg             string  `json:"icon_img"`
+		BannerImg           string  `json:"banner_img"`
+		PrimaryColor        string  `json:"primary_color"`
+		KeyColor            string  `json:"key_color"`
+		SubredditType       string  `json:"subreddit_type"`
+		Over18              bool    `json:"over_18"`
+		CreatedUTC          float64 `json:"created_utc"`
+		URL                 string  `json:"url"`
+
+		// Community icon data
+		CommunityIcon string `json:"community_icon"`
+		IconSize      []int  `json:"icon_size"`
+
+		// Header image data
+		HeaderImg   string `json:"header_img"`
+		HeaderSize  []int  `json:"header_size"`
+		HeaderTitle string `json:"header_title"`
+	} `json:"data"`
+}
+
+// AccountCountsRequest defines the request structure for getting account counts
+type AccountCountsRequest struct {
+	Cookie string `json:"cookie"`
+}
+
+// AccountCountsResponse defines the response structure for account counts
+type AccountCountsResponse struct {
+	Success         bool   `json:"success"`
+	Message         string `json:"message"`
+	Username        string `json:"username"`
+	SubredditCount  int    `json:"subreddit_count"`
+	SavedPostsCount int    `json:"saved_posts_count"`
+}
