@@ -13,6 +13,77 @@
         #parsedTokenBox::selection {
             background-color: transparent;
         }
+
+        /* Custom styles for better modal appearance */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Smooth transitions for interactive elements */
+        .item-row {
+            transition: all 0.15s ease-in-out;
+        }
+
+        .item-row:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .item-row:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Custom scrollbar for modal */
+        #itemsList {
+            scrollbar-width: thin;
+            scrollbar-color: #d1d5db #f3f4f6;
+        }
+
+        #itemsList::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #itemsList::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 4px;
+        }
+
+        .dark #itemsList::-webkit-scrollbar-track {
+            background: #374151;
+        }
+
+        #itemsList::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+
+        #itemsList::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        .dark #itemsList::-webkit-scrollbar-thumb {
+            background: #6b7280;
+        }
+
+        .dark #itemsList::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        /* Link hover animations */
+        a {
+            transition: color 0.15s ease-in-out;
+        }
+
+        /* Badge styling improvements */
+        .rounded-full {
+            font-weight: 500;
+            font-size: 0.75rem;
+            letter-spacing: 0.025em;
+        }
     </style>
 </head>
 
@@ -275,15 +346,7 @@
                 id="migrate-response-block">
                 <h1 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">Response Status</h1>
                 <ul id="migrate-response-data" class="space-y-4 text-left text-gray-500 dark:text-gray-400">
-                    <li id="subscribe-subreddit" class="flex items-center space-x-3">
-                        <svg class="flex-shrink-0 w-3.5 h-3.5 text-green-500 dark:text-green-400" aria-hidden="true"
-                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M1 5.917 5.724 10.5 15 1.5" />
-                        </svg>
-                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Subreddit migration
-                            status</span>
-                    </li>
+                    <!-- Dynamic content will be inserted here -->
                 </ul>
             </div>
         </div>

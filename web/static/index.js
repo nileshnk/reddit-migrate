@@ -195,39 +195,63 @@ class SelectionModal {
           : "Unknown";
 
         return `
-                <div class="p-4 border-b hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer item-row" data-id="${
+                <div class="group p-4 border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer item-row transition-colors duration-150" data-id="${
                   subreddit.display_name
                 }">
-                    <div class="flex items-center space-x-3">
-                        <input type="checkbox" class="item-checkbox" data-id="${
-                          subreddit.display_name
-                        }" ${isSelected ? "checked" : ""}>
-                        <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-shrink-0">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only item-checkbox" data-id="${
+                                  subreddit.display_name
+                                }" ${isSelected ? "checked" : ""}>
+                                <div class="checkbox-visual w-5 h-5 bg-white border-2 border-gray-300 rounded flex items-center justify-center transition-all duration-200 group-hover:border-red-400">
+                                    <svg class="checkmark w-3 h-3 text-white hidden" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center ${
                           iconUrl ? "" : "bg-red-100 dark:bg-red-900"
                         }">
                             ${
                               iconUrl
-                                ? `<img src="${iconUrl}" alt="${subreddit.display_name}" class="w-8 h-8 rounded-full object-cover" 
-                                       onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\\'text-red-500 text-xs font-bold\\'>r/</span>';">`
-                                : `<span class="text-red-500 text-xs font-bold">r/</span>`
+                                ? `<img src="${iconUrl}" alt="${subreddit.display_name}" class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600" 
+                                       onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\\'text-red-500 text-sm font-bold\\'>r/</span>';">`
+                                : `<span class="text-red-500 text-sm font-bold">r/</span>`
                             }
                         </div>
+                        
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center space-x-2">
-                                <h4 class="font-medium text-gray-900 dark:text-gray-100 truncate">r/${
+                                <a href="https://reddit.com/r/${
                                   subreddit.display_name
-                                }</h4>
+                                }" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   class="font-semibold text-gray-900 dark:text-gray-100 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150 truncate"
+                                   onclick="event.stopPropagation()">
+                                    r/${subreddit.display_name}
+                                </a>
                                 ${
                                   subreddit.over_18
-                                    ? '<span class="px-2 py-1 text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded">NSFW</span>'
+                                    ? '<span class="px-2 py-1 text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full">NSFW</span>'
                                     : ""
                                 }
                             </div>
-                            <p class="text-sm text-gray-600 dark:text-gray-300 truncate">${
+                            <p class="text-sm text-gray-600 dark:text-gray-300 truncate font-medium">${
                               subreddit.title || subreddit.display_name
                             }</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${description}</p>
-                            <p class="text-xs text-gray-400 dark:text-gray-500">${subscriberCount} subscribers</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 truncate leading-relaxed">${description}</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                <span class="inline-flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    ${subscriberCount} subscribers
+                                </span>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -239,6 +263,7 @@ class SelectionModal {
     this.updateSelectedCount();
     this.attachCheckboxListeners();
     this.attachRowClickListeners();
+    this.updateCheckboxVisuals();
   }
 
   renderPosts() {
@@ -251,72 +276,121 @@ class SelectionModal {
         const mediaTypeIcon = this.getMediaTypeIcon(post.image_data.media_type);
         const timeAgo = this.formatTimeAgo(post.created_utc);
 
+        // Fix URL generation - check if permalink already contains full URL
+        let postUrl;
+        if (post.permalink && post.permalink.startsWith("http")) {
+          postUrl = post.permalink;
+        } else if (post.permalink) {
+          postUrl = `https://reddit.com${post.permalink}`;
+        } else {
+          postUrl = `https://reddit.com/r/${post.subreddit}/comments/${post.id}/`;
+        }
+
         return `
-                <div class="p-4 border-b hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer item-row" data-id="${
+                <div class="group p-4 border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer item-row transition-colors duration-150" data-id="${
                   post.full_name
                 }">
-                    <div class="flex items-start space-x-3">
-                        <input type="checkbox" class="item-checkbox mt-1" data-id="${
-                          post.full_name
-                        }" ${isSelected ? "checked" : ""}>
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0 flex items-center">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only item-checkbox" data-id="${
+                                  post.full_name
+                                }" ${isSelected ? "checked" : ""}>
+                                <div class="checkbox-visual w-5 h-5 bg-white border-2 border-gray-300 rounded flex items-center justify-center transition-all duration-200 group-hover:border-red-400">
+                                    <svg class="checkmark w-3 h-3 text-white hidden" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </label>
+                        </div>
                         
                         <div class="flex-shrink-0">
                             ${
                               imageUrl
-                                ? `<img src="${imageUrl}" alt="${post.title}" class="w-20 h-20 object-cover rounded-lg" 
+                                ? `<img src="${imageUrl}" alt="${post.title}" class="w-20 h-20 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-600" 
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                 <div class="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-400 dark:text-gray-500 text-xs" style="display:none;">
+                                 <div class="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm" style="display:none;">
                                      ${mediaTypeIcon}
                                  </div>`
-                                : `<div class="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-400 dark:text-gray-500 text-xs">
+                                : `<div class="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
                                      ${mediaTypeIcon}
                                  </div>`
                             }
                         </div>
                         
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-start justify-between">
-                                <h4 class="font-medium text-gray-900 dark:text-gray-100 text-sm leading-tight line-clamp-2">${
-                                  post.title
-                                }</h4>
-                                <div class="flex items-center space-x-1 ml-2 flex-shrink-0">
+                            <div class="flex items-start justify-between mb-2">
+                                <a href="${postUrl}" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   class="font-medium text-gray-900 dark:text-gray-100 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150 text-sm leading-tight line-clamp-2 pr-2"
+                                   onclick="event.stopPropagation()">
+                                    ${post.title}
+                                </a>
+                                <div class="flex items-center space-x-1 flex-shrink-0">
                                     ${
                                       post.over_18
-                                        ? '<span class="px-1 py-0.5 text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded">NSFW</span>'
+                                        ? '<span class="px-2 py-1 text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full">NSFW</span>'
                                         : ""
                                     }
                                     ${
                                       post.spoiler
-                                        ? '<span class="px-1 py-0.5 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded">Spoiler</span>'
+                                        ? '<span class="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-full">Spoiler</span>'
                                         : ""
                                     }
                                 </div>
                             </div>
                             
-                            <div class="mt-1 flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-                                <span>r/${post.subreddit}</span>
+                            <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                <a href="https://reddit.com/r/${
+                                  post.subreddit
+                                }" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   class="hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150 font-medium"
+                                   onclick="event.stopPropagation()">
+                                    r/${post.subreddit}
+                                </a>
                                 <span>•</span>
-                                <span>u/${post.author}</span>
+                                <a href="https://reddit.com/u/${post.author}" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   class="hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150"
+                                   onclick="event.stopPropagation()">
+                                    u/${post.author}
+                                </a>
                                 <span>•</span>
                                 <span>${timeAgo}</span>
                             </div>
                             
-                            <div class="mt-1 flex items-center space-x-3 text-xs text-gray-400 dark:text-gray-500">
-                                <span>⬆ ${formatNumber(post.score)}</span>
-                                <span>💬 ${formatNumber(
-                                  post.num_comments
-                                )}</span>
-                                <span class="truncate">${post.domain}</span>
+                            <div class="flex items-center space-x-4 text-xs text-gray-400 dark:text-gray-500 mb-2">
+                                <span class="inline-flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z"></path>
+                                    </svg>
+                                    ${formatNumber(post.score)}
+                                </span>
+                                <span class="inline-flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    ${formatNumber(post.num_comments)}
+                                </span>
+                                <span class="truncate text-blue-600 dark:text-blue-400">${
+                                  post.domain
+                                }</span>
                             </div>
                             
                             ${
                               post.selftext && post.selftext.length > 0
-                                ? `<p class="mt-2 text-xs text-gray-600 dark:text-gray-300 line-clamp-2">${post.selftext.substring(
-                                    0,
-                                    150
-                                  )}${
+                                ? `<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mt-2">
+                                     <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">${post.selftext.substring(
+                                       0,
+                                       150
+                                     )}${
                                     post.selftext.length > 150 ? "..." : ""
-                                  }</p>`
+                                  }</p>
+                                   </div>`
                                 : ""
                             }
                         </div>
@@ -330,6 +404,7 @@ class SelectionModal {
     this.updateSelectedCount();
     this.attachCheckboxListeners();
     this.attachRowClickListeners();
+    this.updateCheckboxVisuals();
   }
 
   getPostImageUrl(post) {
@@ -372,6 +447,7 @@ class SelectionModal {
         e.stopPropagation(); // Prevent row click when clicking checkbox directly
         const id = e.target.dataset.id;
         this.toggleSelection(id, e.target.checked);
+        this.updateCheckboxVisuals(); // Update visual state after toggle
       });
     });
   }
@@ -482,16 +558,56 @@ class SelectionModal {
     const rows = this.itemsList.querySelectorAll(".item-row");
     rows.forEach((row) => {
       row.addEventListener("click", (e) => {
-        // Don't trigger if clicking on checkbox directly
-        if (e.target.type === "checkbox") return;
+        // Don't trigger if clicking on checkbox, links, or any interactive elements
+        if (
+          e.target.type === "checkbox" ||
+          e.target.tagName === "A" ||
+          e.target.closest("a") ||
+          e.target.closest("label")
+        ) {
+          return;
+        }
 
         const id = row.dataset.id;
         const checkbox = row.querySelector(".item-checkbox");
         if (checkbox) {
           checkbox.checked = !checkbox.checked;
           this.toggleSelection(id, checkbox.checked);
+          this.updateCheckboxVisuals(); // Update visual state after row click
         }
       });
+    });
+  }
+
+  updateCheckboxVisuals() {
+    const rows = this.itemsList.querySelectorAll(".item-row");
+    rows.forEach((row) => {
+      const checkbox = row.querySelector(".item-checkbox");
+      const isChecked = checkbox.checked;
+      const checkboxVisual = checkbox
+        .closest("label")
+        .querySelector(".checkbox-visual");
+      const checkmark = checkboxVisual.querySelector(".checkmark");
+
+      // Update checkbox visual state
+      if (isChecked) {
+        checkboxVisual.classList.add("bg-red-500", "border-red-500");
+        checkboxVisual.classList.remove("bg-white", "border-gray-300");
+        checkmark.classList.remove("hidden");
+      } else {
+        checkboxVisual.classList.remove("bg-red-500", "border-red-500");
+        checkboxVisual.classList.add("bg-white", "border-gray-300");
+        checkmark.classList.add("hidden");
+      }
+
+      // Update row highlighting
+      if (isChecked) {
+        row.classList.add("bg-gray-100", "dark:bg-gray-600");
+        row.classList.remove("hover:bg-gray-50", "dark:hover:bg-gray-700");
+      } else {
+        row.classList.remove("bg-gray-100", "dark:bg-gray-600");
+        row.classList.add("hover:bg-gray-50", "dark:hover:bg-gray-700");
+      }
     });
   }
 }
@@ -740,16 +856,66 @@ optionSubmit.addEventListener("click", async (e) => {
 
 // Keep original functions (simplified)
 function displayMigrationResponse(response) {
-  const SubscribeSubreddit = document
-    .getElementById("subscribe-subreddit")
-    ?.querySelector("span");
-  if (SubscribeSubreddit) {
-    SubscribeSubreddit.innerText = `Total subreddits successfully subscribed to new account: ${response.data.subscribeSubreddit.SuccessCount}`;
+  // Clear previous response data
+  migrateResponseData.innerHTML = "";
+
+  // Check what was actually migrated and create appropriate status elements
+  const migratingSubreddits =
+    SUBREDDIT_SELECTION === "all" ||
+    (SUBREDDIT_SELECTION === "custom" && SELECTED_SUBREDDITS.length > 0);
+  const migratingPosts =
+    POSTS_SELECTION === "all" ||
+    (POSTS_SELECTION === "custom" && SELECTED_POSTS.length > 0);
+
+  // Create subreddit status if subreddits were migrated
+  if (migratingSubreddits && response.data.subscribeSubreddit) {
+    const subredditStatusElement = document.createElement("li");
+    subredditStatusElement.className = "flex items-center space-x-3";
+    subredditStatusElement.innerHTML = `
+      <svg class="flex-shrink-0 w-3.5 h-3.5 text-green-500 dark:text-green-400" aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
+          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M1 5.917 5.724 10.5 15 1.5" />
+      </svg>
+      <span class="text-sm font-medium text-gray-500 dark:text-gray-400">
+        Total subreddits successfully subscribed to new account: ${response.data.subscribeSubreddit.SuccessCount}
+      </span>
+    `;
+    migrateResponseData.appendChild(subredditStatusElement);
   }
 
-  const SavePost = document.getElementById("save-post")?.querySelector("span");
-  if (SavePost) {
-    SavePost.innerHTML = `Total posts successfully saved in new account: ${response.data.savePost.SuccessCount}`;
+  // Create post status if posts were migrated
+  if (migratingPosts && response.data.savePost) {
+    const postStatusElement = document.createElement("li");
+    postStatusElement.className = "flex items-center space-x-3";
+    postStatusElement.innerHTML = `
+      <svg class="flex-shrink-0 w-3.5 h-3.5 text-green-500 dark:text-green-400" aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
+          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M1 5.917 5.724 10.5 15 1.5" />
+      </svg>
+      <span class="text-sm font-medium text-gray-500 dark:text-gray-400">
+        Total posts successfully saved in new account: ${response.data.savePost.SuccessCount}
+      </span>
+    `;
+    migrateResponseData.appendChild(postStatusElement);
+  }
+
+  // If nothing was migrated, show a message
+  if (!migratingSubreddits && !migratingPosts) {
+    const noMigrationElement = document.createElement("li");
+    noMigrationElement.className = "flex items-center space-x-3";
+    noMigrationElement.innerHTML = `
+      <svg class="flex-shrink-0 w-3.5 h-3.5 text-yellow-500 dark:text-yellow-400" aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+      </svg>
+      <span class="text-sm font-medium text-gray-500 dark:text-gray-400">
+        No items were selected for migration
+      </span>
+    `;
+    migrateResponseData.appendChild(noMigrationElement);
   }
 
   optionSubmit.style.display = "block";

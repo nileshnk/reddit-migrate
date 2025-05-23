@@ -8,8 +8,8 @@ const { URL } = require("url");
 function parseArgs() {
   const args = process.argv.slice(2);
   const config = {
-    subreddits: 10,
-    posts: 10,
+    subreddits: null, // Changed from 0 to null to distinguish between explicitly set 0 and unset
+    posts: null, // Changed from 0 to null to distinguish between explicitly set 0 and unset
     cookie: null,
     unfollowAll: false,
     unsaveAll: false,
@@ -18,11 +18,11 @@ function parseArgs() {
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
       case "--subreddits":
-        config.subreddits = parseInt(args[i + 1]) || 10;
+        config.subreddits = parseInt(args[i + 1]) || 0;
         i++;
         break;
       case "--posts":
-        config.posts = parseInt(args[i + 1]) || 10;
+        config.posts = parseInt(args[i + 1]) || 0;
         i++;
         break;
       case "--cookie":
@@ -59,6 +59,16 @@ Examples:
         process.exit(0);
         break;
     }
+  }
+
+  // Set defaults only if not doing cleanup operations and values weren't explicitly set
+  if (!config.unfollowAll && !config.unsaveAll) {
+    if (config.subreddits === null) config.subreddits = 10;
+    if (config.posts === null) config.posts = 10;
+  } else {
+    // For cleanup operations, ensure we don't accidentally trigger follow/save operations
+    if (config.subreddits === null) config.subreddits = 0;
+    if (config.posts === null) config.posts = 0;
   }
 
   return config;
@@ -310,7 +320,16 @@ class RedditAPI {
   async getSavedPosts(limit = 100) {
     try {
       console.log("🔍 Fetching saved posts...");
-      const response = await this.makeRequest(`/user/me/saved?limit=${limit}`);
+
+      // First get the current user to get their username
+      const user = await this.getCurrentUser();
+      if (!user || !user.name) {
+        throw new Error("Could not get current user");
+      }
+
+      const response = await this.makeRequest(
+        `/user/${user.name}/saved?limit=${limit}`
+      );
       return response.data.children.map((child) => ({
         id: child.data.name,
         title: child.data.title || child.data.body || "Comment",
@@ -722,13 +741,13 @@ async function main() {
     process.exit(1);
   }
 
-  // Check if any operation is requested
-  if (
-    !config.unfollowAll &&
-    !config.unsaveAll &&
-    config.subreddits <= 0 &&
-    config.posts <= 0
-  ) {
+  // Updated validation logic - more explicit about when operations are needed
+  const hasCleanupOperation = config.unfollowAll || config.unsaveAll;
+  const hasNormalOperation =
+    (config.subreddits !== null && config.subreddits > 0) ||
+    (config.posts !== null && config.posts > 0);
+
+  if (!hasCleanupOperation && !hasNormalOperation) {
     console.error(
       "❌ Please specify at least one operation: --subreddits, --posts, --unfollowAll, or --unsaveAll"
     );
