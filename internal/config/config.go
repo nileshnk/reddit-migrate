@@ -95,10 +95,10 @@ func LoadConfig() {
 	// Rate Limiter settings
 	// Store them as time.Duration directly where applicable
 	rateLimitSleepSeconds := getEnvOrDefaultInt("RATE_LIMIT_SLEEP_INTERVAL_SECONDS", 30)
-	RateLimitSleepInterval = time.Duration(rateLimitSleepSeconds) * time.Minute // Note: Original code had time.Minute here, might be error. Assuming seconds as per var name.
+	RateLimitSleepInterval = time.Duration(rateLimitSleepSeconds) * time.Second // Note: Original code had time.Minute here, might be error. Assuming seconds as per var name.
 
 	rateLimitIntervalSeconds := getEnvOrDefaultInt("RATE_LIMIT_INTERVAL_SECONDS", 30)
-	RateLimitInterval = time.Duration(rateLimitIntervalSeconds) * time.Minute // Note: Original code had time.Minute here, might be error. Assuming seconds as per var name.
+	RateLimitInterval = time.Duration(rateLimitIntervalSeconds) * time.Second // Note: Original code had time.Minute here, might be error. Assuming seconds as per var name.
 
 	MaxTokensPerInterval = getEnvOrDefaultInt("MAX_TOKENS_PER_INTERVAL", 50)
 

@@ -1,9 +1,10 @@
 package ratelimiter
 
 import (
-	"github.com/nileshnk/reddit-migrate/internal/config"
 	"sync"
 	"time"
+
+	"github.com/nileshnk/reddit-migrate/internal/config"
 )
 
 // RateLimiter provides a token bucket based rate limiting mechanism.
@@ -132,7 +133,7 @@ func (rl *RateLimiter) Wait() {
 	// A very short sleep/timeout can be used to prevent busy-waiting if no token is immediately available.
 	// The original `config.RateLimitSleepInterval` was used as a generic polling interval.
 
-	checkInterval := 100 * time.Millisecond // Internal check interval if no token or signal is received quickly
+	checkInterval := config.RateLimitInterval // Internal check interval if no token or signal is received quickly
 
 	for {
 		rl.mu.RLock()

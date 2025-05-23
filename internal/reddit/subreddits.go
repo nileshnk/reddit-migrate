@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/nileshnk/reddit-migrate/internal/config"
-	"github.com/nileshnk/reddit-migrate/internal/types"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/nileshnk/reddit-migrate/internal/config"
+	"github.com/nileshnk/reddit-migrate/internal/types"
 )
 
 // ManageSubreddits performs subscribe or unsubscribe actions on a list of subreddits in chunks.
@@ -242,4 +243,209 @@ func FetchSubredditFullNames(token string) (types.RedditNameType, error) {
 	config.InfoLogger.Printf("Fetched %d subscribed subreddits (display_name) and %d followed users (display_name).",
 		len(nameList.DisplayNamesList), len(nameList.UserDisplayNameList))
 	return nameList, nil
+}
+
+// FetchSubredditsWithDetails retrieves detailed information about all subreddits the user is subscribed to
+// including subscriber counts, descriptions, icons, and metadata needed for the selection UI
+func FetchSubredditsWithDetails(token string) ([]types.SubredditInfo, error) {
+	config.InfoLogger.Println("Fetching detailed subscribed subreddits information.")
+	apiURL := "https://oauth.reddit.com/subreddits/mine.json"
+
+	var allSubreddits []types.SubredditInfo
+	lastFullName := ""
+
+	for i := 0; ; i++ {
+		paginatedURL := fmt.Sprintf("%s?limit=100&after=%s", apiURL, lastFullName)
+		config.DebugLogger.Printf("Fetching subreddits page %d from %s", i+1, paginatedURL)
+
+		req, err := http.NewRequest(http.MethodGet, paginatedURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error creating request for %s: %w", paginatedURL, err)
+		}
+
+		req.Header = http.Header{
+			"Authorization": {"Bearer " + token},
+			"User-Agent":    {config.UserAgent},
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching subreddits from %s: %w", paginatedURL, err)
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			config.ErrorLogger.Printf("Failed to fetch subreddits from %s. Status: %d, Body: %s", paginatedURL, resp.StatusCode, string(bodyBytes))
+			return nil, fmt.Errorf("failed to fetch subreddits from %s, status code: %d", paginatedURL, resp.StatusCode)
+		}
+
+		bodyBytes, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("error reading subreddits response body from %s: %w", paginatedURL, err)
+		}
+
+		var listing struct {
+			Kind string `json:"kind"`
+			Data struct {
+				After    string                        `json:"after"`
+				Children []types.DetailedSubredditData `json:"children"`
+			} `json:"data"`
+		}
+
+		if err := json.Unmarshal(bodyBytes, &listing); err != nil {
+			config.ErrorLogger.Printf("Error unmarshalling subreddits response from %s: %v. Body: %s", paginatedURL, err, string(bodyBytes))
+			return nil, fmt.Errorf("error unmarshalling subreddits response from %s: %w", paginatedURL, err)
+		}
+
+		config.DebugLogger.Printf("Page %d: found %d subreddits", i+1, len(listing.Data.Children))
+
+		if len(listing.Data.Children) == 0 && listing.Data.After == "" && lastFullName != "" {
+			config.DebugLogger.Printf("No subreddits found on page %d and no 'after' token. End of subreddits list.", i+1)
+			break
+		}
+
+		// Process each subreddit and extract detailed information
+		for _, child := range listing.Data.Children {
+			if child.Kind == "t5" && child.Data.SubredditType != "user" { // Only process actual subreddits, not user profiles
+				subredditInfo := parseDetailedSubredditData(child)
+				allSubreddits = append(allSubreddits, subredditInfo)
+			}
+		}
+
+		if listing.Data.After == "" {
+			config.DebugLogger.Printf("No 'after' token in subreddits response. End of list.")
+			break
+		}
+		lastFullName = listing.Data.After
+
+		if i > 100 {
+			config.ErrorLogger.Printf("fetchSubredditsWithDetails exceeded 100 pages. Aborting.")
+			return nil, fmt.Errorf("exceeded 100 pages fetching subreddits")
+		}
+	}
+
+	config.InfoLogger.Printf("Fetched %d detailed subreddits.", len(allSubreddits))
+	return allSubreddits, nil
+}
+
+// parseDetailedSubredditData converts Reddit API subreddit data into our SubredditInfo structure
+func parseDetailedSubredditData(subredditData types.DetailedSubredditData) types.SubredditInfo {
+	// Choose the best available icon URL
+	iconURL := ""
+	if subredditData.Data.CommunityIcon != "" {
+		iconURL = unescapeHTMLEntities(subredditData.Data.CommunityIcon)
+	} else if subredditData.Data.IconImg != "" {
+		iconURL = subredditData.Data.IconImg
+	}
+
+	// Choose the best available banner URL
+	bannerURL := ""
+	if subredditData.Data.BannerImg != "" {
+		bannerURL = subredditData.Data.BannerImg
+	} else if subredditData.Data.HeaderImg != "" {
+		bannerURL = subredditData.Data.HeaderImg
+	}
+
+	return types.SubredditInfo{
+		Name:          subredditData.Data.Name,
+		DisplayName:   subredditData.Data.DisplayName,
+		Title:         subredditData.Data.Title,
+		Description:   subredditData.Data.PublicDescription,
+		Subscribers:   subredditData.Data.Subscribers,
+		IconURL:       iconURL,
+		BannerURL:     bannerURL,
+		PrimaryColor:  subredditData.Data.PrimaryColor,
+		KeyColor:      subredditData.Data.KeyColor,
+		SubredditType: subredditData.Data.SubredditType,
+		NSFW:          subredditData.Data.Over18,
+		Created:       int64(subredditData.Data.CreatedUTC),
+	}
+}
+
+// unescapeHTMLEntities unescapes HTML entities in URLs (Reddit often HTML-escapes URLs)
+func unescapeHTMLEntities(url string) string {
+	url = strings.ReplaceAll(url, "&amp;", "&")
+	url = strings.ReplaceAll(url, "&lt;", "<")
+	url = strings.ReplaceAll(url, "&gt;", ">")
+	url = strings.ReplaceAll(url, "&quot;", "\"")
+	url = strings.ReplaceAll(url, "&#39;", "'")
+	return url
+}
+
+// GetSubredditCount returns the total count of subscribed subreddits (excluding followed users)
+func GetSubredditCount(token string) (int, error) {
+	config.DebugLogger.Println("Getting subscribed subreddits count.")
+	apiURL := "https://oauth.reddit.com/subreddits/mine.json"
+
+	count := 0
+	lastFullName := ""
+
+	for i := 0; ; i++ {
+		paginatedURL := fmt.Sprintf("%s?limit=100&after=%s", apiURL, lastFullName)
+
+		req, err := http.NewRequest(http.MethodGet, paginatedURL, nil)
+		if err != nil {
+			return 0, fmt.Errorf("error creating request for subreddit count: %w", err)
+		}
+
+		req.Header = http.Header{
+			"Authorization": {"Bearer " + token},
+			"User-Agent":    {config.UserAgent},
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return 0, fmt.Errorf("error fetching subreddit count: %w", err)
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			return 0, fmt.Errorf("failed to fetch subreddit count, status code: %d, body: %s", resp.StatusCode, string(bodyBytes))
+		}
+
+		bodyBytes, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return 0, fmt.Errorf("error reading subreddit count response: %w", err)
+		}
+
+		var listing struct {
+			Kind string `json:"kind"`
+			Data struct {
+				After    string `json:"after"`
+				Children []struct {
+					Kind string `json:"kind"`
+					Data struct {
+						SubredditType string `json:"subreddit_type"`
+					} `json:"data"`
+				} `json:"children"`
+			} `json:"data"`
+		}
+
+		if err := json.Unmarshal(bodyBytes, &listing); err != nil {
+			return 0, fmt.Errorf("error unmarshalling subreddit count response: %w", err)
+		}
+
+		// Count only actual subreddits (not user profiles)
+		for _, child := range listing.Data.Children {
+			if child.Kind == "t5" && child.Data.SubredditType != "user" {
+				count++
+			}
+		}
+
+		if listing.Data.After == "" {
+			break
+		}
+		lastFullName = listing.Data.After
+
+		if i > 100 {
+			return 0, fmt.Errorf("exceeded 100 pages fetching subreddit count")
+		}
+	}
+
+	config.DebugLogger.Printf("Found %d subscribed subreddits.", count)
+	return count, nil
 }

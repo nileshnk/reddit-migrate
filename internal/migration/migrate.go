@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/nileshnk/reddit-migrate/internal/config"
-	"github.com/nileshnk/reddit-migrate/internal/reddit"
-	"github.com/nileshnk/reddit-migrate/internal/types"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/nileshnk/reddit-migrate/internal/config"
+	"github.com/nileshnk/reddit-migrate/internal/reddit"
+	"github.com/nileshnk/reddit-migrate/internal/types"
 )
 
 // MigrationHandler is the HTTP handler for the /migrate endpoint.
@@ -185,8 +186,8 @@ func processSubreddits(oldToken, newToken, oldUser, newUser string, prefs types.
 // migrateSubredditsWithRetry attempts to subscribe to subreddits with a retry mechanism.
 func migrateSubredditsWithRetry(token string, displayNames []string, username string) types.ManageSubredditResponseType { // Adjusted type
 	// TODO: These should come from config
-	subredditChunkSize := 100 // Initial chunk size for subscribing.
-	maxRetryAttempts := 5     // Maximum number of retry attempts.
+	subredditChunkSize := config.DefaultSubredditChunkSize // Initial chunk size for subscribing.
+	maxRetryAttempts := config.MaxSubredditRetryAttempts   // Maximum number of retry attempts.
 
 	config.InfoLogger.Printf("Migrating %d subreddits to account %s.", len(displayNames), username)
 
@@ -427,4 +428,95 @@ func safeSuffix(s string, n int) string {
 		return s
 	}
 	return s[len(s)-n:]
+}
+
+// HandleCustomMigration processes a custom selection migration request
+// It migrates only the selected subreddits and posts instead of all items
+func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResponseType {
+	var finalResponse types.MigrationResponseType
+	finalResponse.Success = false // Default to false
+
+	config.InfoLogger.Printf("Starting custom migration process with %d subreddits and %d posts",
+		len(req.SelectedSubreddits), len(req.SelectedPosts))
+
+	// Verify cookies and get usernames
+	oldAccountUsername, err := getUsernameFromCookie(req.OldAccountCookie)
+	if err != nil {
+		config.ErrorLogger.Printf("Failed to verify old account cookie: %v", err)
+		finalResponse.Message = fmt.Sprintf("Failed to verify old account cookie: %v", err)
+		return finalResponse
+	}
+
+	newAccountUsername, err := getUsernameFromCookie(req.NewAccountCookie)
+	if err != nil {
+		config.ErrorLogger.Printf("Failed to verify new account cookie: %v", err)
+		finalResponse.Message = fmt.Sprintf("Failed to verify new account cookie: %v", err)
+		return finalResponse
+	}
+
+	config.InfoLogger.Printf("Verified accounts for custom migration: %s -> %s", oldAccountUsername, newAccountUsername)
+
+	// Parse OAuth tokens from cookies
+	oldAccountToken := parseTokenFromCookie(req.OldAccountCookie)
+	newAccountToken := parseTokenFromCookie(req.NewAccountCookie)
+	if oldAccountToken == "" || newAccountToken == "" {
+		config.ErrorLogger.Println("Failed to parse OAuth tokens from one or both cookies.")
+		finalResponse.Message = "Failed to parse OAuth tokens from cookies. Ensure 'token_v2' is present."
+		return finalResponse
+	}
+
+	// Handle selected subreddits migration
+	if len(req.SelectedSubreddits) > 0 {
+		config.InfoLogger.Printf("Migrating %d selected subreddits", len(req.SelectedSubreddits))
+		subscribeResult := reddit.ManageSubreddits(newAccountToken, req.SelectedSubreddits, types.SubscribeAction, 100)
+		finalResponse.Data.SubscribeSubreddit = subscribeResult
+
+		// Handle deletion if requested
+		if req.DeleteOldSubreddits {
+			config.InfoLogger.Printf("Deleting %d selected subreddits from old account", len(req.SelectedSubreddits))
+			unsubscribeResult := reddit.ManageSubreddits(oldAccountToken, req.SelectedSubreddits, types.UnsubscribeAction, 100)
+			finalResponse.Data.UnsubscribeSubreddit = unsubscribeResult
+		}
+	} else {
+		config.InfoLogger.Println("No subreddits selected for migration")
+	}
+
+	// Handle selected posts migration
+	if len(req.SelectedPosts) > 0 {
+		config.InfoLogger.Printf("Migrating %d selected posts", len(req.SelectedPosts))
+
+		concurrencyForPosts := config.DefaultPostConcurrency
+		saveResult := reddit.ManageSavedPosts(newAccountToken, req.SelectedPosts, types.SaveAction, concurrencyForPosts)
+		finalResponse.Data.SavePost = saveResult
+
+		// Handle deletion if requested
+		if req.DeleteOldPosts {
+			config.InfoLogger.Printf("Deleting %d selected posts from old account", len(req.SelectedPosts))
+			unsaveResult := reddit.ManageSavedPosts(oldAccountToken, req.SelectedPosts, types.UnsaveAction, concurrencyForPosts)
+			finalResponse.Data.UnsavePost = unsaveResult
+		}
+	} else {
+		config.InfoLogger.Println("No posts selected for migration")
+	}
+
+	// Determine overall success and message
+	hasErrors := finalResponse.Data.SubscribeSubreddit.Error ||
+		finalResponse.Data.UnsubscribeSubreddit.Error ||
+		finalResponse.Data.SavePost.FailedCount > 0 ||
+		finalResponse.Data.UnsavePost.FailedCount > 0
+
+	if hasErrors {
+		finalResponse.Success = false
+		finalResponse.Message = "Custom migration completed with some errors. Check individual operation statuses."
+		config.InfoLogger.Println("Custom migration process completed with some errors.")
+	} else {
+		finalResponse.Success = true
+		finalResponse.Message = "Custom migration completed successfully."
+		config.InfoLogger.Println("Custom migration process completed successfully.")
+	}
+
+	config.InfoLogger.Printf("Custom migration summary - Subreddits subscribed: %d, Posts saved: %d",
+		finalResponse.Data.SubscribeSubreddit.SuccessCount, finalResponse.Data.SavePost.SuccessCount)
+
+	return finalResponse
 }

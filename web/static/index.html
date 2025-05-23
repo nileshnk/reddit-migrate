@@ -16,19 +16,35 @@
     </style>
 </head>
 
-<body class="bg-gray-100 font-sans">
+<body class="bg-gray-100 font-sans dark:bg-gray-900 transition-colors duration-200">
+    <!-- Dark Mode Toggle -->
+    <div class="fixed top-4 right-4 z-50">
+        <button id="darkModeToggle"
+            class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200">
+            <svg id="sunIcon" class="w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                    d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+                    clip-rule="evenodd"></path>
+            </svg>
+            <svg id="moonIcon" class="w-5 h-5 block dark:hidden" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            </svg>
+        </button>
+    </div>
+
     <div class="container mx-auto flex min-h-screen flex-col items-center py-8">
         <!-- Adjusted path for reddit logo -->
         <img src="assets/reddit-logo.svg" alt="Reddit Logo" class="mb-4 h-16 w-16" />
 
-        <div class="w-full max-w-xl rounded-lg bg-white p-8 shadow-md">
+        <div class="w-full max-w-xl rounded-lg bg-white dark:bg-gray-800 p-8 shadow-md">
             <h1 class="mb-6 text-3xl font-semibold text-red-500">Reddit Data Migration</h1>
 
             <div class="mb-4">
-                <label for="oldAccessToken" class="mb-2 block font-bold text-gray-700">Old Account Cookie:</label>
+                <label for="oldAccessToken" class="mb-2 block font-bold text-gray-700 dark:text-gray-300">Old Account
+                    Cookie:</label>
                 <div class="flex items-center">
                     <input type="text" id="oldAccessToken" name="oldAccessToken"
-                        class="bg-white-200 block w-full rounded border border-gray-300 px-4 py-2 text-sm text-gray-500 focus:border-orange-500 focus:outline-none" />
+                        class="bg-white-200 block w-full rounded border border-gray-300 px-4 py-2 text-sm text-gray-500 focus:border-orange-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:placeholder-gray-400" />
                     <button class="ml-2 rounded bg-red-500 px-4 py-2 text-white hover:bg-orange-600 focus:outline-none"
                         id="oldTokenVerifyBtn">Verify</button>
                     <button
@@ -58,10 +74,11 @@
             </div>
 
             <div class="mb-4">
-                <label for="newAccessToken" class="mb-2 block font-bold text-gray-700">New Account Cookie:</label>
+                <label for="newAccessToken" class="mb-2 block font-bold text-gray-700 dark:text-gray-300">New Account
+                    Cookie:</label>
                 <div class="flex items-center">
                     <input type="text" id="newAccessToken" name="newAccessToken"
-                        class="bg-white-100 w-full rounded border border-gray-300 px-4 py-2 text-sm text-gray-500 focus:border-orange-500 focus:outline-none" />
+                        class="bg-white-100 w-full rounded border border-gray-300 px-4 py-2 text-sm text-gray-500 focus:border-orange-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:placeholder-gray-400" />
                     <button class="ml-2 rounded bg-red-500 px-4 py-2 text-white hover:bg-orange-600 focus:outline-none "
                         id="newTokenVerifyBtn">Verify</button>
                     <button
@@ -148,64 +165,90 @@
             </div>
 
             <div class="mb-6" id="subreddit-options">
-                <label class="mb-2 block font-bold text-gray-700">Migrate All Subreddits:</label>
-                <div class="flex items-center">
-                    <input type="radio" id="migrateSubredditYes" name="migrateSubreddit" value="yes" class="mr-2"
-                        onclick="toggleDeleteSubreddits(true)" />
-                    <label for="migrateSubredditYes" class="mr-4 text-gray-700">Yes</label>
-                    <input type="radio" id="migrateSubredditNo" name="migrateSubreddit" value="no" class="mr-2"
-                        onclick="toggleDeleteSubreddits(false)" />
-                    <label for="migrateSubredditNo" class="text-gray-700">No</label>
+                <label class="mb-2 block font-bold text-gray-700 dark:text-gray-300">Migrate Subreddits:</label>
+                <div class="flex items-center space-x-4">
+                    <input type="radio" id="subredditAll" name="subredditSelection" value="all" class="mr-2" />
+                    <label for="subredditAll" class="text-gray-700 dark:text-gray-300">All</label>
+                    <input type="radio" id="subredditCustom" name="subredditSelection" value="custom" class="mr-2" />
+                    <label for="subredditCustom" class="text-gray-700 dark:text-gray-300">Custom</label>
+                    <input type="radio" id="subredditNone" name="subredditSelection" value="none" class="mr-2" />
+                    <label for="subredditNone" class="text-gray-700 dark:text-gray-300">None</label>
+                </div>
+                <div id="subredditSelectionSummary"
+                    class="mt-2 text-sm text-gray-600 dark:text-gray-400 hidden flex items-center justify-between">
+                    <span>
+                        <span id="selectedSubredditCount">0</span><span> subreddits selected</span>
+                    </span>
+                    <button id="editSubredditSelection"
+                        class="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
+                        Edit Selection
+                    </button>
                 </div>
 
-                <div id="deleteSubreddits" class="mt-2">
-                    <label class="mb-2 block text-sm font-bold text-gray-700">Delete Old Account Subreddits:</label>
+                <div id="deleteSubreddits" class="mt-2 hidden">
+                    <label class="mb-2 block text-sm font-bold text-gray-700 dark:text-gray-300">Delete Old Account
+                        Subreddits:</label>
                     <div class="flex items-center">
                         <input type="radio" id="deleteSubredditsYes" name="deleteSubreddits" value="yes"
                             class="mr-2 text-sm" />
-                        <label for="deleteSubredditsYes" class="mr-4 text-sm text-gray-700">Yes</label>
+                        <label for="deleteSubredditsYes"
+                            class="mr-4 text-sm text-gray-700 dark:text-gray-300">Yes</label>
                         <input type="radio" id="deleteSubredditsNo" name="deleteSubreddits" value="no"
                             class="mr-2 text-sm" />
-                        <label for="deleteSubredditsNo" class="text-sm text-gray-700">No</label>
+                        <label for="deleteSubredditsNo" class="text-sm text-gray-700 dark:text-gray-300">No</label>
                     </div>
                 </div>
             </div>
 
             <div class="mb-6" id="saved-posts-options">
-                <label class="mb-2 font-bold text-gray-700 flex items-center">
-                    Migrate All Saved Posts:
+                <label class="mb-2 font-bold text-gray-700 dark:text-gray-300 flex items-center">
+                    Migrate Saved Posts:
                     <span class="ml-2 relative">
-                        <svg onclick="toggleTooltip(event)" class="w-5 h-5 text-gray-500 cursor-pointer"
+                        <svg onclick="toggleTooltip(event)"
+                            class="w-5 h-5 text-gray-500 dark:text-gray-400 cursor-pointer"
                             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 1 1-10 10A10 10 0 0 1 12 2z" />
                         </svg>
                         <div id="tooltip"
-                            class="hidden absolute left-6 top-0 bg-gray-800 text-white text-sm rounded-lg p-2 w-48 shadow-md">
-                            Migrating more than 50 saved posts may take additional time, with approximately 10 extra
-                            minutes required for every additional 50 posts. For example, migrating 100 posts could take
-                            around 10-15 minutes. Please leave the tab open without refreshing until you get a
-                            response.
+                            class="hidden absolute left-6 top-0 bg-gray-800 text-white text-sm rounded-lg p-2 w-48 shadow-md dark:bg-gray-700">
+                            ⏱️ <strong>Processing Time:</strong><br>
+                            • Up to 50 posts: ~5 minutes<br>
+                            • 100 posts: ~10-15 minutes<br>
+                            • 200+ posts: 30+ minutes<br><br>
+                            💡 <em>Tip: Keep this tab open and grab a coffee while we work our magic!</em>
                         </div>
                     </span>
                 </label>
-                <div class="flex items-center">
-                    <input type="radio" id="migrateSavedPostsYes" name="migratePost" value="yes" class="mr-2"
-                        onclick="toggleDeletePosts(true)" />
-                    <label for="migrateSavedPostsYes" class="mr-4 text-gray-700">Yes</label>
-                    <input type="radio" id="migrateSavedPostsNo" name="migratePost" value="no" class="mr-2"
-                        onclick="toggleDeletePosts(false)" />
-                    <label for="migrateSavedPostsNo" class="text-gray-700">No</label>
+                <div class="flex items-center space-x-4">
+                    <input type="radio" id="postsAll" name="postsSelection" value="all" class="mr-2" />
+                    <label for="postsAll" class="text-gray-700 dark:text-gray-300">All</label>
+                    <input type="radio" id="postsCustom" name="postsSelection" value="custom" class="mr-2" />
+                    <label for="postsCustom" class="text-gray-700 dark:text-gray-300">Custom</label>
+                    <input type="radio" id="postsNone" name="postsSelection" value="none" class="mr-2" />
+                    <label for="postsNone" class="text-gray-700 dark:text-gray-300">None</label>
+                </div>
+                <div id="postsSelectionSummary"
+                    class="mt-2 text-sm text-gray-600 dark:text-gray-400 hidden flex items-center justify-between">
+                    <span>
+                        <span id="selectedPostsCount">0</span><span> posts selected</span>
+                    </span>
+                    <button id="editPostsSelection"
+                        class="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
+                        Edit Selection
+                    </button>
                 </div>
 
-                <div class="mt-2" id="deletePosts">
-                    <label class="mb-2 block text-sm font-bold text-gray-700">Delete Old Account Saved Posts:</label>
+                <div class="mt-2 hidden" id="deletePosts">
+                    <label class="mb-2 block text-sm font-bold text-gray-700 dark:text-gray-300">Delete Old Account
+                        Saved Posts:</label>
                     <div class="flex items-center">
                         <input type="radio" id="deleteSavedPostsYes" name="deletePosts" value="yes"
                             class="mr-2 text-sm" />
-                        <label for="deleteSavedPostsYes" class="mr-4 text-sm text-gray-700">Yes</label>
+                        <label for="deleteSavedPostsYes"
+                            class="mr-4 text-sm text-gray-700 dark:text-gray-300">Yes</label>
                         <input type="radio" id="deletePostsNo" name="deletePosts" value="no" class="mr-2 text-sm" />
-                        <label for="deletePostsNo" class="text-sm text-gray-700">No</label>
+                        <label for="deletePostsNo" class="text-sm text-gray-700 dark:text-gray-300">No</label>
                     </div>
                 </div>
             </div>
@@ -242,6 +285,115 @@
                             status</span>
                     </li>
                 </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-8 mt-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col items-center space-y-4">
+                <!-- Made for Redditors -->
+                <!-- <div class="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+                    <span class="text-2xl">❤️</span>
+                    <span class="text-lg font-medium">Made for fellow Redditors</span>
+                </div> -->
+
+                <!-- GitHub Link -->
+                <div class="flex items-center space-x-3">
+                    <a href="https://github.com/nileshnk/reddit-migrate" target="_blank" rel="noopener noreferrer"
+                        class="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                        <!-- GitHub Icon -->
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd"
+                                d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="font-medium">View on GitHub</span>
+                        <!-- External link icon -->
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Copyright/Additional Info -->
+                <div class="text-sm text-gray-500 dark:text-gray-400 text-center">
+                    <p>Free & Open Source • Built with ❤️ for the Reddit community</p>
+                    <p class="mt-1">
+                        <span class="inline-flex items-center space-x-1">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Safe, secure, and respects Reddit's API guidelines</span>
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Selection Modal for Posts and Subreddits -->
+    <div id="selectionModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div
+            class="relative top-4 mx-auto p-5 border w-11/12 md:w-5/6 lg:w-5/6 xl:w-5/6 2xl:w-4/5 shadow-lg rounded-md bg-white dark:bg-gray-800 max-h-screen overflow-hidden">
+            <div class="flex flex-col h-full" style="min-height: 80vh; max-height: 90vh;">
+                <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                    <h3 class="text-lg font-medium dark:text-white" id="modalTitle">Select Items</h3>
+                    <button id="closeModal"
+                        class="text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 text-2xl">&times;</button>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="mb-4 flex-shrink-0">
+                    <input type="text" id="searchInput" placeholder="Search..."
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400">
+                </div>
+
+                <!-- Bulk Actions -->
+                <div class="mb-4 flex justify-between items-center flex-shrink-0">
+                    <div class="flex space-x-2">
+                        <button id="selectAllBtn"
+                            class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">Select
+                            All</button>
+                        <button id="selectNoneBtn"
+                            class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600">Select
+                            None</button>
+                    </div>
+                    <span class="text-sm text-gray-600 dark:text-gray-300">
+                        <span id="selectedCount">0</span> / <span id="totalCount">0</span> selected
+                    </span>
+                </div>
+
+                <!-- Loading State -->
+                <div id="modalLoading" class="flex items-center justify-center py-8 hidden">
+                    <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg"
+                        fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                    <span class="text-gray-600 dark:text-gray-300">Loading...</span>
+                </div>
+
+                <!-- Items List -->
+                <div id="itemsList" class="flex-1 overflow-y-auto border rounded-lg min-h-0 dark:border-gray-600">
+                    <!-- Dynamic content will be inserted here -->
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="flex justify-end space-x-2 mt-4 flex-shrink-0">
+                    <button id="cancelSelection"
+                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">Cancel</button>
+                    <button id="confirmSelection"
+                        class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Confirm Selection</button>
+                </div>
             </div>
         </div>
     </div>
