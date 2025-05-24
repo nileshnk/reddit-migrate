@@ -317,6 +317,43 @@
         .light-mode .text-orange-400 {
             color: #ea580c !important;
         }
+
+        /* Fix modal text colors in light mode */
+        .light-mode #selectionModal .text-slate-200 {
+            color: #1e293b !important;
+        }
+
+        .light-mode #selectionModal .text-slate-300 {
+            color: #475569 !important;
+        }
+
+        .light-mode #selectionModal .text-slate-400 {
+            color: #64748b !important;
+        }
+
+        .light-mode #cookieHelpModal .text-slate-200 {
+            color: #1e293b !important;
+        }
+
+        .light-mode #cookieHelpModal .text-slate-300 {
+            color: #475569 !important;
+        }
+
+        .light-mode #cookieHelpModal .text-slate-400 {
+            color: #64748b !important;
+        }
+
+        .light-mode .glass-card .text-orange-400 {
+            color: #ea580c !important;
+        }
+
+        .light-mode .glass-card .text-emerald-400 {
+            color: #10b981 !important;
+        }
+
+        .light-mode .glass-card .text-amber-400 {
+            color: #f59e0b !important;
+        }
     </style>
 </head>
 
@@ -351,9 +388,17 @@
         <div class="w-full max-w-2xl glass-card rounded-2xl p-8 shadow-2xl animate-slide-in">
             <!-- Old Account Section -->
             <div class="mb-6">
-                <label for="oldAccessToken" class="block text-base font-semibold text-slate-200 mb-3 flex items-center">
-                    <span class="material-icons mr-2 text-orange-400">account_circle</span>
-                    Old Account Cookie
+                <label for="oldAccessToken"
+                    class="block text-base font-semibold text-slate-200 mb-3 flex items-center justify-between">
+                    <span class="flex items-center">
+                        <span class="material-icons mr-2 text-orange-400">account_circle</span>
+                        Old Account Cookie
+                    </span>
+                    <button onclick="showCookieHelp()"
+                        class="text-sm font-normal text-slate-400 hover:text-orange-400 flex items-center space-x-1 transition-colors">
+                        <span class="material-icons text-base">help_outline</span>
+                        <span>How to get cookie?</span>
+                    </button>
                 </label>
                 <div class="flex items-center space-x-3">
                     <input type="text" id="oldAccessToken" name="oldAccessToken"
@@ -387,9 +432,17 @@
 
             <!-- New Account Section -->
             <div class="mb-8">
-                <label for="newAccessToken" class="block text-base font-semibold text-slate-200 mb-3 flex items-center">
-                    <span class="material-icons mr-2 text-blue-400">account_circle</span>
-                    New Account Cookie
+                <label for="newAccessToken"
+                    class="block text-base font-semibold text-slate-200 mb-3 flex items-center justify-between">
+                    <span class="flex items-center">
+                        <span class="material-icons mr-2 text-blue-400">account_circle</span>
+                        New Account Cookie
+                    </span>
+                    <button onclick="showCookieHelp()"
+                        class="text-sm font-normal text-slate-400 hover:text-orange-400 flex items-center space-x-1 transition-colors">
+                        <span class="material-icons text-base">help_outline</span>
+                        <span>How to get cookie?</span>
+                    </button>
                 </label>
                 <div class="flex items-center space-x-3">
                     <input type="text" id="newAccessToken" name="newAccessToken"
@@ -450,7 +503,7 @@
                         class="hidden flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
                         <span class="text-sm text-slate-400 flex items-center">
                             <span class="material-icons mr-2 text-sm">info</span>
-                            <span id="selectedSubredditCount">0 </span> subreddits selected
+                            <span id="selectedSubredditCount">0</span><span>&nbsp;subreddits selected</span>
                         </span>
                         <button id="editSubredditSelection"
                             class="btn-secondary px-4 py-2 text-white text-sm font-semibold rounded-lg">
@@ -521,7 +574,7 @@
                         class="hidden flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
                         <span class="text-sm text-slate-400 flex items-center">
                             <span class="material-icons mr-2 text-sm">info</span>
-                            <span id="selectedPostsCount">0 </span> posts selected
+                            <span id="selectedPostsCount">0</span><span>&nbsp;posts selected</span>
                         </span>
                         <button id="editPostsSelection"
                             class="btn-secondary px-4 py-2 text-white text-sm font-semibold rounded-lg">
@@ -607,10 +660,10 @@
                             <span>Built for the Reddit community</span>
                         </span>
                     </p>
-                    <p class="flex items-center justify-center space-x-2">
+                    <!-- <p class="flex items-center justify-center space-x-2">
                         <span class="material-icons text-base text-emerald-400">security</span>
                         <span>Safe, secure, and respects Reddit's API guidelines</span>
-                    </p>
+                    </p> -->
                 </div>
             </div>
         </div>
@@ -740,6 +793,117 @@
                         <span class="material-icons">check_circle</span>
                         <span>Confirm Selection</span>
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cookie Help Modal -->
+    <div id="cookieHelpModal"
+        class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-0 w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 max-w-2xl">
+            <div class="glass-card rounded-2xl shadow-2xl overflow-hidden">
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-orange-500/20 to-rose-500/20 p-6 border-b border-slate-600">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-2xl font-bold text-slate-200 flex items-center">
+                            <span class="material-icons mr-3 text-orange-400">cookie</span>
+                            How to Get Reddit Cookie
+                        </h3>
+                        <button onclick="hideCookieHelp()"
+                            class="text-slate-400 hover:text-slate-200 p-2 rounded-xl hover:bg-slate-700/50 transition-all duration-200">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Content -->
+                <div class="p-6 overflow-y-auto max-h-[70vh]">
+                    <div class="space-y-6">
+                        <!-- Chrome Instructions -->
+                        <div class="bg-slate-700/30 rounded-xl p-4">
+                            <h4 class="text-lg font-semibold text-slate-200 mb-3 flex items-center">
+                                <span class="material-icons mr-2 text-blue-400">web</span>
+                                For Chrome/Edge/Brave/Firefox
+                            </h4>
+                            <ol class="space-y-3 text-sm">
+                                <li class="flex">
+                                    <span class="text-orange-400 font-semibold mr-2">1.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300">Open Reddit and log in to your account</p>
+                                    </div>
+                                </li>
+                                <li class="flex">
+                                    <span class="text-orange-400 font-semibold mr-2">2.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300">Press <kbd
+                                                class="px-2 py-1 bg-slate-600 rounded text-xs">F12</kbd> to open
+                                            Developer Tools</p>
+                                    </div>
+                                </li>
+                                <li class="flex">
+                                    <span class="text-orange-400 font-semibold mr-2">3.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300">Go to <strong>Network</strong> tab</p>
+                                    </div>
+                                </li>
+                                <li class="flex">
+                                    <span class="text-orange-400 font-semibold mr-2">4.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300">Refresh the page with <kbd
+                                                class="px-2 py-1 bg-slate-600 rounded text-xs">F5</kbd></p>
+                                    </div>
+                                </li>
+                                <li class="flex">
+                                    <span class="text-orange-400 font-semibold mr-2">5.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300">Click on any request to reddit.com</p>
+                                    </div>
+                                </li>
+                                <li class="flex">
+                                    <span class="text-orange-400 font-semibold mr-2">6.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300">In the <strong>Headers</strong> tab, find
+                                            <strong>Request Headers</strong> → <strong>Cookie</strong>
+                                        </p>
+                                    </div>
+                                </li>
+                                <li class="flex">
+                                    <span class="text-orange-400 font-semibold mr-2">7.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300"><strong>Triple-click</strong> on the cookie value to
+                                            select all, then copy</p>
+                                        <p class="text-slate-400 text-xs mt-1">💡 Triple-click selects the entire line
+                                            automatically</p>
+                                    </div>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <!-- Important Notes -->
+                        <div class="bg-amber-900/20 border border-amber-500/30 rounded-xl p-4">
+                            <h4 class="text-amber-400 font-semibold mb-2 flex items-center">
+                                <span class="material-icons mr-2">warning</span>
+                                Important Notes
+                            </h4>
+                            <ul class="space-y-2 text-sm text-slate-300">
+                                <li class="flex items-start">
+                                    <span class="material-icons text-amber-400 mr-2 text-base">info</span>
+                                    <span>Cookies expire after some time. If you get errors, try getting a fresh
+                                        cookie.</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="material-icons text-amber-400 mr-2 text-base">security</span>
+                                    <span>Never share your cookies with anyone - they provide full access to your
+                                        account.</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="material-icons text-amber-400 mr-2 text-base">timer</span>
+                                    <span>Reddit cookies typically expire after 2 hours of inactivity.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

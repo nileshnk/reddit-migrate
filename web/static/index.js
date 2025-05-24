@@ -159,6 +159,19 @@ class SelectionModal {
       // Check if response is ok before trying to parse JSON
       if (!response.ok) {
         const errorText = await response.text();
+
+        // Check for authentication/cookie errors
+        if (
+          response.status === 401 ||
+          response.status === 403 ||
+          errorText.toLowerCase().includes("token") ||
+          errorText.toLowerCase().includes("expired") ||
+          errorText.toLowerCase().includes("invalid") ||
+          errorText.toLowerCase().includes("unauthorized")
+        ) {
+          throw new Error("COOKIE_EXPIRED");
+        }
+
         throw new Error(`Server error: ${errorText}`);
       }
 
@@ -175,18 +188,52 @@ class SelectionModal {
         filteredItems = [...ALL_SUBREDDITS];
         this.renderSubreddits();
       } else {
+        // Check if the error message indicates a cookie issue
+        if (
+          data.message &&
+          (data.message.toLowerCase().includes("token") ||
+            data.message.toLowerCase().includes("expired") ||
+            data.message.toLowerCase().includes("invalid"))
+        ) {
+          throw new Error("COOKIE_EXPIRED");
+        }
         throw new Error(data.message || "Failed to load subreddits");
       }
     } catch (error) {
       console.error("Error loading subreddits:", error);
-      this.itemsList.innerHTML = `
-        <div class="p-8 text-center">
-          <span class="material-icons text-5xl text-red-400 mb-4 block">error_outline</span>
-          <p class="text-red-400 font-semibold mb-2">Error Loading Subreddits</p>
-          <p class="text-slate-400 text-sm">${error.message}</p>
-          <p class="text-slate-500 text-xs mt-4">Please verify your cookie is valid and try again.</p>
-        </div>
-      `;
+
+      if (error.message === "COOKIE_EXPIRED") {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-6xl text-amber-400 mb-4 block">cookie</span>
+            <p class="text-amber-400 font-semibold mb-2 text-lg">Cookie Expired or Invalid</p>
+            <p class="text-slate-400 text-sm mb-4">Your Reddit authentication cookie has expired or is invalid.</p>
+            <div class="bg-slate-700/30 rounded-lg p-4 text-left max-w-md mx-auto">
+              <p class="text-slate-300 text-sm font-semibold mb-2">To get a new cookie:</p>
+              <ol class="text-slate-400 text-xs space-y-1 list-decimal list-inside">
+                <li>Open Reddit in a new tab and log in</li>
+                <li>Open browser Developer Tools (F12)</li>
+                <li>Go to Application/Storage → Cookies</li>
+                <li>Find and copy the entire cookie string</li>
+                <li>Paste it in the cookie field above</li>
+              </ol>
+            </div>
+            <button onclick="location.reload()" class="mt-4 btn-primary px-6 py-2 text-white font-semibold rounded-lg flex items-center space-x-2 mx-auto">
+              <span class="material-icons">refresh</span>
+              <span>Refresh Page</span>
+            </button>
+          </div>
+        `;
+      } else {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-5xl text-red-400 mb-4 block">error_outline</span>
+            <p class="text-red-400 font-semibold mb-2">Error Loading Subreddits</p>
+            <p class="text-slate-400 text-sm">${error.message}</p>
+            <p class="text-slate-500 text-xs mt-4">Please verify your cookie is valid and try again.</p>
+          </div>
+        `;
+      }
     }
 
     this.hideLoading();
@@ -207,6 +254,19 @@ class SelectionModal {
       // Check if response is ok before trying to parse JSON
       if (!response.ok) {
         const errorText = await response.text();
+
+        // Check for authentication/cookie errors
+        if (
+          response.status === 401 ||
+          response.status === 403 ||
+          errorText.toLowerCase().includes("token") ||
+          errorText.toLowerCase().includes("expired") ||
+          errorText.toLowerCase().includes("invalid") ||
+          errorText.toLowerCase().includes("unauthorized")
+        ) {
+          throw new Error("COOKIE_EXPIRED");
+        }
+
         throw new Error(`Server error: ${errorText}`);
       }
 
@@ -223,18 +283,52 @@ class SelectionModal {
         filteredItems = [...ALL_POSTS];
         this.renderPosts();
       } else {
+        // Check if the error message indicates a cookie issue
+        if (
+          data.message &&
+          (data.message.toLowerCase().includes("token") ||
+            data.message.toLowerCase().includes("expired") ||
+            data.message.toLowerCase().includes("invalid"))
+        ) {
+          throw new Error("COOKIE_EXPIRED");
+        }
         throw new Error(data.message || "Failed to load posts");
       }
     } catch (error) {
       console.error("Error loading posts:", error);
-      this.itemsList.innerHTML = `
-        <div class="p-8 text-center">
-          <span class="material-icons text-5xl text-red-400 mb-4 block">error_outline</span>
-          <p class="text-red-400 font-semibold mb-2">Error Loading Posts</p>
-          <p class="text-slate-400 text-sm">${error.message}</p>
-          <p class="text-slate-500 text-xs mt-4">Please verify your cookie is valid and try again.</p>
-        </div>
-      `;
+
+      if (error.message === "COOKIE_EXPIRED") {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-6xl text-amber-400 mb-4 block">cookie</span>
+            <p class="text-amber-400 font-semibold mb-2 text-lg">Cookie Expired or Invalid</p>
+            <p class="text-slate-400 text-sm mb-4">Your Reddit authentication cookie has expired or is invalid.</p>
+            <div class="bg-slate-700/30 rounded-lg p-4 text-left max-w-md mx-auto">
+              <p class="text-slate-300 text-sm font-semibold mb-2">To get a new cookie:</p>
+              <ol class="text-slate-400 text-xs space-y-1 list-decimal list-inside">
+                <li>Open Reddit in a new tab and log in</li>
+                <li>Open browser Developer Tools (F12)</li>
+                <li>Go to Application/Storage → Cookies</li>
+                <li>Find and copy the entire cookie string</li>
+                <li>Paste it in the cookie field above</li>
+              </ol>
+            </div>
+            <button onclick="location.reload()" class="mt-4 btn-primary px-6 py-2 text-white font-semibold rounded-lg flex items-center space-x-2 mx-auto">
+              <span class="material-icons">refresh</span>
+              <span>Refresh Page</span>
+            </button>
+          </div>
+        `;
+      } else {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-5xl text-red-400 mb-4 block">error_outline</span>
+            <p class="text-red-400 font-semibold mb-2">Error Loading Posts</p>
+            <p class="text-slate-400 text-sm">${error.message}</p>
+            <p class="text-slate-500 text-xs mt-4">Please verify your cookie is valid and try again.</p>
+          </div>
+        `;
+      }
     }
 
     this.hideLoading();
@@ -1140,6 +1234,27 @@ document.addEventListener("click", function (event) {
     tooltip.classList.add("hidden");
   }
 });
+
+// Cookie Help Modal Functions
+function showCookieHelp() {
+  const modal = document.getElementById("cookieHelpModal");
+  modal.classList.remove("hidden");
+  modal.classList.add("animate-slide-in");
+}
+
+function hideCookieHelp() {
+  const modal = document.getElementById("cookieHelpModal");
+  modal.classList.add("hidden");
+}
+
+// Close modal when clicking outside
+document
+  .getElementById("cookieHelpModal")
+  ?.addEventListener("click", function (event) {
+    if (event.target === this) {
+      hideCookieHelp();
+    }
+  });
 
 // Initialize the page
 document.addEventListener("DOMContentLoaded", () => {
