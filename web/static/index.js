@@ -1,3 +1,6 @@
+// API Base URL Configuration
+const API_BASE_URL = "http://localhost:5005";
+
 let BOOL_OLD_TOKEN_VERIFIED = false;
 let BOOL_NEW_TOKEN_VERIFIED = false;
 let BOOL_MIGRATE_SUBREDDITS = false;
@@ -24,15 +27,19 @@ let filteredItems = [];
 class DarkModeManager {
   constructor() {
     this.darkModeToggle = document.getElementById("darkModeToggle");
+    this.themeIcon = document.getElementById("themeIcon");
     this.init();
   }
 
   init() {
-    // Check for saved preference or default to light mode
-    const isDarkMode = localStorage.getItem("darkMode") === "true";
+    // Since we're using a primarily dark theme, let's adjust this logic
+    // The toggle will switch between the dark theme and a lighter version
+    const isLightMode = localStorage.getItem("lightMode") === "true";
 
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
+    if (isLightMode) {
+      this.enableLightMode();
+    } else {
+      this.enableDarkMode();
     }
 
     // Add event listener
@@ -42,15 +49,29 @@ class DarkModeManager {
   }
 
   toggle() {
-    const isDarkMode = document.documentElement.classList.contains("dark");
+    const isCurrentlyLight = document.body.classList.contains("light-mode");
 
-    if (isDarkMode) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("darkMode", "false");
+    if (isCurrentlyLight) {
+      this.enableDarkMode();
+      localStorage.setItem("lightMode", "false");
     } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("darkMode", "true");
+      this.enableLightMode();
+      localStorage.setItem("lightMode", "true");
     }
+  }
+
+  enableDarkMode() {
+    document.body.classList.remove("light-mode");
+    document.body.className =
+      "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100 min-h-screen transition-all duration-300";
+    this.themeIcon.textContent = "light_mode";
+  }
+
+  enableLightMode() {
+    document.body.classList.add("light-mode");
+    document.body.className =
+      "bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 text-slate-900 min-h-screen transition-all duration-300 light-mode";
+    this.themeIcon.textContent = "dark_mode";
   }
 }
 
@@ -127,13 +148,25 @@ class SelectionModal {
     this.showLoading();
 
     try {
-      const response = await fetch("/api/subreddits", {
+      const response = await fetch(`${API_BASE_URL}/api/subreddits`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ cookie: getFullCookieString(token) }),
       });
+
+      // Check if response is ok before trying to parse JSON
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server error: ${errorText}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        throw new Error(`Server returned non-JSON response: ${text}`);
+      }
 
       const data = await response.json();
 
@@ -142,11 +175,18 @@ class SelectionModal {
         filteredItems = [...ALL_SUBREDDITS];
         this.renderSubreddits();
       } else {
-        throw new Error(data.message);
+        throw new Error(data.message || "Failed to load subreddits");
       }
     } catch (error) {
       console.error("Error loading subreddits:", error);
-      this.itemsList.innerHTML = `<div class="p-4 text-red-500">Error loading subreddits: ${error.message}</div>`;
+      this.itemsList.innerHTML = `
+        <div class="p-8 text-center">
+          <span class="material-icons text-5xl text-red-400 mb-4 block">error_outline</span>
+          <p class="text-red-400 font-semibold mb-2">Error Loading Subreddits</p>
+          <p class="text-slate-400 text-sm">${error.message}</p>
+          <p class="text-slate-500 text-xs mt-4">Please verify your cookie is valid and try again.</p>
+        </div>
+      `;
     }
 
     this.hideLoading();
@@ -156,13 +196,25 @@ class SelectionModal {
     this.showLoading();
 
     try {
-      const response = await fetch("/api/saved-posts", {
+      const response = await fetch(`${API_BASE_URL}/api/saved-posts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ cookie: getFullCookieString(token) }),
       });
+
+      // Check if response is ok before trying to parse JSON
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server error: ${errorText}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        throw new Error(`Server returned non-JSON response: ${text}`);
+      }
 
       const data = await response.json();
 
@@ -171,11 +223,18 @@ class SelectionModal {
         filteredItems = [...ALL_POSTS];
         this.renderPosts();
       } else {
-        throw new Error(data.message);
+        throw new Error(data.message || "Failed to load posts");
       }
     } catch (error) {
       console.error("Error loading posts:", error);
-      this.itemsList.innerHTML = `<div class="p-4 text-red-500">Error loading posts: ${error.message}</div>`;
+      this.itemsList.innerHTML = `
+        <div class="p-8 text-center">
+          <span class="material-icons text-5xl text-red-400 mb-4 block">error_outline</span>
+          <p class="text-red-400 font-semibold mb-2">Error Loading Posts</p>
+          <p class="text-slate-400 text-sm">${error.message}</p>
+          <p class="text-slate-500 text-xs mt-4">Please verify your cookie is valid and try again.</p>
+        </div>
+      `;
     }
 
     this.hideLoading();
@@ -623,8 +682,9 @@ function formatNumber(num) {
 }
 
 function getFullCookieString(token) {
-  // This is a simplified version - in practice you'd get the full cookie from the input
-  return document.getElementById("oldAccessToken").value;
+  // The token parameter is not used correctly - we should return the actual cookie value
+  // For subreddits/posts, we're loading from the old account
+  return OLD_ACCESS_TOKEN;
 }
 
 function updateSelectionSummary(type, selection, count = 0) {
@@ -793,7 +853,7 @@ optionSubmit.addEventListener("click", async (e) => {
   // Determine if we're using custom selection or traditional all/none
   if (SUBREDDIT_SELECTION === "custom" || POSTS_SELECTION === "custom") {
     // Use custom migration endpoint
-    endpoint = "/api/migrate-custom";
+    endpoint = `${API_BASE_URL}/api/migrate-custom`;
     requestBody = {
       old_account_cookie: OLD_ACCESS_TOKEN,
       new_account_cookie: NEW_ACCESS_TOKEN,
@@ -805,7 +865,7 @@ optionSubmit.addEventListener("click", async (e) => {
     };
   } else {
     // Use traditional migration endpoint
-    endpoint = "/api/migrate";
+    endpoint = `${API_BASE_URL}/api/migrate`;
     requestBody = {
       old_account_cookie: OLD_ACCESS_TOKEN,
       new_account_cookie: NEW_ACCESS_TOKEN,
@@ -870,15 +930,13 @@ function displayMigrationResponse(response) {
   // Create subreddit status if subreddits were migrated
   if (migratingSubreddits && response.data.subscribeSubreddit) {
     const subredditStatusElement = document.createElement("li");
-    subredditStatusElement.className = "flex items-center space-x-3";
+    subredditStatusElement.className =
+      "flex items-center space-x-3 p-3 bg-emerald-900/20 rounded-lg border border-emerald-500/20";
     subredditStatusElement.innerHTML = `
-      <svg class="flex-shrink-0 w-3.5 h-3.5 text-green-500 dark:text-green-400" aria-hidden="true"
-          xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
-          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M1 5.917 5.724 10.5 15 1.5" />
-      </svg>
-      <span class="text-sm font-medium text-gray-500 dark:text-gray-400">
-        Total subreddits successfully subscribed to new account: ${response.data.subscribeSubreddit.SuccessCount}
+      <span class="material-icons text-emerald-400">check_circle</span>
+      <span class="text-sm font-medium text-slate-300">
+        Total subreddits successfully subscribed to new account: 
+        <span class="text-emerald-400 font-bold">${response.data.subscribeSubreddit.SuccessCount}</span>
       </span>
     `;
     migrateResponseData.appendChild(subredditStatusElement);
@@ -887,15 +945,13 @@ function displayMigrationResponse(response) {
   // Create post status if posts were migrated
   if (migratingPosts && response.data.savePost) {
     const postStatusElement = document.createElement("li");
-    postStatusElement.className = "flex items-center space-x-3";
+    postStatusElement.className =
+      "flex items-center space-x-3 p-3 bg-emerald-900/20 rounded-lg border border-emerald-500/20";
     postStatusElement.innerHTML = `
-      <svg class="flex-shrink-0 w-3.5 h-3.5 text-green-500 dark:text-green-400" aria-hidden="true"
-          xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
-          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M1 5.917 5.724 10.5 15 1.5" />
-      </svg>
-      <span class="text-sm font-medium text-gray-500 dark:text-gray-400">
-        Total posts successfully saved in new account: ${response.data.savePost.SuccessCount}
+      <span class="material-icons text-emerald-400">check_circle</span>
+      <span class="text-sm font-medium text-slate-300">
+        Total posts successfully saved in new account: 
+        <span class="text-emerald-400 font-bold">${response.data.savePost.SuccessCount}</span>
       </span>
     `;
     migrateResponseData.appendChild(postStatusElement);
@@ -904,14 +960,11 @@ function displayMigrationResponse(response) {
   // If nothing was migrated, show a message
   if (!migratingSubreddits && !migratingPosts) {
     const noMigrationElement = document.createElement("li");
-    noMigrationElement.className = "flex items-center space-x-3";
+    noMigrationElement.className =
+      "flex items-center space-x-3 p-3 bg-amber-900/20 rounded-lg border border-amber-500/20";
     noMigrationElement.innerHTML = `
-      <svg class="flex-shrink-0 w-3.5 h-3.5 text-yellow-500 dark:text-yellow-400" aria-hidden="true"
-          xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
-      </svg>
-      <span class="text-sm font-medium text-gray-500 dark:text-gray-400">
+      <span class="material-icons text-amber-400">info</span>
+      <span class="text-sm font-medium text-slate-300">
         No items were selected for migration
       </span>
     `;
@@ -957,23 +1010,28 @@ oldTokenVerifyBtn.addEventListener("click", async (e) => {
     OLD_ACCESS_TOKEN = oldAccAccessTokenValue;
 
     oldAccAccessToken.disabled = true;
-    oldAccAccessToken.style.borderColor = "#00cc00";
-    oldTokenVerifyBtn.style.backgroundColor = "#00cc00";
+    oldAccAccessToken.style.borderColor = "#10b981";
+
+    // Update button to verified state
+    oldTokenVerifyBtn.className =
+      "btn-verified px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2";
     oldTokenVerifyBtn.disabled = true;
     oldTokenVerifyBtn.style.cursor = "default";
-    oldTokenVerifyBtn.innerHTML = "Verified";
+    oldTokenVerifyBtn.innerHTML = `
+      <span class="material-icons text-lg">verified</span>
+      <span>Verified</span>
+    `;
 
     document.getElementById("oldTokenVerifySuccessMessage").style.display =
-      "block";
+      "flex";
     document.getElementById("oldTokenVerifyFailMessage").style.display = "none";
     document.getElementById("oldAccountUserId").innerHTML =
       verifyOldToken.data.username;
 
     updateSubmitButtonState();
   } else {
-    oldAccAccessToken.style.borderColor = "#ff0000";
-    document.getElementById("oldTokenVerifyFailMessage").style.display =
-      "block";
+    oldAccAccessToken.style.borderColor = "#ef4444";
+    document.getElementById("oldTokenVerifyFailMessage").style.display = "flex";
     document.getElementById("oldTokenVerifySuccessMessage").style.display =
       "none";
   }
@@ -997,23 +1055,28 @@ newTokenVerifyBtn.addEventListener("click", async (e) => {
     NEW_ACCESS_TOKEN = newAccAccessTokenValue;
 
     newAccAccessToken.disabled = true;
-    newAccAccessToken.style.borderColor = "#00cc00";
-    newTokenVerifyBtn.style.backgroundColor = "#00cc00";
+    newAccAccessToken.style.borderColor = "#10b981";
+
+    // Update button to verified state
+    newTokenVerifyBtn.className =
+      "btn-verified px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2";
     newTokenVerifyBtn.disabled = true;
     newTokenVerifyBtn.style.cursor = "default";
-    newTokenVerifyBtn.innerHTML = "Verified";
+    newTokenVerifyBtn.innerHTML = `
+      <span class="material-icons text-lg">verified</span>
+      <span>Verified</span>
+    `;
 
     document.getElementById("newTokenVerifySuccessMessage").style.display =
-      "block";
+      "flex";
     document.getElementById("newTokenVerifyFailMessage").style.display = "none";
     document.getElementById("newAccountUserId").innerHTML =
       verifyNewToken.data.username;
 
     updateSubmitButtonState();
   } else {
-    newAccAccessToken.style.borderColor = "#ff0000";
-    document.getElementById("newTokenVerifyFailMessage").style.display =
-      "block";
+    newAccAccessToken.style.borderColor = "#ef4444";
+    document.getElementById("newTokenVerifyFailMessage").style.display = "flex";
     document.getElementById("newTokenVerifySuccessMessage").style.display =
       "none";
   }
@@ -1029,7 +1092,7 @@ async function verifyCookie(cookie) {
     };
   }
 
-  const response = await fetch("/api/verify-cookie", {
+  const response = await fetch(`${API_BASE_URL}/api/verify-cookie`, {
     body: JSON.stringify({ cookie: cookie }),
     method: "POST",
     headers: {
