@@ -63,14 +63,14 @@ class DarkModeManager {
   enableDarkMode() {
     document.body.classList.remove("light-mode");
     document.body.className =
-      "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100 min-h-screen transition-all duration-300";
+      "bg-gradient-to-br from-zinc-900 via-neutral-900 to-black text-white min-h-screen transition-all duration-300";
     this.themeIcon.textContent = "light_mode";
   }
 
   enableLightMode() {
     document.body.classList.add("light-mode");
     document.body.className =
-      "bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 text-slate-900 min-h-screen transition-all duration-300 light-mode";
+      "bg-gradient-to-br from-white via-gray-50 to-gray-100 text-gray-900 min-h-screen transition-all duration-300 light-mode";
     this.themeIcon.textContent = "dark_mode";
   }
 }
