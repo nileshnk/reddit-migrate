@@ -95,9 +95,15 @@ class RedditAPI {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
     this.delay = 1000; // 1 second delay between requests
+    this.rateLimitHit = false; // Track if we've hit rate limit
   }
 
   async makeRequest(endpoint, method = "GET", data = null) {
+    // Check if we've hit rate limit
+    if (this.rateLimitHit) {
+      throw new Error("Rate limit hit - stopping all requests");
+    }
+
     return new Promise((resolve, reject) => {
       const url = new URL(endpoint, this.baseURL);
       const options = {
@@ -111,7 +117,20 @@ class RedditAPI {
         res.on("data", (chunk) => (body += chunk));
         res.on("end", () => {
           try {
-            if (res.statusCode >= 200 && res.statusCode < 300) {
+            // Handle rate limiting
+            if (res.statusCode === 429) {
+              this.rateLimitHit = true;
+              console.error(
+                "\n⚠️  Rate limit hit (429) - Reddit is limiting requests"
+              );
+              console.error(
+                "🕐 Please wait at least 10-15 minutes before trying again"
+              );
+              console.error(
+                "💡 Consider reducing the number of items or spreading requests over time"
+              );
+              reject(new Error("Rate limit hit - try again later"));
+            } else if (res.statusCode >= 200 && res.statusCode < 300) {
               resolve(JSON.parse(body));
             } else {
               reject(new Error(`HTTP ${res.statusCode}: ${body}`));
@@ -357,10 +376,27 @@ class RedditAPI {
             const result = await this.savePost(postId);
             return { postId, success: result };
           } catch (e) {
+            // If rate limit hit, stop processing
+            if (this.rateLimitHit || e.message.includes("Rate limit hit")) {
+              return { postId, success: false, rateLimited: true };
+            }
             return { postId, success: false };
           }
         })
       );
+
+      // Check if any request hit rate limit
+      const rateLimited = chunkResults.some((result) => result.rateLimited);
+      if (rateLimited) {
+        // Count remaining posts as failed due to rate limit
+        const remaining = postIds.length - i;
+        failedCount += remaining;
+        console.log(
+          `\n⚠️  Stopped processing due to rate limit. ${remaining} posts not processed.`
+        );
+        break;
+      }
+
       chunkResults.forEach(({ postId, success }) => {
         if (success) {
           successCount++;
@@ -406,6 +442,16 @@ class RedditAPI {
         totalSuccess += chunk.length;
         console.log(`✅ Successfully followed: ${chunk.join(", ")}`);
       } catch (error) {
+        // If rate limit hit, stop processing
+        if (this.rateLimitHit || error.message.includes("Rate limit hit")) {
+          const remaining = subredditNames.length - i;
+          totalFailed += remaining;
+          console.log(
+            `\n⚠️  Stopped processing due to rate limit. ${remaining} subreddits not processed.`
+          );
+          break;
+        }
+
         console.error(
           `❌ Failed to follow chunk: ${chunk.join(", ")} - ${error.message}`
         );
@@ -543,11 +589,29 @@ class TestDataGenerator {
           : post.title;
       process.stdout.write(`Saving "${shortTitle}"... `);
 
-      const success = await this.reddit.savePost(post.id);
-      if (success) {
-        this.stats.postsSaved++;
-        console.log("✅");
-      } else {
+      try {
+        const success = await this.reddit.savePost(post.id);
+        if (success) {
+          this.stats.postsSaved++;
+          console.log("✅");
+        } else {
+          this.stats.errors++;
+          console.log("❌");
+        }
+      } catch (error) {
+        // If rate limit hit, stop processing
+        if (
+          this.reddit.rateLimitHit ||
+          error.message.includes("Rate limit hit")
+        ) {
+          console.log("⚠️ Rate limit hit");
+          const remaining = selected.length - i;
+          this.stats.errors += remaining;
+          console.log(
+            `\n⚠️  Stopped processing due to rate limit. ${remaining} posts not saved.`
+          );
+          break;
+        }
         this.stats.errors++;
         console.log("❌");
       }
@@ -578,11 +642,29 @@ class TestDataGenerator {
       const subreddit = subreddits[i];
       process.stdout.write(`Unfollowing r/${subreddit}... `);
 
-      const success = await this.reddit.unfollowSubreddit(subreddit);
-      if (success) {
-        this.stats.subredditsUnfollowed++;
-        console.log("✅");
-      } else {
+      try {
+        const success = await this.reddit.unfollowSubreddit(subreddit);
+        if (success) {
+          this.stats.subredditsUnfollowed++;
+          console.log("✅");
+        } else {
+          this.stats.errors++;
+          console.log("❌");
+        }
+      } catch (error) {
+        // If rate limit hit, stop processing
+        if (
+          this.reddit.rateLimitHit ||
+          error.message.includes("Rate limit hit")
+        ) {
+          console.log("⚠️ Rate limit hit");
+          const remaining = subreddits.length - i;
+          this.stats.errors += remaining;
+          console.log(
+            `\n⚠️  Stopped processing due to rate limit. ${remaining} subreddits not unfollowed.`
+          );
+          break;
+        }
         this.stats.errors++;
         console.log("❌");
       }
@@ -623,11 +705,29 @@ class TestDataGenerator {
           : post.title;
       process.stdout.write(`Unsaving "${shortTitle}"... `);
 
-      const success = await this.reddit.unsavePost(post.id);
-      if (success) {
-        this.stats.postsUnsaved++;
-        console.log("✅");
-      } else {
+      try {
+        const success = await this.reddit.unsavePost(post.id);
+        if (success) {
+          this.stats.postsUnsaved++;
+          console.log("✅");
+        } else {
+          this.stats.errors++;
+          console.log("❌");
+        }
+      } catch (error) {
+        // If rate limit hit, stop processing
+        if (
+          this.reddit.rateLimitHit ||
+          error.message.includes("Rate limit hit")
+        ) {
+          console.log("⚠️ Rate limit hit");
+          const remaining = posts.length - i;
+          this.stats.errors += remaining;
+          console.log(
+            `\n⚠️  Stopped processing due to rate limit. ${remaining} posts not unsaved.`
+          );
+          break;
+        }
         this.stats.errors++;
         console.log("❌");
       }
