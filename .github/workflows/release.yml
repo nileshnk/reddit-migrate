@@ -68,7 +68,6 @@ jobs:
         run: |
           find builds -type f -name '*-linux-*' -exec chmod +x {} \;
           find builds -type f -name '*-darwin-*' -exec chmod +x {} \;
-          find builds -type f -name '*-freebsd-*' -exec chmod +x {} \;
           echo "Executable permissions set for existing builds."
 
       - name: Create Release
@@ -141,24 +140,4 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./builds/${{ steps.project_name.outputs.name }}-${{ steps.extract_info.outputs.version }}-macos-arm64.zip
           asset_name: ${{ steps.project_name.outputs.name }}-${{ steps.extract_info.outputs.version }}-macos-arm64.zip
-          asset_content_type: application/zip
-
-      - name: Upload FreeBSD amd64 Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./builds/${{ steps.project_name.outputs.name }}-${{ steps.extract_info.outputs.version }}-freebsd-amd64.zip
-          asset_name: ${{ steps.project_name.outputs.name }}-${{ steps.extract_info.outputs.version }}-freebsd-amd64.zip
-          asset_content_type: application/zip
-
-      - name: Upload FreeBSD arm64 Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./builds/${{ steps.project_name.outputs.name }}-${{ steps.extract_info.outputs.version }}-freebsd-arm64.zip
-          asset_name: ${{ steps.project_name.outputs.name }}-${{ steps.extract_info.outputs.version }}-freebsd-arm64.zip
           asset_content_type: application/zip

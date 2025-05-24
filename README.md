@@ -25,7 +25,7 @@ Easily transfer your Reddit account data to a new account - including saved post
 2. **Extract** the downloaded ZIP file
 3. **Run** the application:
    - **Windows**: Double-click `reddit-migrate.exe`
-   - **Mac**: Double-click `reddit-migrate.app`
+   - **Mac**: Run `./reddit-migrate` in terminal
    - **Linux**: Run `./reddit-migrate` in terminal
 
 The app will open in your browser at `http://localhost:5005`

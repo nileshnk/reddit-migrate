@@ -1,5 +1,5 @@
 // API Base URL Configuration
-const API_BASE_URL = "http://localhost:5005";
+const API_BASE_URL = "";
 
 let BOOL_OLD_TOKEN_VERIFIED = false;
 let BOOL_NEW_TOKEN_VERIFIED = false;
@@ -184,7 +184,7 @@ class SelectionModal {
       const data = await response.json();
 
       if (data.success) {
-        ALL_SUBREDDITS = data.subreddits;
+        ALL_SUBREDDITS = data.subreddits || []; // Ensure it's always an array
         filteredItems = [...ALL_SUBREDDITS];
         this.renderSubreddits();
       } else {
@@ -279,7 +279,7 @@ class SelectionModal {
       const data = await response.json();
 
       if (data.success) {
-        ALL_POSTS = data.posts;
+        ALL_POSTS = data.posts || []; // Ensure it's always an array
         filteredItems = [...ALL_POSTS];
         this.renderPosts();
       } else {
@@ -337,17 +337,53 @@ class SelectionModal {
   renderSubreddits() {
     this.totalCount.textContent = filteredItems.length;
 
-    const html = filteredItems
-      .map((subreddit) => {
-        const isSelected = SELECTED_SUBREDDITS.includes(subreddit.display_name);
-        const iconUrl = subreddit.icon_img;
-        const description =
-          subreddit.public_description || "No description available";
-        const subscriberCount = subreddit.subscribers
-          ? formatNumber(subreddit.subscribers)
-          : "Unknown";
+    // Check if no subreddits found
+    if (filteredItems.length === 0) {
+      const searchTerm = this.searchInput?.value?.trim() || "";
 
-        return `
+      if (searchTerm) {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-5xl text-red-400 mb-4 block">search</span>
+            <p class="text-red-400 font-semibold mb-2">No Search Results</p>
+            <p class="text-slate-400 text-sm mb-4">No subreddits found for "<span class="font-semibold">${searchTerm}</span>".</p>
+            <button onclick="selectionModal.clearSearch()" class="btn-primary px-6 py-2 text-white font-semibold rounded-lg flex items-center space-x-2 mx-auto">
+              <span class="material-icons">clear</span>
+              <span>Clear Search</span>
+            </button>
+          </div>
+        `;
+      } else {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-5xl text-red-400 mb-4 block">groups</span>
+            <p class="text-red-400 font-semibold mb-2">No Subreddits Found</p>
+            <p class="text-slate-400 text-sm mb-4">You don't seem to be subscribed to any subreddits.</p>
+            <div class="bg-slate-700/30 rounded-lg p-4 text-left max-w-md mx-auto">
+              <p class="text-slate-300 text-sm font-semibold mb-2">To subscribe to a subreddit:</p>
+              <ol class="text-slate-400 text-xs space-y-1 list-decimal list-inside">
+                <li>Open Reddit in a new tab</li>
+                <li>Find the subreddit you're interested in</li>
+                <li>Click the "Join" button</li>
+              </ol>
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      const html = filteredItems
+        .map((subreddit) => {
+          const isSelected = SELECTED_SUBREDDITS.includes(
+            subreddit.display_name
+          );
+          const iconUrl = subreddit.icon_img;
+          const description =
+            subreddit.public_description || "No description available";
+          const subscriberCount = subreddit.subscribers
+            ? formatNumber(subreddit.subscribers)
+            : "Unknown";
+
+          return `
                 <div class="group p-4 border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer item-row transition-colors duration-150" data-id="${
                   subreddit.display_name
                 }">
@@ -409,37 +445,74 @@ class SelectionModal {
                     </div>
                 </div>
             `;
-      })
-      .join("");
+        })
+        .join("");
 
-    this.itemsList.innerHTML = html;
-    this.updateSelectedCount();
-    this.attachCheckboxListeners();
-    this.attachRowClickListeners();
-    this.updateCheckboxVisuals();
+      this.itemsList.innerHTML = html;
+      this.updateSelectedCount();
+      this.attachCheckboxListeners();
+      this.attachRowClickListeners();
+      this.updateCheckboxVisuals();
+    }
   }
 
   renderPosts() {
     this.totalCount.textContent = filteredItems.length;
 
-    const html = filteredItems
-      .map((post) => {
-        const isSelected = SELECTED_POSTS.includes(post.full_name);
-        const imageUrl = this.getPostImageUrl(post);
-        const mediaTypeIcon = this.getMediaTypeIcon(post.image_data.media_type);
-        const timeAgo = this.formatTimeAgo(post.created_utc);
+    // Check if no saved posts found
+    if (filteredItems.length === 0) {
+      const searchTerm = this.searchInput?.value?.trim() || "";
 
-        // Fix URL generation - check if permalink already contains full URL
-        let postUrl;
-        if (post.permalink && post.permalink.startsWith("http")) {
-          postUrl = post.permalink;
-        } else if (post.permalink) {
-          postUrl = `https://reddit.com${post.permalink}`;
-        } else {
-          postUrl = `https://reddit.com/r/${post.subreddit}/comments/${post.id}/`;
-        }
+      if (searchTerm) {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-5xl text-red-400 mb-4 block">search</span>
+            <p class="text-red-400 font-semibold mb-2">No Search Results</p>
+            <p class="text-slate-400 text-sm mb-4">No saved posts found for "<span class="font-semibold">${searchTerm}</span>".</p>
+            <button onclick="selectionModal.clearSearch()" class="btn-primary px-6 py-2 text-white font-semibold rounded-lg flex items-center space-x-2 mx-auto">
+              <span class="material-icons">clear</span>
+              <span>Clear Search</span>
+            </button>
+          </div>
+        `;
+      } else {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-5xl text-red-400 mb-4 block">bookmark</span>
+            <p class="text-red-400 font-semibold mb-2">No Saved Posts Found</p>
+            <p class="text-slate-400 text-sm mb-4">You don't seem to have any saved posts.</p>
+            <div class="bg-slate-700/30 rounded-lg p-4 text-left max-w-md mx-auto">
+              <p class="text-slate-300 text-sm font-semibold mb-2">To save a post:</p>
+              <ol class="text-slate-400 text-xs space-y-1 list-decimal list-inside">
+                <li>Open Reddit in a new tab</li>
+                <li>Find the post you're interested in</li>
+                <li>Click the "Save" button</li>
+              </ol>
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      const html = filteredItems
+        .map((post) => {
+          const isSelected = SELECTED_POSTS.includes(post.full_name);
+          const imageUrl = this.getPostImageUrl(post);
+          const mediaTypeIcon = this.getMediaTypeIcon(
+            post.image_data.media_type
+          );
+          const timeAgo = this.formatTimeAgo(post.created_utc);
 
-        return `
+          // Fix URL generation - check if permalink already contains full URL
+          let postUrl;
+          if (post.permalink && post.permalink.startsWith("http")) {
+            postUrl = post.permalink;
+          } else if (post.permalink) {
+            postUrl = `https://reddit.com${post.permalink}`;
+          } else {
+            postUrl = `https://reddit.com/r/${post.subreddit}/comments/${post.id}/`;
+          }
+
+          return `
                 <div class="group p-4 border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer item-row transition-colors duration-150" data-id="${
                   post.full_name
                 }">
@@ -550,14 +623,15 @@ class SelectionModal {
                     </div>
                 </div>
             `;
-      })
-      .join("");
+        })
+        .join("");
 
-    this.itemsList.innerHTML = html;
-    this.updateSelectedCount();
-    this.attachCheckboxListeners();
-    this.attachRowClickListeners();
-    this.updateCheckboxVisuals();
+      this.itemsList.innerHTML = html;
+      this.updateSelectedCount();
+      this.attachCheckboxListeners();
+      this.attachRowClickListeners();
+      this.updateCheckboxVisuals();
+    }
   }
 
   getPostImageUrl(post) {
@@ -762,6 +836,11 @@ class SelectionModal {
         row.classList.add("hover:bg-gray-50", "dark:hover:bg-gray-700");
       }
     });
+  }
+
+  clearSearch() {
+    this.searchInput.value = "";
+    this.filterItems("");
   }
 }
 
