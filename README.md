@@ -4,14 +4,14 @@ Easily transfer your Reddit account data to a new account - including saved post
 
 ![Home](./docs/assets/app_home.png)
 
-## Why Reddit-Migrate?
+## Features
 
-- **Start Fresh**: Moving to a new Reddit account? Take your curated content with you
 - **Simple Interface**: User-friendly web interface - no command line required
 - **Bulk Transfer**: Migrate hundreds of saved posts and subreddit subscriptions in minutes
-- **Safe & Private**: Runs locally on your computer - your data never leaves your machine
+- **Privacy First**: Runs locally on your computer - your data never leaves your machine
+- **Cross-Platform**: Available for Windows, Mac, and Linux
 
-## What Can It Migrate?
+## What Gets Migrated
 
 ✅ **Subreddit Subscriptions** - Transfer all your joined communities  
 ✅ **Saved Posts** - Move your saved posts collection  
@@ -32,7 +32,7 @@ The app will open in your browser at `http://localhost:5005`
 
 > **Security Note**: This tool requires Reddit cookies which contain sensitive data. Never share these cookies with anyone. The tool runs entirely on your local machine.
 
-## How to Use
+## Usage Guide
 
 ### Step 1: Get Your Reddit Cookies
 
@@ -57,9 +57,9 @@ You'll need cookies from both your old and new Reddit accounts:
 
 > **Note**: Large migrations (50+ saved posts) may take several minutes due to Reddit's rate limiting. Keep the browser tab open until completion.
 
-## Building from Source
+## Development
 
-If you prefer to build the application yourself:
+### Building from Source
 
 ```bash
 # Clone the repository
@@ -77,19 +77,30 @@ go build -o reddit-migrate
 ./reddit-migrate
 ```
 
-### Docker Option
+### Docker
 
 ```bash
 # Build the Docker image
 docker build -t reddit-migrate-img .
 
 # Run the container
-docker run -d -p 5005:5005 --name reddit-migrate reddit-migrate-img
+docker run -d -p 127.0.0.1:5005:5005 --name reddit-migrate reddit-migrate-img
 ```
 
 ## Demo
 
 Watch it in action: [YouTube Demo](https://youtu.be/cpwPjjkW2O4)
+
+## How It Works
+
+Reddit-Migrate uses Reddit's official APIs with cookie authentication to transfer data between accounts:
+
+- **Cookie Verification**: Validates cookies by checking for access tokens and testing API responses
+- **Subreddit Migration**: Fetches all subscribed subreddits and subscribes to them in batches of 100
+- **Saved Posts**: Retrieves saved posts and saves them individually (subject to rate limits)
+- **User Follows**: Transfers followed user accounts to the new account
+
+The tool runs entirely locally on your machine - no data is sent to external servers.
 
 ## Important Notes
 
@@ -97,17 +108,6 @@ Watch it in action: [YouTube Demo](https://youtu.be/cpwPjjkW2O4)
 - Intended for personal use only - use your own Reddit API credentials
 - Please follow Reddit's [API Terms](https://www.reddit.com/dev/api/) and [Content Policy](https://redditinc.com/policies)
 
-## How It Works
+## Support
 
-Reddit-Migrate uses Reddit's official APIs with cookie authentication to transfer data between accounts:
-
-**Cookie Verification**: Validates cookies by checking for access tokens and testing API responses  
-**Subreddit Migration**: Fetches all subscribed subreddits and subscribes to them in batches of 100  
-**Saved Posts**: Retrieves saved posts and saves them individually (subject to rate limits)  
-**User Follows**: Transfers followed user accounts to the new account
-
-The tool runs entirely locally on your machine - no data is sent to external servers.
-
-## Contact
-
-For support or questions, contact [mail@inilesh.com](mailto:mail@inilesh.com)
+For questions or issues, contact [mail@inilesh.com](mailto:mail@inilesh.com) or open an issue on GitHub.
