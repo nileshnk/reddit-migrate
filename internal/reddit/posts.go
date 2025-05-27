@@ -25,14 +25,6 @@ func init() {
 	config.LoadConfig() // This should be called from main, and config values accessed here.
 }
 
-// Result holds the outcome of processing a single post.
-// It includes the PostID, whether the operation was successful, and any error encountered.
-// type Result struct {
-// 	PostID  string
-// 	Success bool
-// 	Error   error
-// }
-
 // ManageSavedPosts coordinates the saving or unsaving of posts concurrently using worker goroutines.
 // It employs a rate limiter and a mechanism to pause/resume workers if API rate limits are hit.
 // token: The OAuth token for API authentication.
@@ -373,16 +365,6 @@ func extractImageData(postData types.DetailedPostData) types.PostImageData {
 
 	return imageData
 }
-
-// unescapeHTMLEntities unescapes HTML entities in URLs (Reddit often HTML-escapes URLs)
-// func unescapeHTMLEntities(url string) string {
-// 	url = strings.ReplaceAll(url, "&amp;", "&")
-// 	url = strings.ReplaceAll(url, "&lt;", "<")
-// 	url = strings.ReplaceAll(url, "&gt;", ">")
-// 	url = strings.ReplaceAll(url, "&quot;", "\"")
-// 	url = strings.ReplaceAll(url, "&#39;", "'")
-// 	return url
-// }
 
 // generateThumbnailFromURL attempts to generate thumbnail URLs for known image hosting services
 func generateThumbnailFromURL(url, domain string) string {

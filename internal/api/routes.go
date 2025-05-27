@@ -18,26 +18,29 @@ import (
 // It defines endpoints for testing, cookie verification, and data migration.
 func Router(router chi.Router) {
 
-	// Test endpoint to check if the API is responsive.
-	router.Get("/test", func(w http.ResponseWriter, r *http.Request) {
-		config.DebugLogger.Printf("Received request for /api/test from %s", r.RemoteAddr)
-		type testData struct {
-			Hello string `json:"hello"`
+	// Health check endpoint to verify API is running
+	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		config.DebugLogger.Printf("Received health check request from %s", r.RemoteAddr)
+		response := struct {
+			Status  string `json:"status"`
+			Message string `json:"message"`
+		}{
+			Status:  "healthy",
+			Message: "API is running",
 		}
-		response := testData{Hello: "world!"}
 
 		w.Header().Set("Content-Type", "application/json")
 		jsonResponse, err := json.Marshal(response)
 		if err != nil {
-			config.ErrorLogger.Printf("Error marshalling test response: %v", err)
+			config.ErrorLogger.Printf("Error marshalling health check response: %v", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
 		_, err = w.Write(jsonResponse)
 		if err != nil {
-			config.ErrorLogger.Printf("Error writing test response: %v", err)
+			config.ErrorLogger.Printf("Error writing health check response: %v", err)
 		}
-		config.DebugLogger.Printf("Successfully responded to /api/test request from %s", r.RemoteAddr)
+		config.DebugLogger.Printf("Successfully responded to health check from %s", r.RemoteAddr)
 	})
 
 	// Endpoint to verify the validity of a Reddit account cookie.
@@ -47,8 +50,6 @@ func Router(router chi.Router) {
 	// Endpoint to handle the data migration process between Reddit accounts.
 	router.Post("/migrate", migration.MigrationHandler) // TODO: MigrationHandler needs to be defined or imported
 	config.InfoLogger.Println("Registered /api/migrate POST endpoint")
-
-	// New endpoints for enhanced selection feature
 
 	// Endpoint to fetch detailed subreddit information for selection UI
 	router.Post("/subreddits", func(w http.ResponseWriter, r *http.Request) {
@@ -189,8 +190,6 @@ func Router(router chi.Router) {
 		config.InfoLogger.Printf("Custom migration request for %s: %d subreddits, %d posts",
 			r.RemoteAddr, len(requestBody.SelectedSubreddits), len(requestBody.SelectedPosts))
 
-		// Handle custom migration logic here
-		// This would be implemented in the migration package
 		finalResponse := migration.HandleCustomMigration(requestBody)
 
 		w.Header().Set("Content-Type", "application/json")
@@ -277,7 +276,7 @@ func Router(router chi.Router) {
 
 // parseTokenFromCookie extracts the 'token_v2' value from a full cookie string.
 func parseTokenFromCookie(cookie string) string {
-	// This is a simplified version - you might want to use the same function from migration package
+
 	parts := strings.Split(cookie, ";")
 	for _, part := range parts {
 		trimmedPart := strings.TrimSpace(part)
@@ -293,8 +292,7 @@ func parseTokenFromCookie(cookie string) string {
 
 // getUsernameFromCookie verifies a cookie and returns the username
 func getUsernameFromCookie(cookieStr string) (string, error) {
-	// This would use the same logic as in migration package
-	// For now, we'll make a simple API call to verify
+
 	req, err := http.NewRequest(http.MethodGet, "https://www.reddit.com/api/me.json", nil)
 	if err != nil {
 		return "", err

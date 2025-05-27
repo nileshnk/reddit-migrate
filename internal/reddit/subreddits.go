@@ -332,7 +332,6 @@ func FetchSubredditsWithDetails(token string) ([]types.SubredditInfo, error) {
 
 // parseDetailedSubredditData converts Reddit API subreddit data into our SubredditInfo structure
 func parseDetailedSubredditData(subredditData types.DetailedSubredditData) types.SubredditInfo {
-	// Choose the best available icon URL
 	iconURL := ""
 	if subredditData.Data.CommunityIcon != "" {
 		iconURL = unescapeHTMLEntities(subredditData.Data.CommunityIcon)
@@ -340,7 +339,6 @@ func parseDetailedSubredditData(subredditData types.DetailedSubredditData) types
 		iconURL = subredditData.Data.IconImg
 	}
 
-	// Choose the best available banner URL
 	bannerURL := ""
 	if subredditData.Data.BannerImg != "" {
 		bannerURL = subredditData.Data.BannerImg

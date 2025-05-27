@@ -1,3 +1,7 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/nileshnk/reddit-migrate/release.yml?label=build)](https://github.com/nileshnk/reddit-migrate/actions)
+[![GitHub all releases](https://img.shields.io/github/downloads/nileshnk/reddit-migrate/total?label=downloads)](https://github.com/nileshnk/reddit-migrate/releases)
+
 # Reddit-Migrate
 
 Easily transfer your Reddit account data to a new account - including saved posts, subreddit subscriptions, and more.
@@ -25,8 +29,17 @@ Easily transfer your Reddit account data to a new account - including saved post
 2. **Extract** the downloaded ZIP file
 3. **Run** the application:
    - **Windows**: Double-click `reddit-migrate.exe`
-   - **Mac**: Run `./reddit-migrate` in terminal
-   - **Linux**: Run `./reddit-migrate` in terminal
+   - **Mac**:
+     - Open your Terminal application.
+     - Drag the `reddit-migrate` file from Finder into the Terminal window and press Enter.
+     - Alternatively, navigate to the extracted folder in Terminal (e.g., `cd path/to/reddit-migrate`) and run `./reddit-migrate`.
+     - _Note: You might need to grant execution permissions first by running `chmod +x reddit-migrate` in the Terminal._
+   - **Linux**:
+     - Open your terminal.
+     - Navigate to the extracted folder (e.g., `cd path/to/reddit-migrate`).
+     - Make the file executable by running `chmod +x reddit-migrate`.
+     - Run the application with `./reddit-migrate`.
+     - Alternatively, some desktop environments may allow you to run it by double-clicking from the file manager (ensure it has execute permissions).
 
 The app will open in your browser at `http://localhost:5005`
 
@@ -89,11 +102,11 @@ docker run -d -p 127.0.0.1:5005:5005 --name reddit-migrate reddit-migrate-img
 
 ## Demo
 
-Watch it in action: [YouTube Demo](https://youtu.be/cpwPjjkW2O4)
+Watch it in action: [YouTube Demo](https://youtu.be/pHGYuwZ1Jp0)
 
 ## How It Works
 
-Reddit-Migrate uses Reddit's official APIs with cookie authentication to transfer data between accounts:
+Reddit-Migrate uses Reddit's official APIs. It extracts the access token from your Reddit cookies and uses it for Bearer token authentication to transfer data between accounts.
 
 - **Cookie Verification**: Validates cookies by checking for access tokens and testing API responses
 - **Subreddit Migration**: Fetches all subscribed subreddits and subscribes to them in batches of 100
