@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/nileshnk/reddit-migrate/internal/api"
+	"github.com/nileshnk/reddit-migrate/internal/auth"
 	"github.com/nileshnk/reddit-migrate/internal/config"
 
 	"github.com/go-chi/chi/v5"
@@ -31,6 +32,26 @@ func main() {
 	config.DebugLogger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lmicroseconds)
 
 	config.InfoLogger.Printf("Application version: %s", Version) // Print the version
+
+	// Initialize OAuth configuration
+	// Get OAuth credentials from environment variables (you can also use a config file)
+	clientID := os.Getenv("REDDIT_CLIENT_ID")
+	clientSecret := os.Getenv("REDDIT_CLIENT_SECRET")
+	redirectURI := os.Getenv("REDDIT_REDIRECT_URI")
+
+	// Use default redirect URI if not specified
+	if redirectURI == "" {
+		redirectURI = fmt.Sprintf("http://%s/api/oauth/callback", getServerAddress())
+	}
+
+	// Initialize OAuth only if credentials are provided
+	if clientID != "" && clientSecret != "" {
+		auth.InitOAuth(clientID, clientSecret, redirectURI)
+		config.InfoLogger.Printf("OAuth initialized with client ID: %s", clientID)
+		config.InfoLogger.Printf("OAuth redirect URI: %s", redirectURI)
+	} else {
+		config.InfoLogger.Println("OAuth not initialized. Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET environment variables to enable OAuth.")
+	}
 
 	// Create a new Chi router.
 	router := chi.NewRouter()
