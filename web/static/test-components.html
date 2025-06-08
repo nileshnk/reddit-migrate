@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Component Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Component styles from main CSS */
+        .auth-method-option input[type="radio"] {
+            display: none;
+        }
+
+        .method-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid rgba(114, 118, 125, 0.3);
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 140px;
+        }
+
+        .method-card small {
+            color: #9ca3af;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .auth-method-option input[type="radio"]:checked+.method-card {
+            border-color: #FF4500;
+            background: rgba(255, 69, 0, 0.1);
+        }
+
+        .tab-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid rgba(114, 118, 125, 0.3);
+            background: rgba(33, 38, 45, 0.5);
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 180px;
+            color: #e2e8f0;
+        }
+
+        .tab-btn small {
+            color: #9ca3af;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 69, 0, 0.2);
+            border-color: #FF4500;
+            color: #FF4500;
+        }
+
+        .tab-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #FF4500 0%, #e03e00 100%);
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #e03e00 0%, #cc3700 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 69, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #0079D3 0%, #0066B3 100%);
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #0066B3 0%, #005299 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 121, 211, 0.4);
+        }
+
+        .form-input {
+            background: rgba(33, 38, 45, 0.5);
+            border: 2px solid rgba(114, 118, 125, 0.3);
+            transition: all 0.2s ease;
+            color: #e2e8f0;
+        }
+
+        .form-input:focus {
+            background: rgba(33, 38, 45, 0.8);
+            border-color: #FF4500;
+            box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.1);
+            outline: none;
+        }
+
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .custom-radio,
+        .custom-checkbox {
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #64748b;
+            background: transparent;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .custom-radio {
+            border-radius: 50%;
+        }
+
+        .custom-checkbox {
+            border-radius: 0.25rem;
+        }
+
+        .custom-radio:checked,
+        .custom-checkbox:checked {
+            border-color: #FF4500;
+            background: #FF4500;
+        }
+
+        .custom-radio:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: white;
+        }
+
+        .custom-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .glass-card {
+            background: rgba(33, 38, 45, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(114, 118, 125, 0.3);
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #FF4500;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #FF4500 0%, #e03e00 100%);
+            height: 8px;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-container {
+            background: rgba(114, 118, 125, 0.3);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-zinc-900 via-neutral-900 to-black text-white min-h-screen p-8">
+    <!-- Header with dark mode toggle -->
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-2xl font-bold">Component Test Page</h1>
+        <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">
+            <span id="themeIcon" class="material-icons">light_mode</span>
+        </button>
+    </div>
+
+    <div id="authComponent" class="mb-8">
+        <h2 class="text-xl mb-4">Auth Component:</h2>
+        <!-- Component will render here -->
+    </div>
+
+    <div id="featureSelector" class="mb-8">
+        <h2 class="text-xl mb-4">Feature Selector:</h2>
+        <!-- Component will render here -->
+    </div>
+
+    <div id="console-output" class="mt-8 p-4 bg-gray-800 rounded">
+        <h3 class="text-lg mb-2">Console Output:</h3>
+        <div id="console-log"></div>
+    </div>
+
+    <!-- Component Scripts -->
+    <script src="components/DarkModeManager.js"></script>
+    <script src="components/AuthComponent.js"></script>
+    <script src="components/MigrationFeature.js"></script>
+    <script src="components/CleanupFeature.js"></script>
+    <script src="components/FeatureSelector.js"></script>
+
+    <script>
+        // Override console.log to display on page
+        const originalLog = console.log;
+        const originalError = console.error;
+        const logDiv = document.getElementById('console-log');
+
+        function addToLog(message, type = 'log') {
+            const div = document.createElement('div');
+            div.className = type === 'error' ? 'text-red-400' : 'text-green-400';
+            div.textContent = `[${type.toUpperCase()}] ${message}`;
+            logDiv.appendChild(div);
+        }
+
+        console.log = function (...args) {
+            originalLog.apply(console, args);
+            addToLog(args.join(' '), 'log');
+        };
+
+        console.error = function (...args) {
+            originalError.apply(console, args);
+            addToLog(args.join(' '), 'error');
+        };
+
+        // Test component initialization
+        try {
+            console.log('Initializing DarkModeManager...');
+            const darkModeManager = new DarkModeManager();
+            console.log('DarkModeManager initialized successfully');
+
+            console.log('Initializing AuthComponent...');
+            const authComponent = new AuthComponent(document.getElementById('authComponent'));
+            console.log('AuthComponent initialized successfully');
+
+            console.log('Initializing FeatureSelector...');
+            const featureSelector = new FeatureSelector(document.getElementById('featureSelector'));
+            console.log('FeatureSelector initialized successfully');
+
+            console.log('All components loaded successfully!');
+        } catch (error) {
+            console.error('Error initializing components:', error.message);
+        }
+
+        // Global function for cookie help (referenced in AuthComponent)
+        function showCookieHelp() {
+            alert('To get Reddit cookies:\n1. Log into Reddit in your browser\n2. Open Developer Tools (F12)\n3. Go to Application/Storage tab\n4. Find Cookies for reddit.com\n5. Copy the entire cookie string');
+        }
+    </script>
+</body>
+
+</html>

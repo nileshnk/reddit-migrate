@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Component Test - Reddit Management Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Component styles from main CSS */
+        .auth-method-option input[type="radio"] {
+            display: none;
+        }
+
+        .method-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid rgba(114, 118, 125, 0.3);
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 140px;
+        }
+
+        .method-card small {
+            color: #9ca3af;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .auth-method-option input[type="radio"]:checked+.method-card {
+            border-color: #FF4500;
+            background: rgba(255, 69, 0, 0.1);
+        }
+
+        .tab-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid rgba(114, 118, 125, 0.3);
+            background: rgba(33, 38, 45, 0.5);
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 180px;
+            color: #e2e8f0;
+        }
+
+        .tab-btn small {
+            color: #9ca3af;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 69, 0, 0.2);
+            border-color: #FF4500;
+            color: #FF4500;
+        }
+
+        .tab-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #FF4500 0%, #e03e00 100%);
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #e03e00 0%, #cc3700 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 69, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #0079D3 0%, #0066B3 100%);
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #0066B3 0%, #005299 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 121, 211, 0.4);
+        }
+
+        .form-input {
+            background: rgba(33, 38, 45, 0.5);
+            border: 2px solid rgba(114, 118, 125, 0.3);
+            transition: all 0.2s ease;
+            color: #e2e8f0;
+        }
+
+        .form-input:focus {
+            background: rgba(33, 38, 45, 0.8);
+            border-color: #FF4500;
+            box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.1);
+            outline: none;
+        }
+
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .custom-radio,
+        .custom-checkbox {
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #64748b;
+            background: transparent;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .custom-radio {
+            border-radius: 50%;
+        }
+
+        .custom-checkbox {
+            border-radius: 0.25rem;
+        }
+
+        .custom-radio:checked,
+        .custom-checkbox:checked {
+            border-color: #FF4500;
+            background: #FF4500;
+        }
+
+        .custom-radio:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: white;
+        }
+
+        .custom-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .glass-card {
+            background: rgba(33, 38, 45, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(114, 118, 125, 0.3);
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #FF4500;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #FF4500 0%, #e03e00 100%);
+            height: 8px;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-container {
+            background: rgba(114, 118, 125, 0.3);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-zinc-900 via-neutral-900 to-black text-white min-h-screen">
+    <div class="container mx-auto py-8 px-4">
+        <div class="text-center mb-8">
+            <h1
+                class="text-3xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent mb-2">
+                Component Test Page
+            </h1>
+            <p class="text-slate-400">Testing all components integration</p>
+        </div>
+
+        <!-- Component Test Area -->
+        <div id="authContainer" class="max-w-6xl mx-auto mb-6"></div>
+        <div id="featureContainer" class="max-w-6xl mx-auto mb-6"></div>
+
+        <div class="max-w-6xl mx-auto">
+            <button id="submitBtn"
+                class="w-full btn-primary text-white font-bold py-4 px-6 rounded-xl text-lg flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled>
+                <span class="material-icons text-xl">play_arrow</span>
+                <span>Start Process</span>
+            </button>
+        </div>
+
+        <!-- Progress Section -->
+        <div id="progressContainer" class="max-w-6xl mx-auto mt-6 hidden">
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                    <span class="material-icons mr-2 text-orange-400">hourglass_empty</span>
+                    Processing...
+                </h3>
+                <div class="progress-container mb-2">
+                    <div class="progress-bar" style="width: 0%" id="progressBar"></div>
+                </div>
+                <p class="text-sm text-slate-400" id="progressText">Initializing...</p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsContainer" class="max-w-6xl mx-auto mt-6 hidden">
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                    <span class="material-icons mr-2 text-emerald-400">check_circle</span>
+                    Results
+                </h3>
+                <div id="resultsContent"></div>
+            </div>
+        </div>
+
+        <!-- Debug Info -->
+        <div class="max-w-6xl mx-auto mt-8">
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-lg font-semibold mb-4">Debug Info</h3>
+                <pre id="debugInfo" class="text-sm text-slate-400 bg-slate-800 p-4 rounded-lg overflow-auto"></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="components/DarkModeManager.js"></script>
+    <script src="components/AuthComponent.js"></script>
+    <script src="components/FeatureSelector.js"></script>
+    <script src="components/MigrationFeature.js"></script>
+    <script src="components/CleanupFeature.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+        // Additional debug functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const debugInfo = document.getElementById('debugInfo');
+
+            // Listen for auth status changes and log them
+            document.addEventListener('authStatusChanged', (e) => {
+                const info = {
+                    timestamp: new Date().toISOString(),
+                    event: 'authStatusChanged',
+                    detail: e.detail
+                };
+                debugInfo.textContent = JSON.stringify(info, null, 2);
+            });
+
+            // Log component initialization
+            setTimeout(() => {
+                const app = window.redditApp;
+                if (app) {
+                    const info = {
+                        timestamp: new Date().toISOString(),
+                        event: 'componentsInitialized',
+                        authComponent: !!app.authComponent,
+                        featureSelector: !!app.featureSelector,
+                        authReady: app.authComponent?.isReady() || false
+                    };
+                    debugInfo.textContent = JSON.stringify(info, null, 2);
+                }
+            }, 100);
+        });
+
+        // Make app globally accessible for debugging
+        document.addEventListener('DOMContentLoaded', () => {
+            const apps = document.querySelectorAll('.reddit-migration-app');
+            if (apps.length === 0) {
+                // App was created in app.js, try to access it differently
+                setTimeout(() => {
+                    console.log('Reddit Management Tool components loaded successfully!');
+                }, 100);
+            }
+        });
+    </script>
+</body>
+
+</html>

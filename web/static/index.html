@@ -1,76 +1,124 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Reddit Data Migration</title>
-    <!-- Adjusted path for favicon -->
-    <link rel="icon" type="image/x-icon" href="assets/favicon.png" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reddit Data Migration Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.css" rel="stylesheet" />
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
 
-        #parsedTokenBox::selection {
-            background-color: transparent;
+        /* Light mode styles */
+        .light-mode {
+            background: linear-gradient(to bottom right, #f8fafc, #e2e8f0, #cbd5e1) !important;
+            color: #1c1c1c !important;
         }
 
-        /* Custom styles for better modal appearance */
-        .line-clamp-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+        .light-mode .glass-card {
+            background: rgba(255, 255, 255, 0.9) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            color: #1c1c1c !important;
         }
 
-        /* Smooth transitions for interactive elements */
-        .item-row {
-            transition: all 0.15s ease-in-out;
+        .light-mode .form-input {
+            background: rgba(255, 255, 255, 0.8) !important;
+            border: 2px solid rgba(0, 0, 0, 0.1) !important;
+            color: #1c1c1c !important;
         }
 
-        .item-row:hover {
+        .light-mode .form-input:focus {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border-color: #FF4500 !important;
+            box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.1) !important;
+        }
+
+        .light-mode .form-input::placeholder {
+            color: #6b7280 !important;
+        }
+
+        .light-mode .custom-radio,
+        .light-mode .custom-checkbox {
+            border: 2px solid #6b7280 !important;
+            background: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .light-mode .custom-radio:checked,
+        .light-mode .custom-checkbox:checked {
+            border-color: #FF4500 !important;
+            background: #FF4500 !important;
+        }
+
+        /* Dark mode styles (default) */
+        .auth-method-option input[type="radio"] {
+            display: none;
+        }
+
+        .method-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid rgba(114, 118, 125, 0.3);
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 140px;
+        }
+
+        .method-card small {
+            color: #9ca3af;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .auth-method-option input[type="radio"]:checked+.method-card {
+            border-color: #FF4500;
+            background: rgba(255, 69, 0, 0.1);
+        }
+
+        .tab-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid rgba(114, 118, 125, 0.3);
+            background: rgba(33, 38, 45, 0.5);
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 180px;
+            color: #e2e8f0;
+        }
+
+        .tab-btn small {
+            color: #9ca3af;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 69, 0, 0.2);
+            border-color: #FF4500;
+            color: #FF4500;
+        }
+
+        .tab-btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        .dark .item-row:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-
-        /* Custom scrollbar for modal */
-        #itemsList {
-            scrollbar-width: thin;
-            scrollbar-color: #6b7280 #374151;
-        }
-
-        #itemsList::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        #itemsList::-webkit-scrollbar-track {
-            background: #374151;
-            border-radius: 4px;
-        }
-
-        #itemsList::-webkit-scrollbar-thumb {
-            background: #6b7280;
-            border-radius: 4px;
-        }
-
-        #itemsList::-webkit-scrollbar-thumb:hover {
-            background: #9ca3af;
-        }
-
-        /* Enhanced button styles - Reddit Orange Theme */
         .btn-primary {
             background: linear-gradient(135deg, #FF4500 0%, #e03e00 100%);
+            border: none;
+            cursor: pointer;
             transition: all 0.2s ease;
         }
 
@@ -82,6 +130,8 @@
 
         .btn-secondary {
             background: linear-gradient(135deg, #0079D3 0%, #0066B3 100%);
+            border: none;
+            cursor: pointer;
             transition: all 0.2s ease;
         }
 
@@ -91,77 +141,46 @@
             box-shadow: 0 4px 12px rgba(0, 121, 211, 0.4);
         }
 
-        .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            transition: all 0.2s ease;
-        }
-
-        .btn-success:hover {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-        }
-
-        .btn-verified {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            transition: all 0.2s ease;
-        }
-
-        .btn-verified:hover {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-        }
-
-        .btn-light-secondary {
-            background: linear-gradient(135deg, #0079D3 0%, #0066B3 100%);
-            transition: all 0.2s ease;
-        }
-
-        .btn-light-secondary:hover {
-            background: linear-gradient(135deg, #0066B3 0%, #005299 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 121, 211, 0.4);
-        }
-
-        .btn-light-cancel {
-            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
-            transition: all 0.2s ease;
-        }
-
-        .btn-light-cancel:hover {
-            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(148, 163, 184, 0.4);
-        }
-
-        /* Enhanced form inputs - Reddit style */
         .form-input {
             background: rgba(33, 38, 45, 0.5);
             border: 2px solid rgba(114, 118, 125, 0.3);
             transition: all 0.2s ease;
+            color: #e2e8f0;
         }
 
         .form-input:focus {
             background: rgba(33, 38, 45, 0.8);
             border-color: #FF4500;
             box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.1);
+            outline: none;
         }
 
-        /* Custom radio button styling - Reddit Orange */
-        .custom-radio {
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .custom-radio,
+        .custom-checkbox {
             appearance: none;
             width: 1.25rem;
             height: 1.25rem;
             border: 2px solid #64748b;
-            border-radius: 50%;
             background: transparent;
             position: relative;
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
-        .custom-radio:checked {
+        .custom-radio {
+            border-radius: 50%;
+        }
+
+        .custom-checkbox {
+            border-radius: 0.25rem;
+        }
+
+        .custom-radio:checked,
+        .custom-checkbox:checked {
             border-color: #FF4500;
             background: #FF4500;
         }
@@ -178,18 +197,64 @@
             background: white;
         }
 
-        /* Glassmorphism effect - Reddit Dark Theme */
+        .custom-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
         .glass-card {
             background: rgba(33, 38, 45, 0.8);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(114, 118, 125, 0.3);
         }
 
-        /* Enhanced animations */
+        .loading-spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #FF4500;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #FF4500 0%, #e03e00 100%);
+            height: 8px;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-container {
+            background: rgba(114, 118, 125, 0.3);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .animate-slide-in {
+            animation: slideIn 0.8s ease-out;
+        }
+
         @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(30px);
             }
 
             to {
@@ -197,182 +262,12 @@
                 transform: translateY(0);
             }
         }
-
-        .animate-slide-in {
-            animation: slideIn 0.3s ease-out;
-        }
-
-        /* Pulse animation for loading states */
-        @keyframes pulse-custom {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.7;
-            }
-        }
-
-        .pulse-custom {
-            animation: pulse-custom 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        /* Light mode styles - Reddit Light Theme */
-        .light-mode {
-            color: #1c1c1c !important;
-        }
-
-        .light-mode .glass-card {
-            background: rgba(255, 255, 255, 0.9) !important;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(237, 239, 241, 0.8) !important;
-        }
-
-        .light-mode .form-input {
-            background: rgba(255, 255, 255, 0.9) !important;
-            border: 2px solid rgba(237, 239, 241, 0.8) !important;
-            color: #1c1c1c !important;
-        }
-
-        .light-mode .form-input::placeholder {
-            color: #787c82 !important;
-        }
-
-        .light-mode .form-input:focus {
-            background: rgba(255, 255, 255, 1) !important;
-            border-color: #FF4500 !important;
-        }
-
-        .light-mode .text-slate-200 {
-            color: #1c1c1c !important;
-        }
-
-        .light-mode .text-slate-300 {
-            color: #4c5155 !important;
-        }
-
-        .light-mode .text-slate-400 {
-            color: #787c82 !important;
-        }
-
-        .light-mode .border-slate-600 {
-            border-color: #edeff1 !important;
-        }
-
-        .light-mode .border-slate-700 {
-            border-color: #edeff1 !important;
-        }
-
-        .light-mode .bg-slate-700\/30 {
-            background: rgba(246, 247, 248, 0.8) !important;
-        }
-
-        .light-mode .custom-radio {
-            border-color: #a8aaab !important;
-        }
-
-        /* Light mode modal and text enhancements */
-        .light-mode .text-slate-100 {
-            color: #1c1c1c !important;
-        }
-
-        .light-mode #modalTitle {
-            color: #1c1c1c !important;
-        }
-
-        .light-mode #itemsList {
-            background: rgba(255, 255, 255, 0.95) !important;
-            border-color: #edeff1 !important;
-        }
-
-        .light-mode .item-row {
-            border-color: #edeff1 !important;
-        }
-
-        .light-mode .item-row:hover {
-            background: rgba(246, 247, 248, 0.9) !important;
-        }
-
-        .light-mode #searchInput {
-            background: rgba(255, 255, 255, 0.95) !important;
-            border-color: #edeff1 !important;
-            color: #1c1c1c !important;
-        }
-
-        .light-mode #searchInput::placeholder {
-            color: #787c82 !important;
-        }
-
-        .light-mode .bg-black {
-            background: rgba(0, 0, 0, 0.3) !important;
-        }
-
-        .light-mode #selectedCount,
-        .light-mode #totalCount {
-            color: #1c1c1c !important;
-        }
-
-        .light-mode .text-orange-400 {
-            color: #FF4500 !important;
-        }
-
-        /* Fix modal text colors in light mode */
-        .light-mode #selectionModal .text-slate-200 {
-            color: #1c1c1c !important;
-        }
-
-        .light-mode #selectionModal .text-slate-300 {
-            color: #4c5155 !important;
-        }
-
-        .light-mode #selectionModal .text-slate-400 {
-            color: #787c82 !important;
-        }
-
-        .light-mode #cookieHelpModal .text-slate-200 {
-            color: #1c1c1c !important;
-        }
-
-        .light-mode #cookieHelpModal .text-slate-300 {
-            color: #4c5155 !important;
-        }
-
-        .light-mode #cookieHelpModal .text-slate-400 {
-            color: #787c82 !important;
-        }
-
-        .light-mode .glass-card .text-orange-400 {
-            color: #FF4500 !important;
-        }
-
-        .light-mode .glass-card .text-emerald-400 {
-            color: #10b981 !important;
-        }
-
-        .light-mode .glass-card .text-amber-400 {
-            color: #f59e0b !important;
-        }
-
-        /* No content found message styles */
-        .light-mode .material-icons {
-            color: inherit !important;
-        }
-
-        .light-mode .btn-secondary {
-            background: linear-gradient(135deg, #0079D3 0%, #0066B3 100%) !important;
-        }
-
-        .light-mode .btn-secondary:hover {
-            background: linear-gradient(135deg, #0066B3 0%, #005299 100%) !important;
-        }
     </style>
 </head>
 
 <body
     class="bg-gradient-to-br from-zinc-900 via-neutral-900 to-black text-white min-h-screen transition-all duration-300">
-    <!-- Enhanced Dark Mode Toggle -->
+    <!-- Dark Mode Toggle -->
     <div class="fixed top-6 right-6 z-50">
         <button id="darkModeToggle"
             class="p-3 rounded-xl glass-card text-slate-200 hover:bg-slate-700/50 transition-all duration-200 group">
@@ -382,7 +277,7 @@
     </div>
 
     <div class="container mx-auto flex min-h-screen flex-col items-center justify-center py-8 px-4">
-        <!-- Enhanced Header -->
+        <!-- Header -->
         <div class="flex flex-col items-center mb-8 animate-slide-in">
             <div class="relative mb-6">
                 <div class="absolute inset-0 bg-orange-500/20 rounded-full blur-2xl"></div>
@@ -390,280 +285,47 @@
             </div>
             <h1
                 class="text-4xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent mb-2">
-                Reddit Data Migration
+                Reddit Management Tool
             </h1>
             <p class="text-slate-400 text-center max-w-md">
-                Seamlessly transfer your Reddit data to a new account with this easy migration tool.
+                Seamlessly migrate or clean your Reddit data with powerful authentication options.
             </p>
         </div>
 
-        <!-- Enhanced Main Card -->
-        <div class="w-full max-w-2xl glass-card rounded-2xl p-8 shadow-2xl animate-slide-in">
-            <!-- Old Account Section -->
-            <div class="mb-6">
-                <label for="oldAccessToken"
-                    class="block text-base font-semibold text-slate-200 mb-3 flex items-center justify-between">
-                    <span class="flex items-center">
-                        <span class="material-icons mr-2" style="color: #FF4500;">account_circle</span>
-                        Old Account Cookie
-                    </span>
-                    <button onclick="showCookieHelp()"
-                        class="text-sm font-normal text-slate-400 hover:text-orange-400 flex items-center space-x-1 transition-colors">
-                        <span class="material-icons text-base">help_outline</span>
-                        <span>How to get cookie?</span>
-                    </button>
-                </label>
-                <div class="flex items-center space-x-3">
-                    <input type="text" id="oldAccessToken" name="oldAccessToken"
-                        class="flex-grow form-input rounded-xl px-4 py-3 text-slate-200 placeholder-slate-400"
-                        placeholder="Enter your old account cookie" />
-                    <button
-                        class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
-                        id="oldTokenVerifyBtn">
-                        <span class="material-icons text-lg">security</span>
-                        <span>Verify</span>
-                    </button>
-                    <button
-                        class="hidden btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
-                        id="verify-load-btn-1">
-                        <span class="material-icons animate-spin">refresh</span>
-                        <span>Verifying</span>
-                    </button>
-                </div>
-                <p class="mt-3 text-sm text-emerald-400 hidden flex items-center" id="oldTokenVerifySuccessMessage">
-                    <span class="material-icons mr-2 text-base">check_circle</span>
-                    <span class="font-medium">Cookie Verified</span>
-                    <span class="text-slate-400 mx-2">|</span>
-                    <span>User Name: </span>
-                    <span class="font-semibold text-slate-200" id="oldAccountUserId"></span>
-                </p>
-                <p class="mt-3 text-sm text-red-400 hidden flex items-center" id="oldTokenVerifyFailMessage">
-                    <span class="material-icons mr-2 text-base">error</span>
-                    <span class="font-medium">Cookie Invalid</span>
-                </p>
-            </div>
+        <!-- Authentication Component Container -->
+        <div id="authComponent" class="w-full max-w-6xl mb-8">
+            <!-- Component will be rendered here -->
+        </div>
 
-            <!-- New Account Section -->
-            <div class="mb-8">
-                <label for="newAccessToken"
-                    class="block text-base font-semibold text-slate-200 mb-3 flex items-center justify-between">
-                    <span class="flex items-center">
-                        <span class="material-icons mr-2" style="color: #0079D3;">account_circle</span>
-                        New Account Cookie
-                    </span>
-                    <button onclick="showCookieHelp()"
-                        class="text-sm font-normal text-slate-400 hover:text-orange-400 flex items-center space-x-1 transition-colors">
-                        <span class="material-icons text-base">help_outline</span>
-                        <span>How to get cookie?</span>
-                    </button>
-                </label>
-                <div class="flex items-center space-x-3">
-                    <input type="text" id="newAccessToken" name="newAccessToken"
-                        class="flex-grow form-input rounded-xl px-4 py-3 text-slate-200 placeholder-slate-400"
-                        placeholder="Enter your new account cookie" />
-                    <button
-                        class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
-                        id="newTokenVerifyBtn">
-                        <span class="material-icons text-lg">security</span>
-                        <span>Verify</span>
-                    </button>
-                    <button
-                        class="hidden btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
-                        id="verify-load-btn-2">
-                        <span class="material-icons animate-spin">refresh</span>
-                        <span>Verifying</span>
-                    </button>
-                </div>
-                <p class="mt-3 text-sm text-emerald-400 hidden flex items-center" id="newTokenVerifySuccessMessage">
-                    <span class="material-icons mr-2 text-base">check_circle</span>
-                    <span class="font-medium">Cookie Verified</span>
-                    <span class="text-slate-400 mx-2">|</span>
-                    <span>User Name: </span>
-                    <span class="font-semibold text-slate-200" id="newAccountUserId"></span>
-                </p>
-                <p class="mt-3 text-sm text-red-400 hidden flex items-center" id="newTokenVerifyFailMessage">
-                    <span class="material-icons mr-2 text-base">error</span>
-                    <span class="font-medium">Cookie Invalid</span>
-                </p>
-            </div>
+        <!-- Feature Selector Container -->
+        <div id="featureSelector" class="w-full max-w-6xl mb-8">
+            <!-- Component will be rendered here -->
+        </div>
 
-            <!-- Migration Options -->
-            <div class="space-y-8">
-                <!-- Subreddits Section -->
-                <fieldset class="glass-card rounded-xl p-6" id="subreddit-options">
-                    <legend class="text-lg font-semibold text-slate-200 mb-4 flex items-center">
-                        <span class="material-icons mr-2" style="color: #FF4500;">group</span>
-                        Migrate Subreddits
-                    </legend>
-                    <div class="flex items-center space-x-8 mb-4">
-                        <div class="flex items-center">
-                            <input type="radio" id="subredditAll" name="subredditSelection" value="all"
-                                class="custom-radio" />
-                            <label for="subredditAll" class="ml-3 text-sm font-medium text-slate-300">All</label>
-                        </div>
-                        <div class="flex items-center">
-                            <input type="radio" id="subredditCustom" name="subredditSelection" value="custom"
-                                class="custom-radio" />
-                            <label for="subredditCustom" class="ml-3 text-sm font-medium text-slate-300">Custom</label>
-                        </div>
-                        <div class="flex items-center">
-                            <input type="radio" id="subredditNone" name="subredditSelection" value="none"
-                                class="custom-radio" />
-                            <label for="subredditNone" class="ml-3 text-sm font-medium text-slate-300">None</label>
-                        </div>
-                    </div>
-                    <div id="subredditSelectionSummary"
-                        class="hidden flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
-                        <span class="text-sm text-slate-400 flex items-center">
-                            <span class="material-icons mr-2 text-sm">info</span>
-                            <span id="selectedSubredditCount">0</span><span>&nbsp;subreddits selected</span>
-                        </span>
-                        <button id="editSubredditSelection"
-                            class="btn-secondary px-4 py-2 text-white text-sm font-semibold rounded-lg">
-                            Edit Selection
-                        </button>
-                    </div>
+        <!-- Process Actions Container -->
+        <div id="processActions" class="w-full max-w-6xl mb-8">
+            <!-- Progress and submit buttons will be rendered here -->
+        </div>
 
-                    <div id="deleteSubreddits" class="mt-4 hidden">
-                        <label class="block text-sm font-semibold text-slate-300 mb-3">Delete Old Account
-                            Subreddits:</label>
-                        <div class="flex items-center space-x-6">
-                            <div class="flex items-center">
-                                <input type="radio" id="deleteSubredditsYes" name="deleteSubreddits" value="yes"
-                                    class="custom-radio" />
-                                <label for="deleteSubredditsYes"
-                                    class="ml-3 text-sm font-medium text-slate-300">Yes</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" id="deleteSubredditsNo" name="deleteSubreddits" value="no"
-                                    class="custom-radio" />
-                                <label for="deleteSubredditsNo"
-                                    class="ml-3 text-sm font-medium text-slate-300">No</label>
-                            </div>
-                        </div>
-                    </div>
-                </fieldset>
-
-                <!-- Saved Posts Section -->
-                <fieldset class="glass-card rounded-xl p-6" id="saved-posts-options">
-                    <legend class="text-lg font-semibold text-slate-200 mb-4 flex items-center">
-                        <span class="material-icons mr-2" style="color: #0079D3;">bookmark</span>
-                        Migrate Saved Posts
-                        <span class="ml-3 relative">
-                            <span
-                                class="material-icons text-slate-400 cursor-pointer hover:text-orange-400 transition-colors"
-                                onclick="toggleTooltip(event)">info_outline</span>
-                            <div id="tooltip"
-                                class="hidden absolute left-8 top-0 bg-slate-800 border border-slate-600 text-white text-sm rounded-lg p-3 w-64 shadow-xl z-10">
-                                <div class="text-orange-400 font-semibold mb-2">⏱️ Processing Time:</div>
-                                <div class="space-y-1 text-xs">
-                                    <div>• Up to 50 posts: ~5 minutes</div>
-                                    <div>• 100 posts: ~10-15 minutes</div>
-                                    <div>• 200+ posts: 30+ minutes</div>
-                                </div>
-                                <div class="mt-3 text-slate-300 text-xs">
-                                    💡 <em>Tip: Keep this tab open and grab a coffee while we work our magic!</em>
-                                </div>
-                            </div>
-                        </span>
-                    </legend>
-                    <div class="flex items-center space-x-8 mb-4">
-                        <div class="flex items-center">
-                            <input type="radio" id="postsAll" name="postsSelection" value="all" class="custom-radio" />
-                            <label for="postsAll" class="ml-3 text-sm font-medium text-slate-300">All</label>
-                        </div>
-                        <div class="flex items-center">
-                            <input type="radio" id="postsCustom" name="postsSelection" value="custom"
-                                class="custom-radio" />
-                            <label for="postsCustom" class="ml-3 text-sm font-medium text-slate-300">Custom</label>
-                        </div>
-                        <div class="flex items-center">
-                            <input type="radio" id="postsNone" name="postsSelection" value="none"
-                                class="custom-radio" />
-                            <label for="postsNone" class="ml-3 text-sm font-medium text-slate-300">None</label>
-                        </div>
-                    </div>
-                    <div id="postsSelectionSummary"
-                        class="hidden flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
-                        <span class="text-sm text-slate-400 flex items-center">
-                            <span class="material-icons mr-2 text-sm">info</span>
-                            <span id="selectedPostsCount">0</span><span>&nbsp;posts selected</span>
-                        </span>
-                        <button id="editPostsSelection"
-                            class="btn-secondary px-4 py-2 text-white text-sm font-semibold rounded-lg">
-                            Edit Selection
-                        </button>
-                    </div>
-
-                    <div class="mt-4 hidden" id="deletePosts">
-                        <label class="block text-sm font-semibold text-slate-300 mb-3">Delete Old Account Saved
-                            Posts:</label>
-                        <div class="flex items-center space-x-6">
-                            <div class="flex items-center">
-                                <input type="radio" id="deleteSavedPostsYes" name="deletePosts" value="yes"
-                                    class="custom-radio" />
-                                <label for="deleteSavedPostsYes"
-                                    class="ml-3 text-sm font-medium text-slate-300">Yes</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" id="deletePostsNo" name="deletePosts" value="no"
-                                    class="custom-radio" />
-                                <label for="deletePostsNo" class="ml-3 text-sm font-medium text-slate-300">No</label>
-                            </div>
-                        </div>
-                    </div>
-                </fieldset>
-            </div>
-
-            <!-- Submit Button -->
-            <div class="pt-8">
-                <button
-                    class="w-full btn-primary text-white font-bold py-4 px-6 rounded-xl text-lg flex items-center justify-center space-x-3"
-                    id="option-submit">
-                    <span class="material-icons text-xl">sync</span>
-                    <span>Start Migration</span>
-                </button>
-                <button
-                    class="hidden w-full btn-primary text-white font-bold py-4 px-6 rounded-xl text-lg flex items-center justify-center space-x-3"
-                    id="loading-btn">
-                    <span class="material-icons animate-spin text-xl">refresh</span>
-                    <span>Processing Migration...</span>
-                </button>
-            </div>
-
-            <!-- Response Block -->
-            <div class="mt-8 pt-6 border-t border-slate-600 hidden animate-slide-in" id="migrate-response-block">
-                <h2 class="text-xl font-semibold text-slate-200 mb-4 flex items-center">
-                    <span class="material-icons mr-2 text-emerald-400">check_circle_outline</span>
-                    Migration Results
-                </h2>
-                <div class="glass-card rounded-xl p-6">
-                    <ul id="migrate-response-data" class="space-y-3">
-                        <!-- Dynamic content will be inserted here -->
-                    </ul>
-                </div>
-            </div>
+        <!-- Results Container -->
+        <div id="resultsContainer" class="w-full max-w-6xl hidden">
+            <!-- Results will be displayed here -->
         </div>
     </div>
 
-    <!-- Enhanced Footer -->
+    <!-- Footer -->
     <footer class="glass-card border-t border-slate-600 py-8 mt-12">
         <div class="container mx-auto px-4">
             <div class="flex flex-col items-center space-y-6">
-                <!-- GitHub Link -->
                 <div class="flex items-center space-x-3">
                     <a href="https://github.com/nileshnk/reddit-migrate" target="_blank" rel="noopener noreferrer"
                         class="flex items-center space-x-3 px-6 py-3 rounded-xl glass-card hover:bg-slate-700/50 transition-all duration-200 text-slate-300 hover:text-white group">
-                        <!-- GitHub Icon -->
                         <span class="material-icons group-hover:scale-110 transition-transform duration-200">code</span>
                         <span class="font-medium">View on GitHub</span>
-                        <!-- External link icon -->
                         <span
                             class="material-icons text-sm opacity-60 group-hover:opacity-100 transition-opacity duration-200">open_in_new</span>
                     </a>
                 </div>
-
-                <!-- Copyright/Additional Info -->
                 <div class="text-sm text-slate-400 text-center space-y-2">
                     <p class="flex items-center justify-center space-x-2">
                         <span>Free & Open Source</span>
@@ -673,150 +335,16 @@
                             <span>Built for the Reddit community</span>
                         </span>
                     </p>
-                    <!-- <p class="flex items-center justify-center space-x-2">
-                        <span class="material-icons text-base text-emerald-400">security</span>
-                        <span>Safe, secure, and respects Reddit's API guidelines</span>
-                    </p> -->
                 </div>
             </div>
         </div>
     </footer>
-
-    <!-- Enhanced Cookie Parse Modal -->
-    <div id="cookie-parse-modal" tabindex="-1" aria-hidden="true"
-        class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
-        <div class="relative w-full max-w-md max-h-full">
-            <div class="relative glass-card rounded-2xl shadow-2xl">
-                <button type="button"
-                    class="absolute top-4 right-4 text-slate-400 hover:text-slate-200 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center transition-colors duration-200"
-                    data-modal-hide="cookie-parse-modal">
-                    <span class="material-icons">close</span>
-                    <span class="sr-only">Close modal</span>
-                </button>
-                <div class="px-8 py-8 flex flex-col items-center">
-                    <h3 class="mb-6 text-xl font-semibold text-slate-200 flex items-center">
-                        <span class="material-icons mr-2 text-orange-400">cookie</span>
-                        Paste Your Cookie
-                    </h3>
-
-                    <textarea id="cookie-input" rows="4"
-                        class="block p-4 w-full text-sm text-slate-200 form-input rounded-xl placeholder-slate-400"
-                        placeholder="Paste your Reddit cookie here..."></textarea>
-                    <button
-                        class="mt-4 btn-primary px-6 py-2 text-white font-semibold rounded-xl flex items-center space-x-2"
-                        id="cookie-parse-submit">
-                        <span class="material-icons">science</span>
-                        <span>Parse Cookie</span>
-                    </button>
-                    <p class="mt-3 text-sm text-emerald-400 hidden flex items-center" id="cookie-parse-success-message">
-                        <span class="material-icons mr-2">check_circle</span>
-                        <span class="font-medium">Success! Cookie is Valid</span>
-                    </p>
-                    <p class="mt-3 text-sm text-red-400 hidden flex items-center" id="cookie-parse-fail-message">
-                        <span class="material-icons mr-2">error</span>
-                        <span class="font-medium">Cookie Invalid</span>
-                    </p>
-                    <textarea id="parsedTokenBox" rows="4"
-                        class="hidden mt-6 p-4 w-full text-sm text-slate-300 bg-slate-700/50 rounded-xl border border-slate-600 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                        placeholder="Parsed token will appear here" readonly></textarea>
-                    <button id="copy-button"
-                        class="hidden mt-3 btn-secondary px-4 py-2 text-white font-semibold rounded-xl flex items-center space-x-2"
-                        data-clipboard-target="#parsedTokenBox">
-                        <span class="material-icons">content_copy</span>
-                        <span>Copy Token</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Enhanced Selection Modal for Posts and Subreddits -->
-    <div id="selectionModal"
-        class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm overflow-y-auto h-full w-full hidden z-50">
-        <div
-            class="relative top-4 mx-auto p-6 border-0 w-11/12 md:w-5/6 lg:w-5/6 xl:w-5/6 2xl:w-4/5 shadow-2xl rounded-2xl glass-card max-h-screen overflow-hidden">
-            <div class="flex flex-col h-full" style="min-height: 80vh; max-height: 90vh;">
-                <div class="flex justify-between items-center mb-6 flex-shrink-0">
-                    <h3 class="text-2xl font-bold text-slate-200 flex items-center" id="modalTitle">
-                        <span class="material-icons mr-3 text-orange-400">checklist</span>
-                        Select Items
-                    </h3>
-                    <button id="closeModal"
-                        class="text-slate-400 hover:text-slate-200 text-2xl p-2 rounded-xl hover:bg-slate-700/50 transition-all duration-200">
-                        <span class="material-icons">close</span>
-                    </button>
-                </div>
-
-                <!-- Enhanced Search Bar -->
-                <div class="mb-6 flex-shrink-0">
-                    <div class="relative">
-                        <span
-                            class="material-icons absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400">search</span>
-                        <input type="text" id="searchInput" placeholder="Search items..."
-                            class="w-full pl-12 pr-4 py-3 form-input rounded-xl text-slate-200 placeholder-slate-400">
-                    </div>
-                </div>
-
-                <!-- Enhanced Bulk Actions -->
-                <div class="mb-6 flex justify-between items-center flex-shrink-0">
-                    <div class="flex space-x-3">
-                        <button id="selectAllBtn"
-                            class="btn-light-secondary px-4 py-2 text-white font-semibold rounded-lg flex items-center space-x-2">
-                            <span class="material-icons text-sm">select_all</span>
-                            <span>Select All</span>
-                        </button>
-                        <button id="selectNoneBtn"
-                            class="btn-light-cancel px-4 py-2 text-white font-semibold rounded-lg flex items-center space-x-2">
-                            <span class="material-icons text-sm">deselect</span>
-                            <span>Select None</span>
-                        </button>
-                    </div>
-                    <div class="glass-card px-4 py-2 rounded-lg">
-                        <span class="text-sm text-slate-300">
-                            <span id="selectedCount" class="font-semibold text-orange-400">0</span> /
-                            <span id="totalCount" class="font-semibold">0</span> selected
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Enhanced Loading State -->
-                <div id="modalLoading" class="flex flex-col items-center justify-center py-12 hidden">
-                    <div class="relative">
-                        <div class="w-16 h-16 border-4 border-slate-600 border-t-orange-500 rounded-full animate-spin">
-                        </div>
-                    </div>
-                    <span class="text-slate-300 mt-4 font-medium">Loading items...</span>
-                </div>
-
-                <!-- Enhanced Items List -->
-                <div id="itemsList"
-                    class="flex-1 overflow-y-auto glass-card rounded-xl min-h-0 border border-slate-600">
-                    <!-- Dynamic content will be inserted here -->
-                </div>
-
-                <!-- Enhanced Modal Actions -->
-                <div class="flex justify-end space-x-4 mt-6 flex-shrink-0">
-                    <button id="cancelSelection"
-                        class="btn-light-cancel px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2">
-                        <span class="material-icons">cancel</span>
-                        <span>Cancel</span>
-                    </button>
-                    <button id="confirmSelection"
-                        class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2">
-                        <span class="material-icons">check_circle</span>
-                        <span>Confirm Selection</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Cookie Help Modal -->
     <div id="cookieHelpModal"
         class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm overflow-y-auto h-full w-full hidden z-50">
         <div class="relative top-20 mx-auto p-0 w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 max-w-2xl">
             <div class="glass-card rounded-2xl shadow-2xl overflow-hidden">
-                <!-- Modal Header -->
                 <div class="bg-gradient-to-r from-orange-500/20 to-rose-500/20 p-6 border-b border-slate-600">
                     <div class="flex justify-between items-center">
                         <h3 class="text-2xl font-bold text-slate-200 flex items-center">
@@ -829,11 +357,8 @@
                         </button>
                     </div>
                 </div>
-
-                <!-- Modal Content -->
                 <div class="p-6 overflow-y-auto max-h-[70vh]">
                     <div class="space-y-6">
-                        <!-- Chrome Instructions -->
                         <div class="bg-slate-700/30 rounded-xl p-4">
                             <h4 class="text-lg font-semibold text-slate-200 mb-3 flex items-center">
                                 <span class="material-icons mr-2 text-blue-400">web</span>
@@ -892,8 +417,6 @@
                                 </li>
                             </ol>
                         </div>
-
-                        <!-- Important Notes -->
                         <div class="bg-amber-900/20 border border-amber-500/30 rounded-xl p-4">
                             <h4 class="text-amber-400 font-semibold mb-2 flex items-center">
                                 <span class="material-icons mr-2">warning</span>
@@ -922,8 +445,35 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="index.js"></script>
+    <!-- Component Scripts -->
+    <script src="components/DarkModeManager.js"></script>
+    <script src="components/AuthComponent.js"></script>
+    <script src="components/MigrationFeature.js"></script>
+    <script src="components/CleanupFeature.js"></script>
+    <script src="components/FeatureSelector.js"></script>
+
+    <!-- Helper Functions -->
+    <script>
+        // Global helper functions for cookie modal
+        function showCookieHelp() {
+            document.getElementById('cookieHelpModal').classList.remove('hidden');
+        }
+
+        function hideCookieHelp() {
+            document.getElementById('cookieHelpModal').classList.add('hidden');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function (e) {
+            const modal = document.getElementById('cookieHelpModal');
+            if (e.target === modal) {
+                hideCookieHelp();
+            }
+        });
+    </script>
+
+    <!-- Main Application Script -->
+    <script src="app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js"></script>
 
 </body>
