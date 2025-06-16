@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/nileshnk/reddit-migrate/internal/api"
-	"github.com/nileshnk/reddit-migrate/internal/auth"
 	"github.com/nileshnk/reddit-migrate/internal/config"
 
 	"github.com/go-chi/chi/v5"
@@ -23,7 +22,6 @@ import (
 var Version = "dev" // Default to "dev" if not built with version info
 
 // DefaultAddress is the address the server will listen on if no other address is specified.
-const DefaultAddress = "localhost:5005"
 
 func main() {
 	// Initialize loggers
@@ -32,26 +30,6 @@ func main() {
 	config.DebugLogger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lmicroseconds)
 
 	config.InfoLogger.Printf("Application version: %s", Version) // Print the version
-
-	// Initialize OAuth configuration
-	// Get OAuth credentials from environment variables (you can also use a config file)
-	clientID := os.Getenv("REDDIT_CLIENT_ID")
-	clientSecret := os.Getenv("REDDIT_CLIENT_SECRET")
-	redirectURI := os.Getenv("REDDIT_REDIRECT_URI")
-
-	// Use default redirect URI if not specified
-	if redirectURI == "" {
-		redirectURI = fmt.Sprintf("http://%s/api/oauth/callback", getServerAddress())
-	}
-
-	// Initialize OAuth only if credentials are provided
-	if clientID != "" && clientSecret != "" {
-		auth.InitOAuth(clientID, clientSecret, redirectURI)
-		config.InfoLogger.Printf("OAuth initialized with client ID: %s", clientID)
-		config.InfoLogger.Printf("OAuth redirect URI: %s", redirectURI)
-	} else {
-		config.InfoLogger.Println("OAuth not initialized. Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET environment variables to enable OAuth.")
-	}
 
 	// Create a new Chi router.
 	router := chi.NewRouter()
@@ -63,7 +41,7 @@ func main() {
 	router.Route("/", mainRouter)
 
 	// Determine the server address.
-	addr := getServerAddress()
+	addr := config.ServerAddress
 
 	// Start listening on the specified address.
 	listener, err := net.Listen("tcp", addr)
@@ -89,31 +67,6 @@ func main() {
 	}
 }
 
-// getServerAddress determines the server address based on environment variables,
-// command-line arguments, or a default value.
-func getServerAddress() string {
-	// Priority 1: Environment variable GO_ADDR.
-	if addr := os.Getenv("GO_ADDR"); addr != "" {
-		config.InfoLogger.Printf("Using address from GO_ADDR environment variable: %s", addr)
-		return addr
-	}
-
-	// Priority 2: Command-line argument --addr.
-	for _, arg := range os.Args[1:] { // Skip the program name.
-		if strings.HasPrefix(arg, "--addr=") {
-			addr := strings.TrimPrefix(arg, "--addr=")
-			if addr != "" {
-				config.InfoLogger.Printf("Using address from --addr command-line argument: %s", addr)
-				return addr
-			}
-		}
-	}
-
-	// Priority 3: Default address.
-	config.InfoLogger.Printf("Using default address: %s", DefaultAddress)
-	return DefaultAddress
-}
-
 // constructURL creates a full HTTP URL from an address string.
 // If the address does not specify a host, "localhost" is assumed.
 func constructURL(addr string) string {
@@ -125,7 +78,7 @@ func constructURL(addr string) string {
 		}
 		// Fallback for other malformed cases, though getServerAddress should prevent this.
 		config.ErrorLogger.Printf("Malformed address string: %s. Defaulting to localhost.", addr)
-		return fmt.Sprintf("http://%s", DefaultAddress)
+		return fmt.Sprintf("http://%s", config.DefaultAddress)
 	}
 
 	if host == "" {

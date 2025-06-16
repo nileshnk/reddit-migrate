@@ -19,8 +19,17 @@ func Router(router chi.Router) {
 	router.Get("/oauth/login", auth.OAuthLoginHandler)
 	config.InfoLogger.Println("Registered /api/oauth/login GET endpoint")
 
-	router.Get("/oauth/callback", auth.OAuthCallbackHandler)
+	router.Get("/oauth/callback", auth.EnhancedOAuthCallbackHandler)
 	config.InfoLogger.Println("Registered /api/oauth/callback GET endpoint")
+
+	router.Post("/oauth/init", auth.OAuthInitHandler)
+	config.InfoLogger.Println("Registered /api/oauth/init POST endpoint")
+
+	router.Get("/oauth/status", auth.OAuthStatusHandler)
+	config.InfoLogger.Println("Registered /api/oauth/status GET endpoint")
+
+	router.Post("/oauth/direct", auth.DirectAuthHandler)
+	config.InfoLogger.Println("Registered /api/oauth/direct POST endpoint")
 
 	// Authentication endpoints
 	router.Post("/verify-cookie", auth.VerifyTokenResponse)

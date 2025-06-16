@@ -1,9 +1,11 @@
 package config
 
 import (
+	"fmt"
 	"log" // Using standard log for now, actual logger injection TBD
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -12,6 +14,8 @@ import (
 var ErrorLogger *log.Logger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lmicroseconds)
 var InfoLogger *log.Logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lmicroseconds)
 var DebugLogger *log.Logger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lmicroseconds)
+
+const DefaultAddress = "localhost:5005"
 
 // getEnvOrDefault retrieves an environment variable or returns a default value.
 func getEnvOrDefault(key, defaultValue string) string {
@@ -49,12 +53,39 @@ func getEnvOrDefaultDuration(key string, defaultValue time.Duration) time.Durati
 	return defaultValue
 }
 
+// getServerAddress determines the server address based on environment variables,
+// command-line arguments, or a default value.
+func GetServerAddress() string {
+	// Priority 1: Environment variable GO_ADDR.
+	if addr := os.Getenv("GO_ADDR"); addr != "" {
+		InfoLogger.Printf("Using address from GO_ADDR environment variable: %s", addr)
+		return addr
+	}
+
+	// Priority 2: Command-line argument --addr.
+	for _, arg := range os.Args[1:] { // Skip the program name.
+		if strings.HasPrefix(arg, "--addr=") {
+			addr := strings.TrimPrefix(arg, "--addr=")
+			if addr != "" {
+				InfoLogger.Printf("Using address from --addr command-line argument: %s", addr)
+				return addr
+			}
+		}
+	}
+
+	// Priority 3: Default address.
+	InfoLogger.Printf("Using default address: %s", DefaultAddress)
+	return DefaultAddress
+}
+
 // Global configuration variables
 var (
 	// General
-	UserAgent      string
-	RedditOauthURL string
-	RedditBaseURL  string // For non-OAuth endpoints like /api/me.json
+	UserAgent              string
+	RedditOauthURL         string
+	RedditBaseURL          string // For non-OAuth endpoints like /api/me.json
+	ServerAddress          string
+	RedditOauthRedirectUri string
 
 	// Migration settings for migrate.go
 	DefaultSubredditChunkSize int
@@ -101,6 +132,8 @@ func LoadConfig() {
 	RateLimitInterval = time.Duration(rateLimitIntervalSeconds) * time.Second // Note: Original code had time.Minute here, might be error. Assuming seconds as per var name.
 
 	MaxTokensPerInterval = getEnvOrDefaultInt("MAX_TOKENS_PER_INTERVAL", 50)
+	ServerAddress = GetServerAddress()
+	RedditOauthRedirectUri = fmt.Sprintf("http://%s/api/oauth/callback", ServerAddress)
 
 	if DebugLogger != nil {
 		DebugLogger.Printf("UserAgent: %s", UserAgent)

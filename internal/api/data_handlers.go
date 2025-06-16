@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/nileshnk/reddit-migrate/internal/auth"
@@ -9,6 +10,51 @@ import (
 	"github.com/nileshnk/reddit-migrate/internal/reddit"
 	"github.com/nileshnk/reddit-migrate/internal/types"
 )
+
+// extractAuthData extracts authentication information from the request
+// Returns (token, username, error)
+func extractAuthData(authMethod, cookie, accessToken, providedUsername string) (string, string, error) {
+	var token, username string
+	var err error
+
+	config.DebugLogger.Printf("extractAuthData called: authMethod=%s, providedUsername='%s', hasAccessToken=%t",
+		authMethod, providedUsername, accessToken != "")
+
+	if authMethod == "oauth" {
+		// Direct OAuth token
+		token = accessToken
+
+		// Use provided username if available, otherwise get from Reddit API
+		if providedUsername != "" {
+			username = providedUsername
+			config.DebugLogger.Printf("Using provided username: %s", username)
+		} else {
+			config.DebugLogger.Printf("No username provided, fetching from Reddit API")
+			// For OAuth, we need to get the username from the Reddit API
+			userInfo, err := auth.GetUserInfoWithToken(token)
+			if err != nil {
+				config.ErrorLogger.Printf("Failed to get user info from token: %v", err)
+				return "", "", fmt.Errorf("failed to get user info: %w", err)
+			}
+			username = userInfo.Data.Name
+			config.DebugLogger.Printf("Fetched username from Reddit API: %s", username)
+		}
+	} else {
+		// Cookie-based authentication (default/backward compatibility)
+		username, err = auth.GetUsernameFromCookie(cookie)
+		if err != nil {
+			return "", "", err
+		}
+
+		token = auth.ParseTokenFromCookie(cookie)
+		if token == "" {
+			return "", "", fmt.Errorf("failed to parse OAuth token from cookie")
+		}
+	}
+
+	config.DebugLogger.Printf("extractAuthData returning: username='%s', hasToken=%t", username, token != "")
+	return token, username, nil
+}
 
 // SubredditsHandler handles the /api/subreddits endpoint
 func SubredditsHandler(w http.ResponseWriter, r *http.Request) {
@@ -30,11 +76,11 @@ func SubredditsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract OAuth token from cookie
-	token := auth.ParseTokenFromCookie(requestBody.Cookie)
-	if token == "" {
-		config.ErrorLogger.Printf("Failed to parse OAuth token from cookie for /api/subreddits from %s", r.RemoteAddr)
-		http.Error(w, "Invalid cookie: token_v2 not found", http.StatusBadRequest)
+	// Extract authentication data
+	token, _, err := extractAuthData(requestBody.AuthMethod, requestBody.Cookie, requestBody.AccessToken, requestBody.Username)
+	if err != nil {
+		config.ErrorLogger.Printf("Failed to extract auth data for /api/subreddits from %s: %v", r.RemoteAddr, err)
+		http.Error(w, "Authentication failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -83,19 +129,11 @@ func SavedPostsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// First verify cookie and get username
-	username, err := auth.GetUsernameFromCookie(requestBody.Cookie)
+	// Extract authentication data
+	token, username, err := extractAuthData(requestBody.AuthMethod, requestBody.Cookie, requestBody.AccessToken, requestBody.Username)
 	if err != nil {
-		config.ErrorLogger.Printf("Failed to verify cookie for /api/saved-posts from %s: %v", r.RemoteAddr, err)
-		http.Error(w, "Invalid cookie: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// Extract OAuth token from cookie
-	token := auth.ParseTokenFromCookie(requestBody.Cookie)
-	if token == "" {
-		config.ErrorLogger.Printf("Failed to parse OAuth token from cookie for /api/saved-posts from %s", r.RemoteAddr)
-		http.Error(w, "Invalid cookie: token_v2 not found", http.StatusBadRequest)
+		config.ErrorLogger.Printf("Failed to extract auth data for /api/saved-posts from %s: %v", r.RemoteAddr, err)
+		http.Error(w, "Authentication failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -144,19 +182,11 @@ func AccountCountsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get username from cookie
-	username, err := auth.GetUsernameFromCookie(requestBody.Cookie)
+	// Extract authentication data
+	token, username, err := extractAuthData(requestBody.AuthMethod, requestBody.Cookie, requestBody.AccessToken, requestBody.Username)
 	if err != nil {
-		config.ErrorLogger.Printf("Failed to verify cookie for /api/account-counts from %s: %v", r.RemoteAddr, err)
-		http.Error(w, "Invalid cookie: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// Extract OAuth token from cookie
-	token := auth.ParseTokenFromCookie(requestBody.Cookie)
-	if token == "" {
-		config.ErrorLogger.Printf("Failed to parse OAuth token from cookie for /api/account-counts from %s", r.RemoteAddr)
-		http.Error(w, "Invalid cookie: token_v2 not found", http.StatusBadRequest)
+		config.ErrorLogger.Printf("Failed to extract auth data for /api/account-counts from %s: %v", r.RemoteAddr, err)
+		http.Error(w, "Authentication failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 

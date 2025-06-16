@@ -129,15 +129,18 @@ func ManageSavedPosts(token string, postIDs []string, actionType types.PostActio
 // It handles pagination from the Reddit API.
 func FetchSavedPostsFullNames(token, username string) ([]string, error) {
 	if username == "" {
-		return nil, fmt.Errorf("username cannot be empty for fetching saved posts") // Use fmt.Errorf for errors.New
+		return nil, fmt.Errorf("username is required for fetching saved posts")
 	}
+
 	config.InfoLogger.Printf("Fetching saved posts for user %s.", username)
 	// The endpoint is /user/{username}/saved.json
 	apiURL := fmt.Sprintf("https://oauth.reddit.com/user/%s/saved.json", username)
+
 	nameList, err := fetchAllNames(apiURL, token, false) // false indicates not specifically for subreddits (affects u_ filtering)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching saved posts for %s: %w", username, err)
 	}
+
 	// For saved posts, we expect 'name' (t3_xxxxx), not 'display_name'. The 'fullNamesList' from fetchAllNames contains these.
 	// The userDisplayNameList is not relevant for saved posts.
 	config.InfoLogger.Printf("Fetched %d saved post full names for user %s.", len(nameList.FullNamesList), username)
@@ -184,7 +187,7 @@ func TestRedditAPI(token string, targetName string) bool {
 // including titles, images, thumbnails, and metadata needed for the selection UI
 func FetchSavedPostsWithDetails(token, username string) ([]types.SavedPostInfo, error) {
 	if username == "" {
-		return nil, fmt.Errorf("username cannot be empty for fetching saved posts")
+		return nil, fmt.Errorf("username is required for fetching saved posts")
 	}
 
 	config.InfoLogger.Printf("Fetching detailed saved posts for user %s.", username)
@@ -401,7 +404,7 @@ func generateThumbnailFromURL(url, domain string) string {
 // GetSavedPostsCount returns the total count of saved posts for a user
 func GetSavedPostsCount(token, username string) (int, error) {
 	if username == "" {
-		return 0, fmt.Errorf("username cannot be empty for fetching saved posts count")
+		return 0, fmt.Errorf("username is required for fetching saved posts count")
 	}
 
 	config.DebugLogger.Printf("Getting saved posts count for user %s.", username)

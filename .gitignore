@@ -3,3 +3,5 @@ temp/
 tmp/
 ./go.sum
 builds/
+.vscode/
+__debug_bin*

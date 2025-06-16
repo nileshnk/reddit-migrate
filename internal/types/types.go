@@ -1,11 +1,16 @@
 package types
 
 // MigrationRequestType defines the structure for the migration request body.
-// It includes cookies for old and new accounts, and user preferences for migration.
+// It includes authentication data for old and new accounts, and user preferences for migration.
 type MigrationRequestType struct {
-	OldAccountCookie string          `json:"old_account_cookie"`
-	NewAccountCookie string          `json:"new_account_cookie"`
-	Preferences      PreferencesType `json:"preferences"`
+	AuthMethod         string          `json:"auth_method,omitempty"`          // "cookie" or "oauth"
+	OldAccountCookie   string          `json:"old_account_cookie,omitempty"`   // For cookie-based auth
+	NewAccountCookie   string          `json:"new_account_cookie,omitempty"`   // For cookie-based auth
+	OldAccountToken    string          `json:"old_account_token,omitempty"`    // For OAuth-based auth
+	NewAccountToken    string          `json:"new_account_token,omitempty"`    // For OAuth-based auth
+	OldAccountUsername string          `json:"old_account_username,omitempty"` // For OAuth-based auth
+	NewAccountUsername string          `json:"new_account_username,omitempty"` // For OAuth-based auth
+	Preferences        PreferencesType `json:"preferences"`
 }
 
 // PreferencesType defines the user's choices for the migration process.
@@ -104,14 +109,23 @@ type VerifyCookieType struct { // Renamed from verify_cookie_type
 	Cookie string `json:"cookie"`
 }
 
-// ProfileResponseType defines the structure for the response from Reddit's /api/me.json endpoint.
+// ProfileResponseType defines the structure for the response from Reddit's /api/v1/me endpoint.
 // It contains basic profile information of the authenticated user.
 type ProfileResponseType struct { // Renamed from profile_response_type
-	Type string `json:"type"`
+	Name         string  `json:"name"`
+	ID           string  `json:"id"`
+	IsEmployee   bool    `json:"is_employee"`
+	IsFriend     bool    `json:"is_friend"`
+	Created      float64 `json:"created"`
+	CreatedUTC   float64 `json:"created_utc"`
+	LinkKarma    int     `json:"link_karma"`
+	CommentKarma int     `json:"comment_karma"`
+	// Wrapper for compatibility
+	Type string `json:"-"`
 	Data struct {
 		Name       string `json:"name"`
-		IsEmployee bool   `json:"is_employee"` // Corrected json tag
-		IsFriend   bool   `json:"is_friend"`   // Corrected json tag
+		IsEmployee bool   `json:"is_employee"`
+		IsFriend   bool   `json:"is_friend"`
 	} `json:"data"`
 }
 
@@ -184,7 +198,10 @@ type SubredditInfo struct {
 
 // GetSavedPostsRequest defines the request structure for fetching saved posts with details
 type GetSavedPostsRequest struct {
-	Cookie string `json:"cookie"`
+	AuthMethod  string `json:"auth_method,omitempty"`  // "cookie" or "oauth"
+	Cookie      string `json:"cookie,omitempty"`       // For cookie-based auth
+	AccessToken string `json:"access_token,omitempty"` // For OAuth-based auth
+	Username    string `json:"username,omitempty"`     // For OAuth-based auth
 }
 
 // GetSavedPostsResponse defines the response structure for saved posts with full details
@@ -197,7 +214,10 @@ type GetSavedPostsResponse struct {
 
 // GetSubredditsRequest defines the request structure for fetching subreddits with details
 type GetSubredditsRequest struct {
-	Cookie string `json:"cookie"`
+	AuthMethod  string `json:"auth_method,omitempty"`  // "cookie" or "oauth"
+	Cookie      string `json:"cookie,omitempty"`       // For cookie-based auth
+	AccessToken string `json:"access_token,omitempty"` // For OAuth-based auth
+	Username    string `json:"username,omitempty"`     // For OAuth-based auth
 }
 
 // GetSubredditsResponse defines the response structure for subreddits with full details
@@ -210,10 +230,15 @@ type GetSubredditsResponse struct {
 
 // CustomMigrationRequest defines the structure for custom selection migration
 type CustomMigrationRequest struct {
-	OldAccountCookie    string   `json:"old_account_cookie"`
-	NewAccountCookie    string   `json:"new_account_cookie"`
-	SelectedSubreddits  []string `json:"selected_subreddits"` // List of display names
-	SelectedPosts       []string `json:"selected_posts"`      // List of full names (t3_xxxxx)
+	AuthMethod          string   `json:"auth_method,omitempty"`          // "cookie" or "oauth"
+	OldAccountCookie    string   `json:"old_account_cookie,omitempty"`   // For cookie-based auth
+	NewAccountCookie    string   `json:"new_account_cookie,omitempty"`   // For cookie-based auth
+	OldAccountToken     string   `json:"old_account_token,omitempty"`    // For OAuth-based auth
+	NewAccountToken     string   `json:"new_account_token,omitempty"`    // For OAuth-based auth
+	OldAccountUsername  string   `json:"old_account_username,omitempty"` // For OAuth-based auth
+	NewAccountUsername  string   `json:"new_account_username,omitempty"` // For OAuth-based auth
+	SelectedSubreddits  []string `json:"selected_subreddits"`            // List of display names
+	SelectedPosts       []string `json:"selected_posts"`                 // List of full names (t3_xxxxx)
 	DeleteOldSubreddits bool     `json:"delete_old_subreddits"`
 	DeleteOldPosts      bool     `json:"delete_old_posts"`
 }
@@ -323,7 +348,10 @@ type DetailedSubredditData struct {
 
 // AccountCountsRequest defines the request structure for getting account counts
 type AccountCountsRequest struct {
-	Cookie string `json:"cookie"`
+	AuthMethod  string `json:"auth_method,omitempty"`  // "cookie" or "oauth"
+	Cookie      string `json:"cookie,omitempty"`       // For cookie-based auth
+	AccessToken string `json:"access_token,omitempty"` // For OAuth-based auth
+	Username    string `json:"username,omitempty"`     // For OAuth-based auth
 }
 
 // AccountCountsResponse defines the response structure for account counts

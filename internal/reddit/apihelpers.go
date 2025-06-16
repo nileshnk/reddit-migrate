@@ -3,10 +3,12 @@ package reddit
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/nileshnk/reddit-migrate/internal/config"
-	"github.com/nileshnk/reddit-migrate/internal/types"
+
 	"io"
 	"net/http"
+
+	"github.com/nileshnk/reddit-migrate/internal/config"
+	"github.com/nileshnk/reddit-migrate/internal/types"
 )
 
 // fetchAllNames is a generic function to fetch items (subreddits, posts) from a Reddit API listing endpoint.
