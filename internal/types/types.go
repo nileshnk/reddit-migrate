@@ -27,31 +27,31 @@ type PreferencesType struct {
 type MigrationResponseType struct {
 	Success bool             `json:"success"`
 	Message string           `json:"message"`
-	Data    MigrationDetails `json:"data"` // Renamed from MigrationData for clarity
+	Data    MigrationDetails `json:"data"`
 }
 
 // MigrationDetails holds the detailed results of migration operations.
 // This structure is embedded within MigrationResponseType.
-type MigrationDetails struct { // Renamed from MigrationData
+type MigrationDetails struct {
 	SubscribeSubreddit   ManageSubredditResponseType `json:"subscribeSubreddit"`
 	UnsubscribeSubreddit ManageSubredditResponseType `json:"unsubscribeSubreddit"`
-	SavePost             ManagePostResponseType      `json:"savePost"`   // Renamed from manage_post_type
-	UnsavePost           ManagePostResponseType      `json:"unsavePost"` // Renamed from manage_post_type
+	SavePost             ManagePostResponseType      `json:"savePost"`
+	UnsavePost           ManagePostResponseType      `json:"unsavePost"`
 }
 
 // SubredditActionType defines the action to be performed on a subreddit (subscribe or unsubscribe).
-type SubredditActionType string // Renamed from subscribe_type
+type SubredditActionType string
 
 const (
 	// SubscribeAction indicates an action to subscribe to a subreddit.
-	SubscribeAction SubredditActionType = "sub" // Renamed from subscribe
+	SubscribeAction SubredditActionType = "sub"
 	// UnsubscribeAction indicates an action to unsubscribe from a subreddit.
-	UnsubscribeAction SubredditActionType = "unsub" // Renamed from unsubscribe
+	UnsubscribeAction SubredditActionType = "unsub"
 )
 
 // ManageSubredditResponseType defines the structure for the response of managing subreddits.
 // It includes error status, HTTP status code, counts of successful and failed operations, and a list of failed subreddits.
-type ManageSubredditResponseType struct { // Renamed from manage_subreddit_response_type
+type ManageSubredditResponseType struct {
 	Error            bool
 	StatusCode       int
 	SuccessCount     int
@@ -60,25 +60,25 @@ type ManageSubredditResponseType struct { // Renamed from manage_subreddit_respo
 }
 
 // PostActionType defines the action to be performed on a post (save or unsave).
-type PostActionType string // Renamed from post_save_type
+type PostActionType string
 
 const (
 	// SaveAction indicates an action to save a post.
-	SaveAction PostActionType = "save" // Renamed from SAVE
+	SaveAction PostActionType = "save"
 	// UnsaveAction indicates an action to unsave a post.
-	UnsaveAction PostActionType = "unsave" // Renamed from UNSAVE
+	UnsaveAction PostActionType = "unsave"
 )
 
 // ManagePostResponseType defines the structure for the response of managing posts.
 // It includes counts of successful and failed operations.
-type ManagePostResponseType struct { // Renamed from manage_post_type
+type ManagePostResponseType struct {
 	SuccessCount int
 	FailedCount  int
 }
 
 // RedditNameType holds lists of subreddit and user display names and full names.
 // This is used internally to pass around collections of names fetched from Reddit.
-type RedditNameType struct { // Renamed from reddit_name_type
+type RedditNameType struct {
 	FullNamesList       []string
 	DisplayNamesList    []string
 	UserDisplayNameList []string
@@ -86,7 +86,7 @@ type RedditNameType struct { // Renamed from reddit_name_type
 
 // FullNameListType defines the structure for a list of items (subreddits or posts) from Reddit API.
 // It's used for unmarshalling JSON responses that contain a list of children objects.
-type FullNameListType struct { // Renamed from full_name_list_type
+type FullNameListType struct {
 	Kind string `json:"kind"`
 	Data struct {
 		After    string          `json:"after"`
@@ -105,23 +105,13 @@ type FullListChild struct {
 
 // VerifyCookieType defines the structure for the request body when verifying a cookie.
 // It contains the cookie string to be verified.
-type VerifyCookieType struct { // Renamed from verify_cookie_type
+type VerifyCookieType struct {
 	Cookie string `json:"cookie"`
 }
 
 // ProfileResponseType defines the structure for the response from Reddit's /api/v1/me endpoint.
 // It contains basic profile information of the authenticated user.
-type ProfileResponseType struct { // Renamed from profile_response_type
-	Name         string  `json:"name"`
-	ID           string  `json:"id"`
-	IsEmployee   bool    `json:"is_employee"`
-	IsFriend     bool    `json:"is_friend"`
-	Created      float64 `json:"created"`
-	CreatedUTC   float64 `json:"created_utc"`
-	LinkKarma    int     `json:"link_karma"`
-	CommentKarma int     `json:"comment_karma"`
-	// Wrapper for compatibility
-	Type string `json:"-"`
+type ProfileResponseType struct {
 	Data struct {
 		Name       string `json:"name"`
 		IsEmployee bool   `json:"is_employee"`
@@ -131,7 +121,7 @@ type ProfileResponseType struct { // Renamed from profile_response_type
 
 // TokenResponseType defines the structure for the response when verifying a token/cookie.
 // It indicates success, a message, and the username associated with the token/cookie if valid.
-type TokenResponseType struct { // Renamed from token_response_type
+type TokenResponseType struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Data    struct {
@@ -141,7 +131,7 @@ type TokenResponseType struct { // Renamed from token_response_type
 
 // ErrorResponseType defines a generic error response structure from the Reddit API.
 // It usually contains an error code and a descriptive message.
-type ErrorResponseType struct { // Renamed from error_response_type
+type ErrorResponseType struct {
 	Error   string `json:"error"`
 	Message string `json:"message"`
 }

@@ -237,11 +237,11 @@ func GetUserInfoWithToken(accessToken string) (*types.ProfileResponseType, error
 	}
 
 	// Populate the Data field for backward compatibility
-	userInfo.Data.Name = userInfo.Name
-	userInfo.Data.IsEmployee = userInfo.IsEmployee
-	userInfo.Data.IsFriend = userInfo.IsFriend
+	// userInfo.Data.Name = userInfo.Name
+	// userInfo.Data.IsEmployee = userInfo.IsEmployee
+	// userInfo.Data.IsFriend = userInfo.IsFriend
 
-	config.DebugLogger.Printf("Parsed user info - Username: %s", userInfo.Name)
+	config.DebugLogger.Printf("Parsed user info - Username: %s", userInfo.Data.Name)
 
 	return &userInfo, nil
 }
