@@ -199,27 +199,62 @@ func initializeMigration(req types.MigrationRequestType) types.MigrationResponse
 	return finalResponse
 }
 
+// filterSlice removes items from a source slice that are present in a toRemoveItems slice.
+func filterSlice(source []string, toRemoveItems []string) []string {
+	toRemoveMap := make(map[string]bool)
+	for _, item := range toRemoveItems {
+		toRemoveMap[item] = true
+	}
+
+	var filteredSlice []string
+	for _, item := range source {
+		if !toRemoveMap[item] {
+			filteredSlice = append(filteredSlice, item)
+		}
+	}
+	return filteredSlice
+}
+
 // processSubreddits handles the migration and/or deletion of subreddits.
 func processSubreddits(oldToken, newToken, oldUser, newUser string, prefs types.PreferencesType, responseData *types.MigrationDetails) error { // Adjusted types
 	config.InfoLogger.Println("Fetching all subreddit and followed user names from old account...")
 	// Use reddit.FetchSubredditFullNames
-	subredditNameList, err := reddit.FetchSubredditFullNames(oldToken)
+	oldSubredditNameList, err := reddit.FetchSubredditFullNames(oldToken)
 	if err != nil {
 		return fmt.Errorf("failed to fetch subreddit names from old account: %w", err)
 	}
 	config.InfoLogger.Printf("Fetched %d subreddits and %d followed users from %s.",
-		len(subredditNameList.DisplayNamesList),
-		len(subredditNameList.UserDisplayNameList), oldUser)
+		len(oldSubredditNameList.DisplayNamesList),
+		len(oldSubredditNameList.UserDisplayNameList), oldUser)
 
 	// Migrate (subscribe) subreddits to the new account.
 	if prefs.MigrateSubredditBool {
-		config.InfoLogger.Printf("Starting subreddit migration for %s -> %s.", oldUser, newUser)
-		responseData.SubscribeSubreddit = migrateSubredditsWithRetry(newToken, subredditNameList.DisplayNamesList, newUser)
+		config.InfoLogger.Printf("Fetching subreddits from new account %s to filter out duplicates...", newUser)
+		newSubredditNameList, err := reddit.FetchSubredditFullNames(newToken)
 
-		if len(subredditNameList.UserDisplayNameList) > 0 {
+		subredditsToMigrate := oldSubredditNameList.DisplayNamesList
+		followedToMigrate := oldSubredditNameList.UserDisplayNameList
+
+		if err != nil {
+			config.ErrorLogger.Printf("Could not fetch subreddits from new account. Proceeding with all subreddits and followed users. Error: %v", err)
+		} else {
+			subredditsToMigrate = filterSlice(oldSubredditNameList.DisplayNamesList, newSubredditNameList.DisplayNamesList)
+			config.InfoLogger.Printf("Filtered selection: %d subreddits to migrate after removing duplicates.", len(subredditsToMigrate))
+
+			followedToMigrate = filterSlice(oldSubredditNameList.UserDisplayNameList, newSubredditNameList.UserDisplayNameList)
+			config.InfoLogger.Printf("Filtered selection: %d followed users to migrate after removing duplicates.", len(followedToMigrate))
+		}
+
+		if len(subredditsToMigrate) > 0 {
+			config.InfoLogger.Printf("Starting subreddit migration for %s -> %s.", oldUser, newUser)
+			responseData.SubscribeSubreddit = migrateSubredditsWithRetry(newToken, subredditsToMigrate, newUser)
+		} else {
+			config.InfoLogger.Printf("No new subreddits to migrate for %s.", newUser)
+		}
+
+		if len(followedToMigrate) > 0 {
 			config.InfoLogger.Printf("Starting followed user migration for %s -> %s.", oldUser, newUser)
-
-			followedUsersResult := reddit.ManageFollowedUsers(newToken, subredditNameList.UserDisplayNameList, types.SubscribeAction)
+			followedUsersResult := reddit.ManageFollowedUsers(newToken, followedToMigrate, types.SubscribeAction)
 			config.InfoLogger.Printf("Followed %d users for %s (failed: %d).", followedUsersResult.SuccessCount, newUser, followedUsersResult.FailedCount)
 		} else {
 			config.InfoLogger.Printf("No followed users to migrate for %s.", oldUser)
@@ -230,7 +265,7 @@ func processSubreddits(oldToken, newToken, oldUser, newUser string, prefs types.
 	if prefs.DeleteSubredditBool {
 		config.InfoLogger.Printf("Starting subreddit deletion (unsubscribing) from %s.", oldUser)
 		// Use reddit.ManageSubreddits
-		unsubscribeData := reddit.ManageSubreddits(oldToken, subredditNameList.DisplayNamesList, types.UnsubscribeAction, 500)
+		unsubscribeData := reddit.ManageSubreddits(oldToken, oldSubredditNameList.DisplayNamesList, types.UnsubscribeAction, 500)
 		config.InfoLogger.Printf("Unsubscribed %d subreddits from %s (failed: %d).", unsubscribeData.SuccessCount, oldUser, unsubscribeData.FailedCount)
 		responseData.UnsubscribeSubreddit = unsubscribeData
 	}
@@ -281,10 +316,27 @@ func migrateSubredditsWithRetry(token string, displayNames []string, username st
 func processPosts(oldToken, newToken, oldUser, newUser string, prefs types.PreferencesType, responseData *types.MigrationDetails) error { // Adjusted types
 	config.InfoLogger.Printf("Fetching saved post full names from old account %s...", oldUser)
 
-	savedPostsFullNamesList, err := reddit.FetchSavedPostsFullNames(oldToken, oldUser)
+	oldSavedPostsFullNamesList, err := reddit.FetchSavedPostsFullNames(oldToken, oldUser)
 	if err != nil {
 		return fmt.Errorf("failed to fetch saved post names from %s: %w", oldUser, err)
 	}
+
+	config.InfoLogger.Printf("Fetching saved post full names from old account %s...", oldUser)
+
+	newSavedPostsFullNamesList, err := reddit.FetchSavedPostsFullNames(newToken, newUser)
+	if err != nil {
+		return fmt.Errorf("failed to fetch saved post names from %s: %w", newToken, err)
+	}
+
+	config.InfoLogger.Printf("Analyzing and selecting only posts that are not added in the new account: %s from old account: %s...", newUser, oldUser)
+
+	// Filter out posts that are already saved in the new account
+	savedPostsFullNamesList := filterSlice(oldSavedPostsFullNamesList, newSavedPostsFullNamesList)
+
+	fmt.Println(savedPostsFullNamesList)
+
+	config.InfoLogger.Printf("Found %d unique posts in old account that aren't in new account", len(savedPostsFullNamesList))
+
 	config.InfoLogger.Printf("Fetched %d saved posts from %s.", len(savedPostsFullNamesList), oldUser)
 
 	concurrencyForPosts := config.DefaultPostConcurrency // Concurrency level for post operations.
@@ -406,14 +458,30 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 	// Handle selected subreddits migration
 	if len(req.SelectedSubreddits) > 0 {
 		config.InfoLogger.Printf("Migrating %d selected subreddits", len(req.SelectedSubreddits))
-		subscribeResult := reddit.ManageSubreddits(newAccountToken, req.SelectedSubreddits, types.SubscribeAction, 100)
-		finalResponse.Data.SubscribeSubreddit = subscribeResult
+		config.InfoLogger.Printf("Fetching subreddits from new account %s to filter out duplicates...", newAccountUsername)
+		newSubredditNameList, err := reddit.FetchSubredditFullNames(newAccountToken)
 
-		// Handle deletion if requested
-		if req.DeleteOldSubreddits {
-			config.InfoLogger.Printf("Deleting %d selected subreddits from old account", len(req.SelectedSubreddits))
-			unsubscribeResult := reddit.ManageSubreddits(oldAccountToken, req.SelectedSubreddits, types.UnsubscribeAction, 100)
-			finalResponse.Data.UnsubscribeSubreddit = unsubscribeResult
+		subredditsToMigrate := req.SelectedSubreddits
+
+		if err != nil {
+			config.ErrorLogger.Printf("Could not fetch subreddits from new account. Proceeding with all %d selected subreddits. Error: %v", len(req.SelectedSubreddits), err)
+		} else {
+			subredditsToMigrate = filterSlice(req.SelectedSubreddits, newSubredditNameList.DisplayNamesList)
+			config.InfoLogger.Printf("Filtered selection: %d subreddits to migrate after removing %d duplicates.", len(subredditsToMigrate), len(req.SelectedSubreddits)-len(subredditsToMigrate))
+		}
+
+		if len(subredditsToMigrate) > 0 {
+			subscribeResult := reddit.ManageSubreddits(newAccountToken, subredditsToMigrate, types.SubscribeAction, 100)
+			finalResponse.Data.SubscribeSubreddit = subscribeResult
+
+			// Handle deletion if requested
+			if req.DeleteOldSubreddits {
+				config.InfoLogger.Printf("Deleting %d selected subreddits from old account", len(subredditsToMigrate))
+				unsubscribeResult := reddit.ManageSubreddits(oldAccountToken, subredditsToMigrate, types.UnsubscribeAction, 100)
+				finalResponse.Data.UnsubscribeSubreddit = unsubscribeResult
+			}
+		} else {
+			config.InfoLogger.Println("No new subreddits to migrate from selection.")
 		}
 	} else {
 		config.InfoLogger.Println("No subreddits selected for migration")
@@ -423,15 +491,30 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 	if len(req.SelectedPosts) > 0 {
 		config.InfoLogger.Printf("Migrating %d selected posts", len(req.SelectedPosts))
 
-		concurrencyForPosts := config.DefaultPostConcurrency
-		saveResult := reddit.ManageSavedPosts(newAccountToken, req.SelectedPosts, types.SaveAction, concurrencyForPosts)
-		finalResponse.Data.SavePost = saveResult
+		// Fetch saved posts from new account to avoid duplicates
+		config.InfoLogger.Printf("Fetching saved posts from new account %s to avoid duplicates...", newAccountUsername)
+		newSavedPosts, err := reddit.FetchSavedPostsFullNames(newAccountToken, newAccountUsername)
+		postsToMigrate := req.SelectedPosts
+		if err != nil {
+			config.ErrorLogger.Printf("Could not fetch saved posts from new account. Proceeding with all %d selected posts. Error: %v", len(req.SelectedPosts), err)
+		} else {
+			postsToMigrate = filterSlice(req.SelectedPosts, newSavedPosts)
+			config.InfoLogger.Printf("Filtered selection: %d posts to migrate after removing %d duplicates.", len(postsToMigrate), len(req.SelectedPosts)-len(postsToMigrate))
+		}
 
-		// Handle deletion if requested
-		if req.DeleteOldPosts {
-			config.InfoLogger.Printf("Deleting %d selected posts from old account", len(req.SelectedPosts))
-			unsaveResult := reddit.ManageSavedPosts(oldAccountToken, req.SelectedPosts, types.UnsaveAction, concurrencyForPosts)
-			finalResponse.Data.UnsavePost = unsaveResult
+		if len(postsToMigrate) > 0 {
+			concurrencyForPosts := config.DefaultPostConcurrency
+			saveResult := reddit.ManageSavedPosts(newAccountToken, postsToMigrate, types.SaveAction, concurrencyForPosts)
+			finalResponse.Data.SavePost = saveResult
+
+			// Handle deletion if requested
+			if req.DeleteOldPosts {
+				config.InfoLogger.Printf("Deleting %d selected posts from old account", len(postsToMigrate))
+				unsaveResult := reddit.ManageSavedPosts(oldAccountToken, postsToMigrate, types.UnsaveAction, concurrencyForPosts)
+				finalResponse.Data.UnsavePost = unsaveResult
+			}
+		} else {
+			config.InfoLogger.Println("No new posts to migrate from selection.")
 		}
 	} else {
 		config.InfoLogger.Println("No posts selected for migration")
