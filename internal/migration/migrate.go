@@ -337,6 +337,12 @@ func processPosts(oldToken, newToken, oldUser, newUser string, prefs types.Prefe
 
 	config.InfoLogger.Printf("Found %d unique posts in old account that aren't in new account", len(savedPostsFullNamesList))
 
+	// Reverse the order so that oldest posts are saved first to maintain chronological order in new account
+	// Reddit API returns newest posts first, but we want oldest posts to be saved first so they appear at bottom
+	for i, j := 0, len(savedPostsFullNamesList)-1; i < j; i, j = i+1, j-1 {
+		savedPostsFullNamesList[i], savedPostsFullNamesList[j] = savedPostsFullNamesList[j], savedPostsFullNamesList[i]
+	}
+
 	config.InfoLogger.Printf("Fetched %d saved posts from %s.", len(savedPostsFullNamesList), oldUser)
 
 	concurrencyForPosts := config.DefaultPostConcurrency // Concurrency level for post operations.
@@ -503,6 +509,12 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 		}
 
 		if len(postsToMigrate) > 0 {
+			// Reverse the order so that oldest posts are saved first to maintain chronological order in new account
+			// Reddit API returns newest posts first, but we want oldest posts to be saved first so they appear at bottom
+			for i, j := 0, len(postsToMigrate)-1; i < j; i, j = i+1, j-1 {
+				postsToMigrate[i], postsToMigrate[j] = postsToMigrate[j], postsToMigrate[i]
+			}
+
 			concurrencyForPosts := config.DefaultPostConcurrency
 			saveResult := reddit.ManageSavedPosts(newAccountToken, postsToMigrate, types.SaveAction, concurrencyForPosts)
 			finalResponse.Data.SavePost = saveResult
