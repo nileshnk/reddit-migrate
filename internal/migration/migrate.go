@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
+	"github.com/nileshnk/reddit-migrate/internal/auth"
 	"github.com/nileshnk/reddit-migrate/internal/config"
 	"github.com/nileshnk/reddit-migrate/internal/reddit"
 	"github.com/nileshnk/reddit-migrate/internal/types"
@@ -36,14 +36,21 @@ func MigrationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	config.InfoLogger.Printf("Migration request validated for %s. Old cookie ends: ...%s, New cookie ends: ...%s",
-		r.RemoteAddr,
-		safeSuffix(requestBody.OldAccountCookie, 6), // Adjusted field name
-		safeSuffix(requestBody.NewAccountCookie, 6)) // Adjusted field name
+	if requestBody.AuthMethod == "oauth" {
+		config.InfoLogger.Printf("OAuth migration request validated for %s. Old token ends: ...%s, New token ends: ...%s",
+			r.RemoteAddr,
+			auth.SafeSuffix(requestBody.OldAccountToken, 6),
+			auth.SafeSuffix(requestBody.NewAccountToken, 6))
+	} else {
+		config.InfoLogger.Printf("Cookie migration request validated for %s. Old cookie ends: ...%s, New cookie ends: ...%s",
+			r.RemoteAddr,
+			auth.SafeSuffix(requestBody.OldAccountCookie, 6),
+			auth.SafeSuffix(requestBody.NewAccountCookie, 6))
+	}
 	config.DebugLogger.Printf("Migration preferences: %+v", requestBody.Preferences)
 
 	// Perform the migration.
-	finalResponse := initializeMigration(requestBody.OldAccountCookie, requestBody.NewAccountCookie, requestBody.Preferences)
+	finalResponse := initializeMigration(requestBody)
 
 	// Send response.
 	w.Header().Set("Content-Type", "application/json")
@@ -78,43 +85,90 @@ func decodeMigrationRequest(r *http.Request, requestBody *types.MigrationRequest
 	return nil
 }
 
-// initializeMigration orchestrates the entire migration process based on cookies and preferences.
+// initializeMigration orchestrates the entire migration process based on authentication data and preferences.
 // It verifies accounts, fetches data, and performs migration actions like subscribing/unsubscribing subreddits and saving/unsaving posts.
-func initializeMigration(oldAccountCookie, newAccountCookie string, preferences types.PreferencesType) types.MigrationResponseType { // Adjusted types
-	var finalResponse types.MigrationResponseType // Adjusted type
-	finalResponse.Success = false                 // Default to false
+func initializeMigration(req types.MigrationRequestType) types.MigrationResponseType {
+	var finalResponse types.MigrationResponseType
+	finalResponse.Success = false // Default to false
 
 	config.InfoLogger.Println("Starting migration process...")
 
-	// Verify cookies and get usernames.
-	oldAccountUsername, err := getUsernameFromCookie(oldAccountCookie)
-	if err != nil {
-		config.ErrorLogger.Printf("Failed to verify old account cookie: %v", err)
-		finalResponse.Message = fmt.Sprintf("Failed to verify old account cookie: %v", err)
-		return finalResponse
-	}
-	newAccountUsername, err := getUsernameFromCookie(newAccountCookie)
-	if err != nil {
-		config.ErrorLogger.Printf("Failed to verify new account cookie: %v", err)
-		finalResponse.Message = fmt.Sprintf("Failed to verify new account cookie: %v", err)
-		return finalResponse
-	}
-	config.InfoLogger.Printf("Verified old account: %s, new account: %s", oldAccountUsername, newAccountUsername)
+	// Extract authentication data for old account
+	var oldAccountToken, oldAccountUsername string
+	var err error
 
-	// Parse OAuth tokens from cookies.
-	oldAccountToken := parseTokenFromCookie(oldAccountCookie)
-	newAccountToken := parseTokenFromCookie(newAccountCookie)
-	if oldAccountToken == "" || newAccountToken == "" {
-		config.ErrorLogger.Println("Failed to parse OAuth tokens from one or both cookies.")
-		finalResponse.Message = "Failed to parse OAuth tokens from cookies. Ensure 'token_v2' is present."
-		return finalResponse
+	if req.AuthMethod == "oauth" {
+		oldAccountToken = req.OldAccountToken
+		// Use provided username if available, otherwise get from OAuth token
+		if req.OldAccountUsername != "" {
+			oldAccountUsername = req.OldAccountUsername
+		} else {
+			// Get username from OAuth token
+			userInfo, err := auth.GetUserInfoWithToken(oldAccountToken)
+			if err != nil {
+				config.ErrorLogger.Printf("Failed to verify old account OAuth token: %v", err)
+				finalResponse.Message = fmt.Sprintf("Failed to verify old account OAuth token: %v", err)
+				return finalResponse
+			}
+			oldAccountUsername = userInfo.Data.Name
+		}
+	} else {
+		// Cookie-based authentication (default/backward compatibility)
+		oldAccountUsername, err = auth.GetUsernameFromCookie(req.OldAccountCookie)
+		if err != nil {
+			config.ErrorLogger.Printf("Failed to verify old account cookie: %v", err)
+			finalResponse.Message = fmt.Sprintf("Failed to verify old account cookie: %v", err)
+			return finalResponse
+		}
+		oldAccountToken = auth.ParseTokenFromCookie(req.OldAccountCookie)
+		if oldAccountToken == "" {
+			config.ErrorLogger.Println("Failed to parse OAuth token from old account cookie.")
+			finalResponse.Message = "Failed to parse OAuth token from old account cookie. Ensure 'token_v2' is present."
+			return finalResponse
+		}
 	}
-	config.DebugLogger.Printf("Old account token (suffix): ...%s", safeSuffix(oldAccountToken, 6))
-	config.DebugLogger.Printf("New account token (suffix): ...%s", safeSuffix(newAccountToken, 6))
+
+	// Extract authentication data for new account
+	var newAccountToken, newAccountUsername string
+
+	if req.AuthMethod == "oauth" {
+		newAccountToken = req.NewAccountToken
+		// Use provided username if available, otherwise get from OAuth token
+		if req.NewAccountUsername != "" {
+			newAccountUsername = req.NewAccountUsername
+		} else {
+			// Get username from OAuth token
+			userInfo, err := auth.GetUserInfoWithToken(newAccountToken)
+			if err != nil {
+				config.ErrorLogger.Printf("Failed to verify new account OAuth token: %v", err)
+				finalResponse.Message = fmt.Sprintf("Failed to verify new account OAuth token: %v", err)
+				return finalResponse
+			}
+			newAccountUsername = userInfo.Data.Name
+		}
+	} else {
+		// Cookie-based authentication (default/backward compatibility)
+		newAccountUsername, err = auth.GetUsernameFromCookie(req.NewAccountCookie)
+		if err != nil {
+			config.ErrorLogger.Printf("Failed to verify new account cookie: %v", err)
+			finalResponse.Message = fmt.Sprintf("Failed to verify new account cookie: %v", err)
+			return finalResponse
+		}
+		newAccountToken = auth.ParseTokenFromCookie(req.NewAccountCookie)
+		if newAccountToken == "" {
+			config.ErrorLogger.Println("Failed to parse OAuth token from new account cookie.")
+			finalResponse.Message = "Failed to parse OAuth token from new account cookie. Ensure 'token_v2' is present."
+			return finalResponse
+		}
+	}
+
+	config.InfoLogger.Printf("Verified old account: %s, new account: %s", oldAccountUsername, newAccountUsername)
+	config.DebugLogger.Printf("Old account token (suffix): ...%s", auth.SafeSuffix(oldAccountToken, 6))
+	config.DebugLogger.Printf("New account token (suffix): ...%s", auth.SafeSuffix(newAccountToken, 6))
 
 	// Handle subreddit migration/deletion.
-	if preferences.MigrateSubredditBool || preferences.DeleteSubredditBool { // Adjusted field names
-		if err := processSubreddits(oldAccountToken, newAccountToken, oldAccountUsername, newAccountUsername, preferences, &finalResponse.Data); err != nil {
+	if req.Preferences.MigrateSubredditBool || req.Preferences.DeleteSubredditBool {
+		if err := processSubreddits(oldAccountToken, newAccountToken, oldAccountUsername, newAccountUsername, req.Preferences, &finalResponse.Data); err != nil {
 			config.ErrorLogger.Printf("Error processing subreddits: %v", err)
 			// Message is set within processSubreddits or its sub-functions for partial success.
 			// If a critical error occurs, it might stop here.
@@ -122,8 +176,8 @@ func initializeMigration(oldAccountCookie, newAccountCookie string, preferences 
 	}
 
 	// Handle post migration/deletion.
-	if preferences.MigratePostBool || preferences.DeletePostBool { // Adjusted field names
-		if err := processPosts(oldAccountToken, newAccountToken, oldAccountUsername, newAccountUsername, preferences, &finalResponse.Data); err != nil {
+	if req.Preferences.MigratePostBool || req.Preferences.DeletePostBool {
+		if err := processPosts(oldAccountToken, newAccountToken, oldAccountUsername, newAccountUsername, req.Preferences, &finalResponse.Data); err != nil {
 			config.ErrorLogger.Printf("Error processing posts: %v", err)
 			// Similar to subreddits, messages handled internally for partial success.
 		}
@@ -251,158 +305,6 @@ func processPosts(oldToken, newToken, oldUser, newUser string, prefs types.Prefe
 	return nil
 }
 
-// verifyTokenResponse is the HTTP handler for the /verify-cookie endpoint.
-// It validates a Reddit cookie and returns the associated username if valid.
-func VerifyTokenResponse(w http.ResponseWriter, r *http.Request) {
-	config.DebugLogger.Printf("Received /verify-cookie request from %s", r.RemoteAddr)
-
-	if r.Header.Get("Content-Type") != "application/json" {
-		config.ErrorLogger.Printf("Invalid content type for /verify-cookie from %s: %s", r.RemoteAddr, r.Header.Get("Content-Type"))
-		errorResponse(w, "Content Type must be application/json", http.StatusUnsupportedMediaType)
-		return
-	}
-
-	var requestBody types.VerifyCookieType
-	decoder := json.NewDecoder(r.Body)
-	// Consider DisallowUnknownFields for stricter parsing.
-	decoder.DisallowUnknownFields()
-	err := decoder.Decode(&requestBody)
-	if err != nil {
-		config.ErrorLogger.Printf("Error decoding /verify-cookie request from %s: %v", r.RemoteAddr, err)
-		var unmarshalErr *json.UnmarshalTypeError
-		if errors.As(err, &unmarshalErr) {
-			errorResponse(w, "Bad Request. Wrong Type provided for field "+unmarshalErr.Field, http.StatusBadRequest)
-		} else {
-			errorResponse(w, "Bad Request: "+err.Error(), http.StatusBadRequest)
-		}
-		return
-	}
-	config.InfoLogger.Printf("Verifying cookie for %s (ends with ...%s)", r.RemoteAddr, safeSuffix(requestBody.Cookie, 6))
-
-	finalResponse := verifyCookieAndGetResponse(requestBody.Cookie)
-
-	w.Header().Set("Content-Type", "application/json")
-	jsonResp, err := json.Marshal(finalResponse)
-	if err != nil {
-		config.ErrorLogger.Printf("Error marshalling /verify-cookie response for %s: %v", r.RemoteAddr, err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	if _, err := w.Write(jsonResp); err != nil {
-		config.ErrorLogger.Printf("Error writing /verify-cookie response for %s: %v", r.RemoteAddr, err)
-	} else {
-		config.DebugLogger.Printf("Successfully sent /verify-cookie response to %s. Success: %t, User: %s",
-			r.RemoteAddr, finalResponse.Success, finalResponse.Data.Username)
-	}
-}
-
-// verifyCookieAndGetResponse takes a cookie string, calls Reddit's API to verify it, and returns a structured response.
-func verifyCookieAndGetResponse(cookieStr string) types.TokenResponseType {
-	var finalResponse types.TokenResponseType
-
-	// Make request to Reddit's /api/me.json
-	req, err := http.NewRequest(http.MethodGet, "https://www.reddit.com/api/me.json", nil)
-	if err != nil {
-		config.ErrorLogger.Printf("Error creating request for /api/me.json: %v", err)
-		finalResponse.Success = false
-		finalResponse.Message = "Internal error creating request to verify cookie."
-		return finalResponse
-	}
-
-	req.Header = http.Header{
-		"Cookie":     {cookieStr},
-		"User-Agent": {config.UserAgent}, // Use a global or configured user agent.
-	}
-
-	config.DebugLogger.Printf("Sending request to /api/me.json to verify cookie (ends ...%s)", safeSuffix(cookieStr, 6))
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		config.ErrorLogger.Printf("Error sending request to /api/me.json: %v", err)
-		finalResponse.Success = false
-		finalResponse.Message = "Error contacting Reddit to verify cookie."
-		return finalResponse
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		config.ErrorLogger.Printf("Error reading response body from /api/me.json (status %d): %v", resp.StatusCode, err)
-		finalResponse.Success = false
-		finalResponse.Message = "Error reading Reddit's response."
-		return finalResponse
-	}
-	config.DebugLogger.Printf("/api/me.json response (Status: %d): %s", resp.StatusCode, string(bodyBytes))
-
-	if resp.StatusCode != http.StatusOK {
-		config.ErrorLogger.Printf("Cookie verification failed. /api/me.json status: %d. Body: %s", resp.StatusCode, string(bodyBytes))
-		var errorRespData types.ErrorResponseType
-		if err := json.Unmarshal(bodyBytes, &errorRespData); err == nil && errorRespData.Message != "" {
-			finalResponse.Message = fmt.Sprintf("Invalid Token/Cookie: %s", errorRespData.Message)
-			finalResponse.Data.Username = errorRespData.Message // Often contains "invalid_token" or similar.
-		} else {
-			finalResponse.Message = fmt.Sprintf("Invalid Token/Cookie (status %d)", resp.StatusCode)
-			finalResponse.Data.Username = "Unknown error"
-		}
-		finalResponse.Success = false
-		return finalResponse
-	}
-
-	var profile types.ProfileResponseType
-	if err := json.Unmarshal(bodyBytes, &profile); err != nil {
-		config.ErrorLogger.Printf("Error unmarshalling /api/me.json response: %v. Body: %s", err, string(bodyBytes))
-		finalResponse.Success = false
-		finalResponse.Message = "Error parsing Reddit's response."
-		return finalResponse
-	}
-
-	if profile.Data.Name == "" {
-		config.ErrorLogger.Printf("Cookie verified (status 200) but no username found in /api/me.json response. Body: %s", string(bodyBytes))
-		finalResponse.Success = false
-		finalResponse.Message = "Cookie seems valid, but username could not be retrieved."
-		return finalResponse
-	}
-
-	config.InfoLogger.Printf("Cookie successfully verified for username: %s", profile.Data.Name)
-	finalResponse.Success = true
-	finalResponse.Message = "Valid Token/Cookie"
-	finalResponse.Data.Username = profile.Data.Name
-	return finalResponse
-}
-
-// getUsernameFromCookie verifies a cookie and returns the username or an error.
-// This is a helper for internal use within the migration logic.
-func getUsernameFromCookie(cookieStr string) (string, error) {
-	response := verifyCookieAndGetResponse(cookieStr)
-	if !response.Success {
-		return "", fmt.Errorf("cookie verification failed: %s", response.Message)
-	}
-	if response.Data.Username == "" {
-		return "", errors.New("cookie verified but username is empty")
-	}
-	return response.Data.Username, nil
-}
-
-// parseTokenFromCookie extracts the 'token_v2' value from a full cookie string.
-// Returns an empty string if 'token_v2' is not found or the cookie format is unexpected.
-func parseTokenFromCookie(cookie string) string {
-	parts := strings.Split(cookie, ";")
-	for _, part := range parts {
-		trimmedPart := strings.TrimSpace(part)
-		if strings.HasPrefix(trimmedPart, "token_v2=") {
-			tokenPair := strings.SplitN(trimmedPart, "=", 2)
-			if len(tokenPair) == 2 && tokenPair[1] != "" {
-				config.DebugLogger.Printf("Successfully parsed token_v2 from cookie (value ends ...%s)", safeSuffix(tokenPair[1], 6))
-				return tokenPair[1]
-			}
-			config.ErrorLogger.Printf("Found 'token_v2=' but failed to parse value from part: '%s'", trimmedPart)
-			return "" // Found prefix but value is malformed
-		}
-	}
-	config.DebugLogger.Printf("Could not find 'token_v2=' in cookie string: ...%s", safeSuffix(cookie, 20))
-	return "" // Token not found
-}
-
 // errorResponse sends a JSON error message to the client with a given HTTP status code.
 func errorResponse(w http.ResponseWriter, message string, httpStatusCode int) {
 	w.Header().Set("Content-Type", "application/json")
@@ -421,15 +323,6 @@ func errorResponse(w http.ResponseWriter, message string, httpStatusCode int) {
 	}
 }
 
-// safeSuffix returns the last N characters of a string, or the whole string if shorter than N.
-// Useful for logging sensitive data like tokens without exposing the full value.
-func safeSuffix(s string, n int) string {
-	if len(s) <= n {
-		return s
-	}
-	return s[len(s)-n:]
-}
-
 // HandleCustomMigration processes a custom selection migration request
 // It migrates only the selected subreddits and posts instead of all items
 func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResponseType {
@@ -439,31 +332,76 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 	config.InfoLogger.Printf("Starting custom migration process with %d subreddits and %d posts",
 		len(req.SelectedSubreddits), len(req.SelectedPosts))
 
-	// Verify cookies and get usernames
-	oldAccountUsername, err := getUsernameFromCookie(req.OldAccountCookie)
-	if err != nil {
-		config.ErrorLogger.Printf("Failed to verify old account cookie: %v", err)
-		finalResponse.Message = fmt.Sprintf("Failed to verify old account cookie: %v", err)
-		return finalResponse
+	// Extract authentication data for old account
+	var oldAccountToken, oldAccountUsername string
+	var err error
+
+	if req.AuthMethod == "oauth" {
+		oldAccountToken = req.OldAccountToken
+		// Use provided username if available, otherwise get from OAuth token
+		if req.OldAccountUsername != "" {
+			oldAccountUsername = req.OldAccountUsername
+		} else {
+			// Get username from OAuth token
+			userInfo, err := auth.GetUserInfoWithToken(oldAccountToken)
+			if err != nil {
+				config.ErrorLogger.Printf("Failed to verify old account OAuth token: %v", err)
+				finalResponse.Message = fmt.Sprintf("Failed to verify old account OAuth token: %v", err)
+				return finalResponse
+			}
+			oldAccountUsername = userInfo.Data.Name
+		}
+	} else {
+		// Cookie-based authentication (default/backward compatibility)
+		oldAccountUsername, err = auth.GetUsernameFromCookie(req.OldAccountCookie)
+		if err != nil {
+			config.ErrorLogger.Printf("Failed to verify old account cookie: %v", err)
+			finalResponse.Message = fmt.Sprintf("Failed to verify old account cookie: %v", err)
+			return finalResponse
+		}
+		oldAccountToken = auth.ParseTokenFromCookie(req.OldAccountCookie)
+		if oldAccountToken == "" {
+			config.ErrorLogger.Println("Failed to parse OAuth token from old account cookie.")
+			finalResponse.Message = "Failed to parse OAuth token from old account cookie. Ensure 'token_v2' is present."
+			return finalResponse
+		}
 	}
 
-	newAccountUsername, err := getUsernameFromCookie(req.NewAccountCookie)
-	if err != nil {
-		config.ErrorLogger.Printf("Failed to verify new account cookie: %v", err)
-		finalResponse.Message = fmt.Sprintf("Failed to verify new account cookie: %v", err)
-		return finalResponse
+	// Extract authentication data for new account
+	var newAccountToken, newAccountUsername string
+
+	if req.AuthMethod == "oauth" {
+		newAccountToken = req.NewAccountToken
+		// Use provided username if available, otherwise get from OAuth token
+		if req.NewAccountUsername != "" {
+			newAccountUsername = req.NewAccountUsername
+		} else {
+			// Get username from OAuth token
+			userInfo, err := auth.GetUserInfoWithToken(newAccountToken)
+			if err != nil {
+				config.ErrorLogger.Printf("Failed to verify new account OAuth token: %v", err)
+				finalResponse.Message = fmt.Sprintf("Failed to verify new account OAuth token: %v", err)
+				return finalResponse
+			}
+			newAccountUsername = userInfo.Data.Name
+		}
+	} else {
+		// Cookie-based authentication (default/backward compatibility)
+		newAccountUsername, err = auth.GetUsernameFromCookie(req.NewAccountCookie)
+		if err != nil {
+			config.ErrorLogger.Printf("Failed to verify new account cookie: %v", err)
+			finalResponse.Message = fmt.Sprintf("Failed to verify new account cookie: %v", err)
+			return finalResponse
+		}
+		newAccountToken = auth.ParseTokenFromCookie(req.NewAccountCookie)
+		if newAccountToken == "" {
+			config.ErrorLogger.Println("Failed to parse OAuth token from new account cookie.")
+			finalResponse.Message = "Failed to parse OAuth token from new account cookie. Ensure 'token_v2' is present."
+			return finalResponse
+		}
 	}
 
 	config.InfoLogger.Printf("Verified accounts for custom migration: %s -> %s", oldAccountUsername, newAccountUsername)
-
-	// Parse OAuth tokens from cookies
-	oldAccountToken := parseTokenFromCookie(req.OldAccountCookie)
-	newAccountToken := parseTokenFromCookie(req.NewAccountCookie)
-	if oldAccountToken == "" || newAccountToken == "" {
-		config.ErrorLogger.Println("Failed to parse OAuth tokens from one or both cookies.")
-		finalResponse.Message = "Failed to parse OAuth tokens from cookies. Ensure 'token_v2' is present."
-		return finalResponse
-	}
 
 	// Handle selected subreddits migration
 	if len(req.SelectedSubreddits) > 0 {

@@ -22,7 +22,6 @@ import (
 var Version = "dev" // Default to "dev" if not built with version info
 
 // DefaultAddress is the address the server will listen on if no other address is specified.
-const DefaultAddress = "localhost:5005"
 
 func main() {
 	// Initialize loggers
@@ -42,7 +41,7 @@ func main() {
 	router.Route("/", mainRouter)
 
 	// Determine the server address.
-	addr := getServerAddress()
+	addr := config.ServerAddress
 
 	// Start listening on the specified address.
 	listener, err := net.Listen("tcp", addr)
@@ -68,31 +67,6 @@ func main() {
 	}
 }
 
-// getServerAddress determines the server address based on environment variables,
-// command-line arguments, or a default value.
-func getServerAddress() string {
-	// Priority 1: Environment variable GO_ADDR.
-	if addr := os.Getenv("GO_ADDR"); addr != "" {
-		config.InfoLogger.Printf("Using address from GO_ADDR environment variable: %s", addr)
-		return addr
-	}
-
-	// Priority 2: Command-line argument --addr.
-	for _, arg := range os.Args[1:] { // Skip the program name.
-		if strings.HasPrefix(arg, "--addr=") {
-			addr := strings.TrimPrefix(arg, "--addr=")
-			if addr != "" {
-				config.InfoLogger.Printf("Using address from --addr command-line argument: %s", addr)
-				return addr
-			}
-		}
-	}
-
-	// Priority 3: Default address.
-	config.InfoLogger.Printf("Using default address: %s", DefaultAddress)
-	return DefaultAddress
-}
-
 // constructURL creates a full HTTP URL from an address string.
 // If the address does not specify a host, "localhost" is assumed.
 func constructURL(addr string) string {
@@ -104,7 +78,7 @@ func constructURL(addr string) string {
 		}
 		// Fallback for other malformed cases, though getServerAddress should prevent this.
 		config.ErrorLogger.Printf("Malformed address string: %s. Defaulting to localhost.", addr)
-		return fmt.Sprintf("http://%s", DefaultAddress)
+		return fmt.Sprintf("http://%s", config.DefaultAddress)
 	}
 
 	if host == "" {

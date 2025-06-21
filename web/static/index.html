@@ -367,6 +367,120 @@
         .light-mode .btn-secondary:hover {
             background: linear-gradient(135deg, #0066B3 0%, #005299 100%) !important;
         }
+
+        /* Tab Styles */
+        .auth-tab {
+            background: transparent;
+            color: #64748b;
+            border: none;
+            cursor: pointer;
+        }
+
+        .auth-tab.active {
+            background: linear-gradient(135deg, #FF4500 0%, #e03e00 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(255, 69, 0, 0.3);
+        }
+
+        .auth-tab:hover:not(.active) {
+            background: rgba(255, 69, 0, 0.1);
+            color: #FF4500;
+        }
+
+        .auth-content {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .auth-content.hidden {
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Light mode tab styles */
+        .light-mode .auth-tab {
+            color: #4b5563;
+        }
+
+        .light-mode .auth-tab.active {
+            background: linear-gradient(135deg, #FF4500 0%, #e03e00 100%);
+            color: white;
+        }
+
+        .light-mode .auth-tab:hover:not(.active) {
+            background: rgba(255, 69, 0, 0.1);
+            color: #FF4500;
+        }
+
+        /* Authentication Method Tab Styles */
+        .auth-method-tab {
+            background: transparent;
+            color: #94a3b8;
+            border: none;
+            cursor: pointer;
+        }
+
+        .auth-method-tab.active {
+            background: linear-gradient(135deg, #0079D3 0%, #0066B3 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 121, 211, 0.3);
+        }
+
+        .auth-method-tab:hover:not(.active) {
+            background: rgba(0, 121, 211, 0.1);
+            color: #0079D3;
+        }
+
+        .auth-method-tab.active:hover {
+            background: linear-gradient(135deg, #0066B3 0%, #005299 100%);
+        }
+
+        /* Light mode authentication method tab styles */
+        .light-mode .auth-method-tab {
+            color: #64748b;
+        }
+
+        .light-mode .auth-method-tab.active {
+            background: linear-gradient(135deg, #0079D3 0%, #0066B3 100%);
+            color: white;
+        }
+
+        .light-mode .auth-method-tab:hover:not(.active) {
+            background: rgba(0, 121, 211, 0.1);
+            color: #0079D3;
+        }
+
+        /* Password visibility toggle styles */
+        .password-toggle-btn {
+            transition: all 0.2s ease;
+        }
+
+        .password-toggle-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .password-toggle-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Light mode password toggle */
+        .light-mode .password-toggle-btn .material-icons {
+            color: #64748b !important;
+        }
+
+        .light-mode .password-toggle-btn:hover .material-icons {
+            color: #374151 !important;
+        }
     </style>
 </head>
 
@@ -399,92 +513,200 @@
 
         <!-- Enhanced Main Card -->
         <div class="w-full max-w-2xl glass-card rounded-2xl p-8 shadow-2xl animate-slide-in">
-            <!-- Old Account Section -->
-            <div class="mb-6">
-                <label for="oldAccessToken"
-                    class="block text-base font-semibold text-slate-200 mb-3 flex items-center justify-between">
-                    <span class="flex items-center">
-                        <span class="material-icons mr-2" style="color: #FF4500;">account_circle</span>
-                        Old Account Cookie
-                    </span>
-                    <button onclick="showCookieHelp()"
-                        class="text-sm font-normal text-slate-400 hover:text-orange-400 flex items-center space-x-1 transition-colors">
-                        <span class="material-icons text-base">help_outline</span>
-                        <span>How to get cookie?</span>
+            <!-- Authentication Method Tabs -->
+            <div class="mb-8">
+                <div class="flex bg-slate-700/30 rounded-xl p-1 mb-6">
+                    <button id="cookieTab"
+                        class="auth-tab active flex-1 py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center space-x-2">
+                        <span class="material-icons text-lg">cookie</span>
+                        <span>Cookie Authentication</span>
                     </button>
-                </label>
-                <div class="flex items-center space-x-3">
-                    <input type="text" id="oldAccessToken" name="oldAccessToken"
-                        class="flex-grow form-input rounded-xl px-4 py-3 text-slate-200 placeholder-slate-400"
-                        placeholder="Enter your old account cookie" />
-                    <button
-                        class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
-                        id="oldTokenVerifyBtn">
+                    <button id="oauthTab"
+                        class="auth-tab flex-1 py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center space-x-2">
                         <span class="material-icons text-lg">security</span>
-                        <span>Verify</span>
-                    </button>
-                    <button
-                        class="hidden btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
-                        id="verify-load-btn-1">
-                        <span class="material-icons animate-spin">refresh</span>
-                        <span>Verifying</span>
+                        <span>OAuth Authentication</span>
                     </button>
                 </div>
-                <p class="mt-3 text-sm text-emerald-400 hidden flex items-center" id="oldTokenVerifySuccessMessage">
-                    <span class="material-icons mr-2 text-base">check_circle</span>
-                    <span class="font-medium">Cookie Verified</span>
-                    <span class="text-slate-400 mx-2">|</span>
-                    <span>User Name: </span>
-                    <span class="font-semibold text-slate-200" id="oldAccountUserId"></span>
-                </p>
-                <p class="mt-3 text-sm text-red-400 hidden flex items-center" id="oldTokenVerifyFailMessage">
-                    <span class="material-icons mr-2 text-base">error</span>
-                    <span class="font-medium">Cookie Invalid</span>
-                </p>
             </div>
 
-            <!-- New Account Section -->
-            <div class="mb-8">
-                <label for="newAccessToken"
-                    class="block text-base font-semibold text-slate-200 mb-3 flex items-center justify-between">
-                    <span class="flex items-center">
-                        <span class="material-icons mr-2" style="color: #0079D3;">account_circle</span>
-                        New Account Cookie
-                    </span>
-                    <button onclick="showCookieHelp()"
-                        class="text-sm font-normal text-slate-400 hover:text-orange-400 flex items-center space-x-1 transition-colors">
-                        <span class="material-icons text-base">help_outline</span>
-                        <span>How to get cookie?</span>
-                    </button>
-                </label>
-                <div class="flex items-center space-x-3">
-                    <input type="text" id="newAccessToken" name="newAccessToken"
-                        class="flex-grow form-input rounded-xl px-4 py-3 text-slate-200 placeholder-slate-400"
-                        placeholder="Enter your new account cookie" />
-                    <button
-                        class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
-                        id="newTokenVerifyBtn">
-                        <span class="material-icons text-lg">security</span>
-                        <span>Verify</span>
-                    </button>
-                    <button
-                        class="hidden btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
-                        id="verify-load-btn-2">
-                        <span class="material-icons animate-spin">refresh</span>
-                        <span>Verifying</span>
-                    </button>
+            <!-- Cookie Authentication Content -->
+            <div id="cookieAuthContent" class="auth-content">
+                <!-- Old Account Section -->
+                <div class="mb-6">
+                    <label for="oldAccessToken"
+                        class="block text-base font-semibold text-slate-200 mb-3 flex items-center justify-between">
+                        <span class="flex items-center">
+                            <span class="material-icons mr-2" style="color: #FF4500;">account_circle</span>
+                            Source Account Cookie
+                        </span>
+                        <button onclick="showCookieHelp()"
+                            class="text-sm font-normal text-slate-400 hover:text-orange-400 flex items-center space-x-1 transition-colors">
+                            <span class="material-icons text-base">help_outline</span>
+                            <span>How to get cookie?</span>
+                        </button>
+                    </label>
+                    <div class="flex items-center space-x-3">
+                        <div class="relative flex-grow">
+                            <input type="password" id="oldAccessToken" name="oldAccessToken"
+                                class="w-full form-input rounded-xl px-4 py-3 pr-12 text-slate-200 placeholder-slate-400"
+                                placeholder="Enter your source account cookie" />
+                            <button type="button"
+                                class="password-toggle-btn absolute inset-y-0 right-0 pr-3 flex items-center"
+                                onclick="togglePasswordVisibility('oldAccessToken', 'oldAccessTokenEye')">
+                                <span class="material-icons text-slate-400 hover:text-slate-200 cursor-pointer"
+                                    id="oldAccessTokenEye">visibility</span>
+                            </button>
+                        </div>
+                        <button
+                            class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                            id="oldTokenVerifyBtn">
+                            <span class="material-icons text-lg">security</span>
+                            <span>Verify</span>
+                        </button>
+                        <button
+                            class="hidden btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                            id="verify-load-btn-1">
+                            <span class="material-icons animate-spin">refresh</span>
+                            <span>Verifying</span>
+                        </button>
+                    </div>
+                    <p class="mt-3 text-sm text-emerald-400 hidden flex items-center" id="oldTokenVerifySuccessMessage">
+                        <span class="material-icons mr-2 text-base">check_circle</span>
+                        <span class="font-medium">Cookie Verified</span>
+                        <span class="text-slate-400 mx-2">|</span>
+                        <span>User Name: </span>
+                        <span class="font-semibold text-slate-200" id="oldAccountUserId"></span>
+                    </p>
+                    <p class="mt-3 text-sm text-red-400 hidden flex items-center" id="oldTokenVerifyFailMessage">
+                        <span class="material-icons mr-2 text-base">error</span>
+                        <span class="font-medium">Cookie Invalid</span>
+                    </p>
                 </div>
-                <p class="mt-3 text-sm text-emerald-400 hidden flex items-center" id="newTokenVerifySuccessMessage">
-                    <span class="material-icons mr-2 text-base">check_circle</span>
-                    <span class="font-medium">Cookie Verified</span>
-                    <span class="text-slate-400 mx-2">|</span>
-                    <span>User Name: </span>
-                    <span class="font-semibold text-slate-200" id="newAccountUserId"></span>
-                </p>
-                <p class="mt-3 text-sm text-red-400 hidden flex items-center" id="newTokenVerifyFailMessage">
-                    <span class="material-icons mr-2 text-base">error</span>
-                    <span class="font-medium">Cookie Invalid</span>
-                </p>
+
+                <!-- New Account Section -->
+                <div class="mb-8">
+                    <label for="newAccessToken"
+                        class="block text-base font-semibold text-slate-200 mb-3 flex items-center justify-between">
+                        <span class="flex items-center">
+                            <span class="material-icons mr-2" style="color: #0079D3;">account_circle</span>
+                            Destination Account Cookie
+                        </span>
+                        <button onclick="showCookieHelp()"
+                            class="text-sm font-normal text-slate-400 hover:text-orange-400 flex items-center space-x-1 transition-colors">
+                            <span class="material-icons text-base">help_outline</span>
+                            <span>How to get cookie?</span>
+                        </button>
+                    </label>
+                    <div class="flex items-center space-x-3">
+                        <div class="relative flex-grow">
+                            <input type="password" id="newAccessToken" name="newAccessToken"
+                                class="w-full form-input rounded-xl px-4 py-3 pr-12 text-slate-200 placeholder-slate-400"
+                                placeholder="Enter your destination account cookie" />
+                            <button type="button"
+                                class="password-toggle-btn absolute inset-y-0 right-0 pr-3 flex items-center"
+                                onclick="togglePasswordVisibility('newAccessToken', 'newAccessTokenEye')">
+                                <span class="material-icons text-slate-400 hover:text-slate-200 cursor-pointer"
+                                    id="newAccessTokenEye">visibility</span>
+                            </button>
+                        </div>
+                        <button
+                            class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                            id="newTokenVerifyBtn">
+                            <span class="material-icons text-lg">security</span>
+                            <span>Verify</span>
+                        </button>
+                        <button
+                            class="hidden btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                            id="verify-load-btn-2">
+                            <span class="material-icons animate-spin">refresh</span>
+                            <span>Verifying</span>
+                        </button>
+                    </div>
+                    <p class="mt-3 text-sm text-emerald-400 hidden flex items-center" id="newTokenVerifySuccessMessage">
+                        <span class="material-icons mr-2 text-base">check_circle</span>
+                        <span class="font-medium">Cookie Verified</span>
+                        <span class="text-slate-400 mx-2">|</span>
+                        <span>User Name: </span>
+                        <span class="font-semibold text-slate-200" id="newAccountUserId"></span>
+                    </p>
+                    <p class="mt-3 text-sm text-red-400 hidden flex items-center" id="newTokenVerifyFailMessage">
+                        <span class="material-icons mr-2 text-base">error</span>
+                        <span class="font-medium">Cookie Invalid</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- OAuth Authentication Content -->
+            <div id="oauthAuthContent" class="auth-content hidden">
+                <!-- Source Account OAuth Section -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <span class="material-icons mr-2" style="color: #FF4500;">account_circle</span>
+                            <h3 class="text-lg font-semibold text-slate-200">Source Account OAuth</h3>
+                        </div>
+                        <button onclick="showOAuthHelp()"
+                            class="text-sm font-normal text-slate-400 hover:text-orange-400 flex items-center space-x-1 transition-colors">
+                            <span class="material-icons text-base">help_outline</span>
+                            <span>How to get OAuth credentials?</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <button
+                            class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                            id="sourceOAuthModalBtn">
+                            <span class="material-icons text-lg">login</span>
+                            <span>Configure Source Account</span>
+                        </button>
+                    </div>
+
+                    <!-- Verification Status -->
+                    <div id="sourceOAuthStatus" class="mt-4 hidden">
+                        <p class="text-sm text-emerald-400 flex items-center">
+                            <span class="material-icons mr-2 text-base">check_circle</span>
+                            <span class="font-medium">Verified</span>
+                            <span class="text-slate-400 mx-2">|</span>
+                            <span>User: </span>
+                            <span class="font-semibold text-slate-200" id="sourceOAuthUsername"></span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Destination Account OAuth Section -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <span class="material-icons mr-2" style="color: #0079D3;">account_circle</span>
+                            <h3 class="text-lg font-semibold text-slate-200">Destination Account OAuth</h3>
+                        </div>
+                        <button onclick="showOAuthHelp()"
+                            class="text-sm font-normal text-slate-400 hover:text-orange-400 flex items-center space-x-1 transition-colors">
+                            <span class="material-icons text-base">help_outline</span>
+                            <span>How to get OAuth credentials?</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <button
+                            class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                            id="destOAuthModalBtn">
+                            <span class="material-icons text-lg">login</span>
+                            <span>Configure Destination Account</span>
+                        </button>
+                    </div>
+
+                    <!-- Verification Status -->
+                    <div id="destOAuthStatus" class="mt-4 hidden">
+                        <p class="text-sm text-emerald-400 flex items-center">
+                            <span class="material-icons mr-2 text-base">check_circle</span>
+                            <span class="font-medium">Verified</span>
+                            <span class="text-slate-400 mx-2">|</span>
+                            <span>User: </span>
+                            <span class="font-semibold text-slate-200" id="destOAuthUsername"></span>
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <!-- Migration Options -->
@@ -915,6 +1137,481 @@
                                     <span>Reddit cookies typically expire after 2 hours of inactivity.</span>
                                 </li>
                             </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OAuth Help Modal -->
+    <div id="oauthHelpModal"
+        class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-0 w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 max-w-2xl">
+            <div class="glass-card rounded-2xl shadow-2xl overflow-hidden">
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-blue-500/20 to-purple-500/20 p-6 border-b border-slate-600">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-2xl font-bold text-slate-200 flex items-center">
+                            <span class="material-icons mr-3 text-blue-400">api</span>
+                            How to Get Reddit OAuth Credentials
+                        </h3>
+                        <button onclick="hideOAuthHelp()"
+                            class="text-slate-400 hover:text-slate-200 p-2 rounded-xl hover:bg-slate-700/50 transition-all duration-200">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Content -->
+                <div class="p-6 overflow-y-auto max-h-[70vh]">
+                    <div class="space-y-6">
+                        <!-- App Creation Instructions -->
+                        <div class="bg-slate-700/30 rounded-xl p-4">
+                            <h4 class="text-lg font-semibold text-slate-200 mb-3 flex items-center">
+                                <span class="material-icons mr-2 text-blue-400">add_box</span>
+                                Creating Reddit App
+                            </h4>
+                            <ol class="space-y-3 text-sm">
+                                <li class="flex">
+                                    <span class="text-blue-400 font-semibold mr-2">1.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300">Go to <a href="https://www.reddit.com/prefs/apps"
+                                                target="_blank"
+                                                class="text-blue-400 hover:text-blue-300 underline">Reddit App
+                                                Preferences</a></p>
+                                    </div>
+                                </li>
+                                <li class="flex">
+                                    <span class="text-blue-400 font-semibold mr-2">2.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300">Click <strong>"Create App"</strong> or <strong>"Create
+                                                Another App"</strong></p>
+                                    </div>
+                                </li>
+                                <li class="flex">
+                                    <span class="text-blue-400 font-semibold mr-2">3.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300">Fill in the form:</p>
+                                        <ul class="mt-2 ml-4 space-y-1 text-slate-400">
+                                            <li>• <strong>Name:</strong> Any name (e.g., "migrate_tool")</li>
+                                            <li>• <strong>App type:</strong> Select "web app" if choosing Normal OAuth,
+                                                otherwise for Direct Login select "script"</li>
+                                            <li>• <strong>Description:</strong> Optional description</li>
+                                            <li>• <strong>About URL:</strong> Leave blank or use any URL</li>
+                                            <li>• <strong>Redirect URI:</strong> <code
+                                                    class="bg-slate-600 px-2 py-1 rounded text-xs">http://localhost:5005/api/oauth/callback</code>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </li>
+                                <li class="flex">
+                                    <span class="text-blue-400 font-semibold mr-2">4.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300">Click <strong>"Create app"</strong></p>
+                                    </div>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <!-- Credentials Extraction -->
+                        <div class="bg-slate-700/30 rounded-xl p-4">
+                            <h4 class="text-lg font-semibold text-slate-200 mb-3 flex items-center">
+                                <span class="material-icons mr-2 text-green-400">key</span>
+                                Getting Credentials
+                            </h4>
+                            <ol class="space-y-3 text-sm">
+                                <li class="flex">
+                                    <span class="text-green-400 font-semibold mr-2">1.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300">After creating the app, you'll see it in your apps
+                                            list</p>
+                                    </div>
+                                </li>
+                                <li class="flex">
+                                    <span class="text-green-400 font-semibold mr-2">2.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300"><strong>Client ID:</strong> The string right under
+                                            your app name (looks like random characters)</p>
+                                    </div>
+                                </li>
+                                <li class="flex">
+                                    <span class="text-green-400 font-semibold mr-2">3.</span>
+                                    <div class="flex-1">
+                                        <p class="text-slate-300"><strong>Client Secret:</strong> Click "Edit" on your
+                                            app, then copy the "secret" field</p>
+                                    </div>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <!-- Important Notes -->
+                        <div class="bg-amber-900/20 border border-amber-500/30 rounded-xl p-4">
+                            <h4 class="text-amber-400 font-semibold mb-2 flex items-center">
+                                <span class="material-icons mr-2">warning</span>
+                                Important Notes
+                            </h4>
+                            <ul class="space-y-2 text-sm text-slate-300">
+                                <li class="flex items-start">
+                                    <span class="material-icons text-amber-400 mr-2 text-base">info</span>
+                                    <span>You need to create <strong>separate apps</strong> for your source and
+                                        destination accounts.</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="material-icons text-amber-400 mr-2 text-base">security</span>
+                                    <span>Keep your Client Secret confidential - never share it publicly.</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="material-icons text-amber-400 mr-2 text-base">link</span>
+                                    <span>The redirect URI must match exactly: <code
+                                            class="bg-slate-600 px-1 rounded text-xs">http://localhost:5005/api/oauth/callback</code></span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="material-icons text-amber-400 mr-2 text-base">schedule</span>
+                                    <span> For Normal OAuth, follow these steps:
+                                        <ol class="list-decimal pl-5 space-y-2">
+                                            <li>Login with your Source Reddit account (the one you're migrating from).
+                                            </li>
+                                            <li>Click "Verify" and continue when asked.</li>
+                                            <li>Logout from the Source account.</li>
+                                            <li>Login with your Destination Reddit account (the one you're migrating
+                                                to).</li>
+                                            <li>Click "Verify" and continue again.</li>
+                                        </ol>
+                                    </span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="material-icons text-amber-400 mr-2 text-base">schedule</span>
+                                    <span>For Direct Login, you need to provide username and password for both Source
+                                        and
+                                        Destination.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OAuth Authentication Modals -->
+    <!-- Source OAuth Modal -->
+    <div id="sourceOAuthModal"
+        class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-0 w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 max-w-2xl">
+            <div class="glass-card rounded-2xl shadow-2xl overflow-hidden">
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-orange-500/20 to-red-500/20 p-6 border-b border-slate-600">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-2xl font-bold text-slate-200 flex items-center">
+                            <span class="material-icons mr-3 text-orange-400">account_circle</span>
+                            Source Account OAuth
+                        </h3>
+                        <button onclick="hideOAuthModal('source')"
+                            class="text-slate-400 hover:text-slate-200 p-2 rounded-xl hover:bg-slate-700/50 transition-all duration-200">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Content -->
+                <div class="p-6">
+                    <!-- Authentication Method Toggle -->
+                    <div class="mb-6">
+                        <div class="flex bg-slate-700/30 rounded-lg p-1 mb-4">
+                            <button id="sourceModalOAuthFlowBtn"
+                                class="auth-method-tab active flex-1 py-2 px-3 rounded-md font-medium text-sm transition-all duration-200 flex items-center justify-center space-x-2">
+                                <span class="material-icons text-base">open_in_new</span>
+                                <span>OAuth Flow</span>
+                            </button>
+                            <button id="sourceModalDirectAuthBtn"
+                                class="auth-method-tab flex-1 py-2 px-3 rounded-md font-medium text-sm transition-all duration-200 flex items-center justify-center space-x-2">
+                                <span class="material-icons text-base">login</span>
+                                <span>Direct Login</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label for="sourceModalClientId" class="block text-sm font-medium text-slate-300 mb-2">
+                                Client ID
+                            </label>
+                            <input type="text" id="sourceModalClientId" name="sourceModalClientId"
+                                class="w-full form-input rounded-xl px-4 py-3 text-slate-200 placeholder-slate-400"
+                                placeholder="Enter client ID" />
+                        </div>
+
+                        <div>
+                            <label for="sourceModalClientSecret" class="block text-sm font-medium text-slate-300 mb-2">
+                                Client Secret
+                            </label>
+                            <div class="relative">
+                                <input type="password" id="sourceModalClientSecret" name="sourceModalClientSecret"
+                                    class="w-full form-input rounded-xl px-4 py-3 pr-12 text-slate-200 placeholder-slate-400"
+                                    placeholder="Enter client secret" />
+                                <button type="button"
+                                    class="password-toggle-btn absolute inset-y-0 right-0 pr-3 flex items-center"
+                                    onclick="togglePasswordVisibility('sourceModalClientSecret', 'sourceModalClientSecretEye')">
+                                    <span class="material-icons text-slate-400 hover:text-slate-200 cursor-pointer"
+                                        id="sourceModalClientSecretEye">visibility</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Direct Auth Fields (Hidden by default) -->
+                        <div id="sourceModalDirectAuthFields" class="space-y-4 hidden">
+                            <div>
+                                <label for="sourceModalUsername" class="block text-sm font-medium text-slate-300 mb-2">
+                                    Reddit Username
+                                </label>
+                                <input type="text" id="sourceModalUsername" name="sourceModalUsername"
+                                    class="w-full form-input rounded-xl px-4 py-3 text-slate-200 placeholder-slate-400"
+                                    placeholder="Enter your Reddit username" />
+                            </div>
+
+                            <div>
+                                <label for="sourceModalPassword" class="block text-sm font-medium text-slate-300 mb-2">
+                                    Reddit Password
+                                </label>
+                                <div class="relative">
+                                    <input type="password" id="sourceModalPassword" name="sourceModalPassword"
+                                        class="w-full form-input rounded-xl px-4 py-3 pr-12 text-slate-200 placeholder-slate-400"
+                                        placeholder="Enter your Reddit password" />
+                                    <button type="button"
+                                        class="password-toggle-btn absolute inset-y-0 right-0 pr-3 flex items-center"
+                                        onclick="togglePasswordVisibility('sourceModalPassword', 'sourceModalPasswordEye')">
+                                        <span class="material-icons text-slate-400 hover:text-slate-200 cursor-pointer"
+                                            id="sourceModalPasswordEye">visibility</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- <div class="bg-amber-900/20 border border-amber-500/30 rounded-lg p-3">
+                                <div class="flex items-start space-x-2">
+                                    <span class="material-icons text-amber-400 text-sm mt-0.5">warning</span>
+                                    <div class="text-xs text-slate-300">
+                                        <p class="font-medium text-amber-400 mb-1">Security Notice</p>
+                                        <p>Direct login requires entering your Reddit password. This is less secure than
+                                            OAuth flow. Use only if you trust this application.</p>
+                                    </div>
+                                </div>
+                            </div> -->
+                        </div>
+
+                        <!-- Authentication Actions -->
+                        <div class="flex justify-end space-x-4 pt-4">
+                            <button
+                                class="btn-light-cancel px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                                onclick="hideOAuthModal('source')">
+                                <span class="material-icons">cancel</span>
+                                <span>Cancel</span>
+                            </button>
+                            <button
+                                class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                                id="sourceModalVerifyBtn">
+                                <span class="material-icons text-lg">security</span>
+                                <span id="sourceModalVerifyBtnText">Verify & Authenticate</span>
+                            </button>
+                            <button
+                                class="hidden btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                                id="sourceModalLoadBtn">
+                                <span class="material-icons animate-spin">refresh</span>
+                                <span>Verifying</span>
+                            </button>
+                        </div>
+
+                        <!-- Success/Error Messages -->
+                        <div id="sourceModalSuccessMessage"
+                            class="hidden bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-4">
+                            <div class="flex items-center space-x-3">
+                                <span class="material-icons text-emerald-400">check_circle</span>
+                                <div class="flex-1">
+                                    <p class="text-emerald-400 font-semibold">Authentication Successful!</p>
+                                    <p class="text-slate-300 text-sm">User: <span id="sourceModalSuccessUsername"
+                                            class="font-semibold"></span></p>
+                                </div>
+                                <button
+                                    class="btn-success px-4 py-2 text-white font-semibold rounded-lg flex items-center space-x-2"
+                                    onclick="hideOAuthModal('source')">
+                                    <span class="material-icons">close</span>
+                                    <span>Close</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="sourceModalErrorMessage"
+                            class="hidden bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+                            <div class="flex items-center space-x-3">
+                                <span class="material-icons text-red-400">error</span>
+                                <div class="flex-1">
+                                    <p class="text-red-400 font-semibold">Authentication Failed</p>
+                                    <p class="text-slate-300 text-sm" id="sourceModalErrorText">Please check your
+                                        credentials and try again.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Destination OAuth Modal -->
+    <div id="destOAuthModal"
+        class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-0 w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 max-w-2xl">
+            <div class="glass-card rounded-2xl shadow-2xl overflow-hidden">
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-blue-500/20 to-purple-500/20 p-6 border-b border-slate-600">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-2xl font-bold text-slate-200 flex items-center">
+                            <span class="material-icons mr-3 text-blue-400">account_circle</span>
+                            Destination Account OAuth
+                        </h3>
+                        <button onclick="hideOAuthModal('dest')"
+                            class="text-slate-400 hover:text-slate-200 p-2 rounded-xl hover:bg-slate-700/50 transition-all duration-200">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Content -->
+                <div class="p-6">
+                    <!-- Authentication Method Toggle -->
+                    <div class="mb-6">
+                        <div class="flex bg-slate-700/30 rounded-lg p-1 mb-4">
+                            <button id="destModalOAuthFlowBtn"
+                                class="auth-method-tab active flex-1 py-2 px-3 rounded-md font-medium text-sm transition-all duration-200 flex items-center justify-center space-x-2">
+                                <span class="material-icons text-base">open_in_new</span>
+                                <span>OAuth Flow</span>
+                            </button>
+                            <button id="destModalDirectAuthBtn"
+                                class="auth-method-tab flex-1 py-2 px-3 rounded-md font-medium text-sm transition-all duration-200 flex items-center justify-center space-x-2">
+                                <span class="material-icons text-base">login</span>
+                                <span>Direct Login</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label for="destModalClientId" class="block text-sm font-medium text-slate-300 mb-2">
+                                Client ID
+                            </label>
+                            <input type="text" id="destModalClientId" name="destModalClientId"
+                                class="w-full form-input rounded-xl px-4 py-3 text-slate-200 placeholder-slate-400"
+                                placeholder="Enter client ID" />
+                        </div>
+
+                        <div>
+                            <label for="destModalClientSecret" class="block text-sm font-medium text-slate-300 mb-2">
+                                Client Secret
+                            </label>
+                            <div class="relative">
+                                <input type="password" id="destModalClientSecret" name="destModalClientSecret"
+                                    class="w-full form-input rounded-xl px-4 py-3 pr-12 text-slate-200 placeholder-slate-400"
+                                    placeholder="Enter client secret" />
+                                <button type="button"
+                                    class="password-toggle-btn absolute inset-y-0 right-0 pr-3 flex items-center"
+                                    onclick="togglePasswordVisibility('destModalClientSecret', 'destModalClientSecretEye')">
+                                    <span class="material-icons text-slate-400 hover:text-slate-200 cursor-pointer"
+                                        id="destModalClientSecretEye">visibility</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Direct Auth Fields (Hidden by default) -->
+                        <div id="destModalDirectAuthFields" class="space-y-4 hidden">
+                            <div>
+                                <label for="destModalUsername" class="block text-sm font-medium text-slate-300 mb-2">
+                                    Reddit Username
+                                </label>
+                                <input type="text" id="destModalUsername" name="destModalUsername"
+                                    class="w-full form-input rounded-xl px-4 py-3 text-slate-200 placeholder-slate-400"
+                                    placeholder="Enter your Reddit username" />
+                            </div>
+
+                            <div>
+                                <label for="destModalPassword" class="block text-sm font-medium text-slate-300 mb-2">
+                                    Reddit Password
+                                </label>
+                                <div class="relative">
+                                    <input type="password" id="destModalPassword" name="destModalPassword"
+                                        class="w-full form-input rounded-xl px-4 py-3 pr-12 text-slate-200 placeholder-slate-400"
+                                        placeholder="Enter your Reddit password" />
+                                    <button type="button"
+                                        class="password-toggle-btn absolute inset-y-0 right-0 pr-3 flex items-center"
+                                        onclick="togglePasswordVisibility('destModalPassword', 'destModalPasswordEye')">
+                                        <span class="material-icons text-slate-400 hover:text-slate-200 cursor-pointer"
+                                            id="destModalPasswordEye">visibility</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="bg-amber-900/20 border border-amber-500/30 rounded-lg p-3">
+                                <div class="flex items-start space-x-2">
+                                    <span class="material-icons text-amber-400 text-sm mt-0.5">warning</span>
+                                    <div class="text-xs text-slate-300">
+                                        <p class="font-medium text-amber-400 mb-1">Security Notice</p>
+                                        <p>Direct login requires entering your Reddit password. This is less secure than
+                                            OAuth flow. Use only if you trust this application.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Authentication Actions -->
+                        <div class="flex justify-end space-x-4 pt-4">
+                            <button
+                                class="btn-light-cancel px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                                onclick="hideOAuthModal('dest')">
+                                <span class="material-icons">cancel</span>
+                                <span>Cancel</span>
+                            </button>
+                            <button
+                                class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                                id="destModalVerifyBtn">
+                                <span class="material-icons text-lg">security</span>
+                                <span id="destModalVerifyBtnText">Verify & Authenticate</span>
+                            </button>
+                            <button
+                                class="hidden btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                                id="destModalLoadBtn">
+                                <span class="material-icons animate-spin">refresh</span>
+                                <span>Verifying</span>
+                            </button>
+                        </div>
+
+                        <!-- Success/Error Messages -->
+                        <div id="destModalSuccessMessage"
+                            class="hidden bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-4">
+                            <div class="flex items-center space-x-3">
+                                <span class="material-icons text-emerald-400">check_circle</span>
+                                <div class="flex-1">
+                                    <p class="text-emerald-400 font-semibold">Authentication Successful!</p>
+                                    <p class="text-slate-300 text-sm">User: <span id="destModalSuccessUsername"
+                                            class="font-semibold"></span></p>
+                                </div>
+                                <button
+                                    class="btn-success px-4 py-2 text-white font-semibold rounded-lg flex items-center space-x-2"
+                                    onclick="hideOAuthModal('dest')">
+                                    <span class="material-icons">close</span>
+                                    <span>Close</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="destModalErrorMessage"
+                            class="hidden bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+                            <div class="flex items-center space-x-3">
+                                <span class="material-icons text-red-400">error</span>
+                                <div class="flex-1">
+                                    <p class="text-red-400 font-semibold">Authentication Failed</p>
+                                    <p class="text-slate-300 text-sm" id="destModalErrorText">Please check your
+                                        credentials and try again.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

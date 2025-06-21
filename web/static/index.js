@@ -8,6 +8,19 @@ let BOOL_MIGRATE_SAVED_POSTS = false;
 let BOOL_DELETE_SUBREDDITS = false;
 let BOOL_DELETE_SAVED_POSTS = false;
 
+// Authentication method tracking
+let CURRENT_AUTH_METHOD = "cookie"; // "cookie" or "oauth"
+let OAUTH_SOURCE_VERIFIED = false;
+let OAUTH_DEST_VERIFIED = false;
+let SOURCE_ACCESS_TOKEN = "";
+let DEST_ACCESS_TOKEN = "";
+let SOURCE_USERNAME = "";
+let DEST_USERNAME = "";
+
+// OAuth modal state
+let SOURCE_AUTH_METHOD = "oauth"; // "oauth" or "direct"
+let DEST_AUTH_METHOD = "oauth"; // "oauth" or "direct"
+
 // New selection state variables
 let SUBREDDIT_SELECTION = "none"; // "all", "custom", "none"
 let POSTS_SELECTION = "none"; // "all", "custom", "none"
@@ -153,7 +166,7 @@ class SelectionModal {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ cookie: getFullCookieString(token) }),
+        body: JSON.stringify(getAuthRequestBody()),
       });
 
       // Check if response is ok before trying to parse JSON
@@ -248,7 +261,7 @@ class SelectionModal {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ cookie: getFullCookieString(token) }),
+        body: JSON.stringify(getAuthRequestBody()),
       });
 
       // Check if response is ok before trying to parse JSON
@@ -854,10 +867,143 @@ function formatNumber(num) {
   return num.toString();
 }
 
-function getFullCookieString(token) {
-  // The token parameter is not used correctly - we should return the actual cookie value
-  // For subreddits/posts, we're loading from the old account
-  return OLD_ACCESS_TOKEN;
+function getAuthRequestBody() {
+  console.log(
+    "getAuthRequestBody called - Current auth method:",
+    CURRENT_AUTH_METHOD
+  );
+  console.log("Authentication state:", {
+    OAUTH_SOURCE_VERIFIED,
+    SOURCE_ACCESS_TOKEN: SOURCE_ACCESS_TOKEN
+      ? SOURCE_ACCESS_TOKEN.substring(0, 10) + "..."
+      : "none",
+    SOURCE_USERNAME,
+    OLD_ACCESS_TOKEN: OLD_ACCESS_TOKEN
+      ? OLD_ACCESS_TOKEN.substring(0, 10) + "..."
+      : "none",
+  });
+
+  // Return the appropriate authentication data based on authentication method
+  if (CURRENT_AUTH_METHOD === "oauth") {
+    const body = {
+      auth_method: "oauth",
+      access_token: SOURCE_ACCESS_TOKEN,
+      username: SOURCE_USERNAME,
+    };
+    console.log("OAuth auth request body:", {
+      auth_method: body.auth_method,
+      access_token: body.access_token
+        ? body.access_token.substring(0, 10) + "..."
+        : "none",
+      username: body.username,
+    });
+    return body;
+  } else {
+    const body = {
+      auth_method: "cookie",
+      cookie: OLD_ACCESS_TOKEN,
+    };
+    console.log("Cookie auth request body:", {
+      auth_method: body.auth_method,
+      cookie: body.cookie ? body.cookie.substring(0, 10) + "..." : "none",
+    });
+    return body;
+  }
+}
+
+// OAuth Modal Management Functions
+function showOAuthModal(type) {
+  const modal = document.getElementById(`${type}OAuthModal`);
+  modal.classList.remove("hidden");
+
+  // Reset modal state
+  resetOAuthModal(type);
+}
+
+function hideOAuthModal(type) {
+  const modal = document.getElementById(`${type}OAuthModal`);
+  modal.classList.add("hidden");
+}
+
+function resetOAuthModal(type) {
+  // Reset form fields
+  document.getElementById(`${type}ModalClientId`).value = "";
+  document.getElementById(`${type}ModalClientSecret`).value = "";
+  document.getElementById(`${type}ModalUsername`).value = "";
+  document.getElementById(`${type}ModalPassword`).value = "";
+
+  // Reset UI state
+  document.getElementById(`${type}ModalSuccessMessage`).classList.add("hidden");
+  document.getElementById(`${type}ModalErrorMessage`).classList.add("hidden");
+  document.getElementById(`${type}ModalVerifyBtn`).style.display = "block";
+  document.getElementById(`${type}ModalLoadBtn`).style.display = "none";
+
+  // Reset auth method to OAuth flow
+  switchModalAuthMethod(type, "oauth");
+}
+
+function switchModalAuthMethod(type, method) {
+  const isOAuth = method === "oauth";
+  const oauthBtn = document.getElementById(`${type}ModalOAuthFlowBtn`);
+  const directBtn = document.getElementById(`${type}ModalDirectAuthBtn`);
+  const directFields = document.getElementById(`${type}ModalDirectAuthFields`);
+  const verifyBtnText = document.getElementById(`${type}ModalVerifyBtnText`);
+
+  if (isOAuth) {
+    oauthBtn.classList.add("active");
+    directBtn.classList.remove("active");
+    directFields.classList.add("hidden");
+    verifyBtnText.textContent = "Verify & Authenticate";
+  } else {
+    directBtn.classList.add("active");
+    oauthBtn.classList.remove("active");
+    directFields.classList.remove("hidden");
+    verifyBtnText.textContent = "Login";
+  }
+
+  // Update method state
+  if (type === "source") {
+    SOURCE_AUTH_METHOD = method;
+  } else {
+    DEST_AUTH_METHOD = method;
+  }
+}
+
+// Helper functions for authentication checks
+function isSourceAccountVerified() {
+  if (CURRENT_AUTH_METHOD === "cookie") {
+    return BOOL_OLD_TOKEN_VERIFIED;
+  } else if (CURRENT_AUTH_METHOD === "oauth") {
+    return OAUTH_SOURCE_VERIFIED;
+  }
+  return false;
+}
+
+function isDestAccountVerified() {
+  if (CURRENT_AUTH_METHOD === "cookie") {
+    return BOOL_NEW_TOKEN_VERIFIED;
+  } else if (CURRENT_AUTH_METHOD === "oauth") {
+    return OAUTH_DEST_VERIFIED;
+  }
+  return false;
+}
+
+function getSourceAccessToken() {
+  if (CURRENT_AUTH_METHOD === "cookie") {
+    return OLD_ACCESS_TOKEN;
+  } else if (CURRENT_AUTH_METHOD === "oauth") {
+    return SOURCE_ACCESS_TOKEN;
+  }
+  return "";
+}
+
+function getDestAccessToken() {
+  if (CURRENT_AUTH_METHOD === "cookie") {
+    return NEW_ACCESS_TOKEN;
+  } else if (CURRENT_AUTH_METHOD === "oauth") {
+    return DEST_ACCESS_TOKEN;
+  }
+  return "";
 }
 
 function updateSelectionSummary(type, selection, count = 0) {
@@ -921,14 +1067,14 @@ document
         updateSelectionSummary("subreddits", "all");
         toggleDeleteOptions("subreddits", true);
       } else if (e.target.value === "custom") {
-        if (!BOOL_OLD_TOKEN_VERIFIED) {
-          alert("Please verify your old account cookie first");
+        if (!isSourceAccountVerified()) {
+          alert("Please verify your source account first");
           document.getElementById("subredditNone").checked = true;
           SUBREDDIT_SELECTION = "none";
           return;
         }
 
-        await selectionModal.open("subreddits", OLD_ACCESS_TOKEN);
+        await selectionModal.open("subreddits", getSourceAccessToken());
         toggleDeleteOptions("subreddits", true);
       } else {
         updateSelectionSummary("subreddits", "none");
@@ -941,19 +1087,38 @@ document
 document.querySelectorAll('input[name="postsSelection"]').forEach((radio) => {
   radio.addEventListener("change", async (e) => {
     POSTS_SELECTION = e.target.value;
+    console.log("Posts selection changed to:", e.target.value);
+    console.log("Current authentication state:", {
+      CURRENT_AUTH_METHOD,
+      isSourceAccountVerified: isSourceAccountVerified(),
+      OAUTH_SOURCE_VERIFIED,
+      SOURCE_USERNAME,
+      SOURCE_ACCESS_TOKEN: SOURCE_ACCESS_TOKEN
+        ? SOURCE_ACCESS_TOKEN.substring(0, 10) + "..."
+        : "none",
+    });
 
     if (e.target.value === "all") {
       updateSelectionSummary("posts", "all");
       toggleDeleteOptions("posts", true);
     } else if (e.target.value === "custom") {
-      if (!BOOL_OLD_TOKEN_VERIFIED) {
-        alert("Please verify your old account cookie first");
+      if (!isSourceAccountVerified()) {
+        console.log(
+          "Source account not verified, blocking custom posts selection"
+        );
+        alert("Please verify your source account first");
         document.getElementById("postsNone").checked = true;
         POSTS_SELECTION = "none";
         return;
       }
 
-      await selectionModal.open("posts", OLD_ACCESS_TOKEN);
+      console.log(
+        "Opening posts selection modal with token:",
+        getSourceAccessToken()
+          ? getSourceAccessToken().substring(0, 10) + "..."
+          : "none"
+      );
+      await selectionModal.open("posts", getSourceAccessToken());
       toggleDeleteOptions("posts", true);
     } else {
       updateSelectionSummary("posts", "none");
@@ -967,53 +1132,60 @@ document.querySelectorAll('input[name="postsSelection"]').forEach((radio) => {
 document
   .getElementById("editSubredditSelection")
   .addEventListener("click", async () => {
-    if (!BOOL_OLD_TOKEN_VERIFIED) {
-      alert("Please verify your old account cookie first");
+    if (!isSourceAccountVerified()) {
+      alert("Please verify your source account first");
       return;
     }
     // Maintain the custom radio button selection
     document.getElementById("subredditCustom").checked = true;
     SUBREDDIT_SELECTION = "custom";
-    await selectionModal.open("subreddits", OLD_ACCESS_TOKEN);
+    await selectionModal.open("subreddits", getSourceAccessToken());
   });
 
 document
   .getElementById("editPostsSelection")
   .addEventListener("click", async () => {
-    if (!BOOL_OLD_TOKEN_VERIFIED) {
-      alert("Please verify your old account cookie first");
+    if (!isSourceAccountVerified()) {
+      alert("Please verify your source account first");
       return;
     }
     // Maintain the custom radio button selection
     document.getElementById("postsCustom").checked = true;
     POSTS_SELECTION = "custom";
-    await selectionModal.open("posts", OLD_ACCESS_TOKEN);
+    await selectionModal.open("posts", getSourceAccessToken());
   });
 
 // Original migration logic (updated)
 optionSubmit.addEventListener("click", async (e) => {
   e.preventDefault();
 
-  if (!BOOL_OLD_TOKEN_VERIFIED || !BOOL_NEW_TOKEN_VERIFIED) {
-    alert("Please verify both account cookies first");
+  // Check authentication based on current method
+  if (!isSourceAccountVerified() || !isDestAccountVerified()) {
+    alert("Please verify both accounts first");
     return;
   }
 
   optionSubmit.style.display = "none";
   loadingBtn.style.display = "block";
 
-  const oldAccAccessToken = document.getElementById("oldAccessToken");
-  const newAccAccessToken = document.getElementById("newAccessToken");
-
   migrateResponseBlock.style.display = "none";
 
-  oldAccAccessToken.style.backgroundColor = "#e6e6e6";
-  oldAccAccessToken.disabled = true;
-  newAccAccessToken.style.backgroundColor = "#e6e6e6";
-  newAccAccessToken.disabled = true;
+  // Get tokens based on authentication method
+  if (CURRENT_AUTH_METHOD === "cookie") {
+    const oldAccAccessToken = document.getElementById("oldAccessToken");
+    const newAccAccessToken = document.getElementById("newAccessToken");
 
-  OLD_ACCESS_TOKEN = oldAccAccessToken.value;
-  NEW_ACCESS_TOKEN = newAccAccessToken.value;
+    oldAccAccessToken.style.backgroundColor = "#e6e6e6";
+    oldAccAccessToken.disabled = true;
+    newAccAccessToken.style.backgroundColor = "#e6e6e6";
+    newAccAccessToken.disabled = true;
+
+    OLD_ACCESS_TOKEN = oldAccAccessToken.value;
+    NEW_ACCESS_TOKEN = newAccAccessToken.value;
+  } else if (CURRENT_AUTH_METHOD === "oauth") {
+    OLD_ACCESS_TOKEN = SOURCE_ACCESS_TOKEN;
+    NEW_ACCESS_TOKEN = DEST_ACCESS_TOKEN;
+  }
 
   const deleteSubreddits = document.getElementById(
     "deleteSubredditsYes"
@@ -1027,28 +1199,61 @@ optionSubmit.addEventListener("click", async (e) => {
   if (SUBREDDIT_SELECTION === "custom" || POSTS_SELECTION === "custom") {
     // Use custom migration endpoint
     endpoint = `${API_BASE_URL}/api/migrate-custom`;
-    requestBody = {
-      old_account_cookie: OLD_ACCESS_TOKEN,
-      new_account_cookie: NEW_ACCESS_TOKEN,
-      selected_subreddits:
-        SUBREDDIT_SELECTION === "custom" ? SELECTED_SUBREDDITS : [],
-      selected_posts: POSTS_SELECTION === "custom" ? SELECTED_POSTS : [],
-      delete_old_subreddits: deleteSubreddits,
-      delete_old_posts: deletePosts,
-    };
+    if (CURRENT_AUTH_METHOD === "oauth") {
+      requestBody = {
+        auth_method: "oauth",
+        old_account_token: OLD_ACCESS_TOKEN,
+        new_account_token: NEW_ACCESS_TOKEN,
+        old_account_username: SOURCE_USERNAME,
+        new_account_username: DEST_USERNAME,
+        selected_subreddits:
+          SUBREDDIT_SELECTION === "custom" ? SELECTED_SUBREDDITS : [],
+        selected_posts: POSTS_SELECTION === "custom" ? SELECTED_POSTS : [],
+        delete_old_subreddits: deleteSubreddits,
+        delete_old_posts: deletePosts,
+      };
+    } else {
+      requestBody = {
+        auth_method: "cookie",
+        old_account_cookie: OLD_ACCESS_TOKEN,
+        new_account_cookie: NEW_ACCESS_TOKEN,
+        selected_subreddits:
+          SUBREDDIT_SELECTION === "custom" ? SELECTED_SUBREDDITS : [],
+        selected_posts: POSTS_SELECTION === "custom" ? SELECTED_POSTS : [],
+        delete_old_subreddits: deleteSubreddits,
+        delete_old_posts: deletePosts,
+      };
+    }
   } else {
     // Use traditional migration endpoint
     endpoint = `${API_BASE_URL}/api/migrate`;
-    requestBody = {
-      old_account_cookie: OLD_ACCESS_TOKEN,
-      new_account_cookie: NEW_ACCESS_TOKEN,
-      preferences: {
-        migrate_subreddit_bool: SUBREDDIT_SELECTION === "all",
-        migrate_post_bool: POSTS_SELECTION === "all",
-        delete_post_bool: deletePosts,
-        delete_subreddit_bool: deleteSubreddits,
-      },
-    };
+    if (CURRENT_AUTH_METHOD === "oauth") {
+      requestBody = {
+        auth_method: "oauth",
+        old_account_token: OLD_ACCESS_TOKEN,
+        new_account_token: NEW_ACCESS_TOKEN,
+        old_account_username: SOURCE_USERNAME,
+        new_account_username: DEST_USERNAME,
+        preferences: {
+          migrate_subreddit_bool: SUBREDDIT_SELECTION === "all",
+          migrate_post_bool: POSTS_SELECTION === "all",
+          delete_post_bool: deletePosts,
+          delete_subreddit_bool: deleteSubreddits,
+        },
+      };
+    } else {
+      requestBody = {
+        auth_method: "cookie",
+        old_account_cookie: OLD_ACCESS_TOKEN,
+        new_account_cookie: NEW_ACCESS_TOKEN,
+        preferences: {
+          migrate_subreddit_bool: SUBREDDIT_SELECTION === "all",
+          migrate_post_bool: POSTS_SELECTION === "all",
+          delete_post_bool: deletePosts,
+          delete_subreddit_bool: deleteSubreddits,
+        },
+      };
+    }
   }
 
   console.log("Starting migration with:", {
@@ -1080,10 +1285,15 @@ optionSubmit.addEventListener("click", async (e) => {
     // Re-enable form
     optionSubmit.style.display = "block";
     loadingBtn.style.display = "none";
-    oldAccAccessToken.disabled = false;
-    newAccAccessToken.disabled = false;
-    oldAccAccessToken.style.backgroundColor = "";
-    newAccAccessToken.style.backgroundColor = "";
+
+    if (CURRENT_AUTH_METHOD === "cookie") {
+      const oldAccAccessToken = document.getElementById("oldAccessToken");
+      const newAccAccessToken = document.getElementById("newAccessToken");
+      oldAccAccessToken.disabled = false;
+      newAccAccessToken.disabled = false;
+      oldAccAccessToken.style.backgroundColor = "";
+      newAccAccessToken.style.backgroundColor = "";
+    }
   }
 });
 
@@ -1151,7 +1361,9 @@ function displayMigrationResponse(response) {
 }
 
 function updateSubmitButtonState() {
-  if (BOOL_OLD_TOKEN_VERIFIED && BOOL_NEW_TOKEN_VERIFIED) {
+  const isVerified = isSourceAccountVerified() && isDestAccountVerified();
+
+  if (isVerified) {
     optionSubmit.disabled = false;
     optionSubmit.classList.remove("cursor-not-allowed", "opacity-50");
   } else {
@@ -1314,6 +1526,20 @@ document.addEventListener("click", function (event) {
   }
 });
 
+// Password Visibility Toggle Function
+function togglePasswordVisibility(inputId, eyeIconId) {
+  const input = document.getElementById(inputId);
+  const eyeIcon = document.getElementById(eyeIconId);
+
+  if (input.type === "password") {
+    input.type = "text";
+    eyeIcon.textContent = "visibility_off";
+  } else {
+    input.type = "password";
+    eyeIcon.textContent = "visibility";
+  }
+}
+
 // Cookie Help Modal Functions
 function showCookieHelp() {
   const modal = document.getElementById("cookieHelpModal");
@@ -1326,6 +1552,18 @@ function hideCookieHelp() {
   modal.classList.add("hidden");
 }
 
+// OAuth Help Modal Functions
+function showOAuthHelp() {
+  const modal = document.getElementById("oauthHelpModal");
+  modal.classList.remove("hidden");
+  modal.classList.add("animate-slide-in");
+}
+
+function hideOAuthHelp() {
+  const modal = document.getElementById("oauthHelpModal");
+  modal.classList.add("hidden");
+}
+
 // Close modal when clicking outside
 document
   .getElementById("cookieHelpModal")
@@ -1335,8 +1573,379 @@ document
     }
   });
 
+document
+  .getElementById("oauthHelpModal")
+  ?.addEventListener("click", function (event) {
+    if (event.target === this) {
+      hideOAuthHelp();
+    }
+  });
+
+// Tab Management
+class TabManager {
+  constructor() {
+    this.cookieTab = document.getElementById("cookieTab");
+    this.oauthTab = document.getElementById("oauthTab");
+    this.cookieContent = document.getElementById("cookieAuthContent");
+    this.oauthContent = document.getElementById("oauthAuthContent");
+
+    console.log("TabManager elements:", {
+      cookieTab: this.cookieTab,
+      oauthTab: this.oauthTab,
+      cookieContent: this.cookieContent,
+      oauthContent: this.oauthContent,
+    });
+
+    this.init();
+  }
+
+  init() {
+    if (
+      !this.cookieTab ||
+      !this.oauthTab ||
+      !this.cookieContent ||
+      !this.oauthContent
+    ) {
+      console.error("Tab elements not found. Check HTML element IDs.");
+      return;
+    }
+
+    this.cookieTab.addEventListener("click", (e) => {
+      e.preventDefault();
+      console.log("Cookie tab clicked");
+      this.switchTab("cookie");
+    });
+
+    this.oauthTab.addEventListener("click", (e) => {
+      e.preventDefault();
+      console.log("OAuth tab clicked");
+      this.switchTab("oauth");
+    });
+  }
+
+  switchTab(method) {
+    console.log("Switching to tab:", method);
+    CURRENT_AUTH_METHOD = method;
+
+    // Update tab appearance
+    if (method === "cookie") {
+      console.log("Switching to cookie tab");
+      this.cookieTab.classList.add("active");
+      this.oauthTab.classList.remove("active");
+      this.cookieContent.classList.remove("hidden");
+      this.oauthContent.classList.add("hidden");
+    } else {
+      console.log("Switching to oauth tab");
+      this.oauthTab.classList.add("active");
+      this.cookieTab.classList.remove("active");
+      this.oauthContent.classList.remove("hidden");
+      this.cookieContent.classList.add("hidden");
+    }
+
+    console.log("Tab classes after switch:", {
+      cookieTab: this.cookieTab.className,
+      oauthTab: this.oauthTab.className,
+      cookieContent: this.cookieContent.className,
+      oauthContent: this.oauthContent.className,
+    });
+
+    // Update submit button state
+    updateSubmitButtonState();
+  }
+}
+
+// OAuth Modal Management
+class OAuthModalManager {
+  constructor() {
+    this.init();
+  }
+
+  init() {
+    // Modal button event listeners
+    document
+      .getElementById("sourceOAuthModalBtn")
+      ?.addEventListener("click", () => {
+        showOAuthModal("source");
+      });
+
+    document
+      .getElementById("destOAuthModalBtn")
+      ?.addEventListener("click", () => {
+        showOAuthModal("dest");
+      });
+
+    // Modal authentication method toggles
+    document
+      .getElementById("sourceModalOAuthFlowBtn")
+      ?.addEventListener("click", () => {
+        switchModalAuthMethod("source", "oauth");
+      });
+
+    document
+      .getElementById("sourceModalDirectAuthBtn")
+      ?.addEventListener("click", () => {
+        switchModalAuthMethod("source", "direct");
+      });
+
+    document
+      .getElementById("destModalOAuthFlowBtn")
+      ?.addEventListener("click", () => {
+        switchModalAuthMethod("dest", "oauth");
+      });
+
+    document
+      .getElementById("destModalDirectAuthBtn")
+      ?.addEventListener("click", () => {
+        switchModalAuthMethod("dest", "direct");
+      });
+
+    // Modal verify buttons
+    document
+      .getElementById("sourceModalVerifyBtn")
+      ?.addEventListener("click", () => {
+        this.verifyModalAuth("source");
+      });
+
+    document
+      .getElementById("destModalVerifyBtn")
+      ?.addEventListener("click", () => {
+        this.verifyModalAuth("dest");
+      });
+  }
+
+  async verifyModalAuth(type) {
+    const authMethod =
+      type === "source" ? SOURCE_AUTH_METHOD : DEST_AUTH_METHOD;
+
+    if (authMethod === "oauth") {
+      await this.verifyModalOAuth(type);
+    } else {
+      await this.verifyModalDirect(type);
+    }
+  }
+
+  async verifyModalOAuth(type) {
+    const clientId = document
+      .getElementById(`${type}ModalClientId`)
+      .value.trim();
+    const clientSecret = document
+      .getElementById(`${type}ModalClientSecret`)
+      .value.trim();
+
+    if (!clientId || !clientSecret) {
+      alert("Please enter both Client ID and Client Secret");
+      return;
+    }
+
+    this.showModalLoading(type);
+
+    try {
+      const initResponse = await fetch(`${API_BASE_URL}/api/oauth/init`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: clientId,
+          client_secret: clientSecret,
+          account_type: type,
+        }),
+      });
+
+      if (!initResponse.ok) {
+        throw new Error("Failed to initialize OAuth");
+      }
+
+      const initData = await initResponse.json();
+      const authWindow = window.open(
+        initData.authorization_url,
+        "oauth",
+        "width=600,height=600"
+      );
+
+      const checkAuthComplete = setInterval(async () => {
+        try {
+          if (authWindow.closed) {
+            clearInterval(checkAuthComplete);
+
+            const statusResponse = await fetch(
+              `${API_BASE_URL}/api/oauth/status?account_type=${type}`
+            );
+            if (statusResponse.ok) {
+              const statusData = await statusResponse.json();
+
+              if (statusData.success) {
+                this.handleModalAuthSuccess(
+                  type,
+                  statusData.username,
+                  statusData.access_token
+                );
+              } else {
+                throw new Error(
+                  statusData.message || "OAuth verification failed"
+                );
+              }
+            } else {
+              throw new Error("Failed to check OAuth status");
+            }
+          }
+        } catch (error) {
+          clearInterval(checkAuthComplete);
+          this.handleModalAuthError(type, error);
+        }
+      }, 1000);
+    } catch (error) {
+      this.handleModalAuthError(type, error);
+    }
+
+    this.hideModalLoading(type);
+  }
+
+  async verifyModalDirect(type) {
+    const clientId = document
+      .getElementById(`${type}ModalClientId`)
+      .value.trim();
+    const clientSecret = document
+      .getElementById(`${type}ModalClientSecret`)
+      .value.trim();
+    const username = document
+      .getElementById(`${type}ModalUsername`)
+      .value.trim();
+    const password = document
+      .getElementById(`${type}ModalPassword`)
+      .value.trim();
+
+    if (!clientId || !clientSecret || !username || !password) {
+      alert("Please enter all required fields");
+      return;
+    }
+
+    this.showModalLoading(type);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/oauth/direct`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: clientId,
+          client_secret: clientSecret,
+          username: username,
+          password: password,
+          account_type: type,
+        }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Direct authentication failed";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        this.handleModalAuthSuccess(type, data.username, data.access_token);
+      } else {
+        throw new Error(data.message || "Direct authentication failed");
+      }
+    } catch (error) {
+      this.handleModalAuthError(type, error);
+    }
+
+    this.hideModalLoading(type);
+  }
+
+  handleModalAuthSuccess(type, username, accessToken) {
+    console.log(`OAuth authentication successful for ${type}:`, {
+      username,
+      accessToken: accessToken.substring(0, 10) + "...",
+    });
+
+    // Automatically switch to OAuth mode when OAuth authentication succeeds
+    if (CURRENT_AUTH_METHOD !== "oauth") {
+      console.log("Switching to OAuth mode after successful authentication");
+      CURRENT_AUTH_METHOD = "oauth";
+
+      // Update tab appearance if needed
+      const tabManager = document.querySelector("#oauthTab");
+      const cookieTab = document.querySelector("#cookieTab");
+      const oauthContent = document.querySelector("#oauthAuthContent");
+      const cookieContent = document.querySelector("#cookieAuthContent");
+
+      if (tabManager && cookieTab && oauthContent && cookieContent) {
+        tabManager.classList.add("active");
+        cookieTab.classList.remove("active");
+        oauthContent.classList.remove("hidden");
+        cookieContent.classList.add("hidden");
+      }
+    }
+
+    // Update global state
+    if (type === "source") {
+      OAUTH_SOURCE_VERIFIED = true;
+      SOURCE_ACCESS_TOKEN = accessToken;
+      SOURCE_USERNAME = username;
+      console.log("Set SOURCE_USERNAME to:", username);
+      document.getElementById("sourceOAuthUsername").textContent = username;
+      document.getElementById("sourceOAuthStatus").classList.remove("hidden");
+    } else {
+      OAUTH_DEST_VERIFIED = true;
+      DEST_ACCESS_TOKEN = accessToken;
+      DEST_USERNAME = username;
+      console.log("Set DEST_USERNAME to:", username);
+      document.getElementById("destOAuthUsername").textContent = username;
+      document.getElementById("destOAuthStatus").classList.remove("hidden");
+    }
+
+    // Show success message in modal
+    document.getElementById(`${type}ModalSuccessUsername`).textContent =
+      username;
+    document
+      .getElementById(`${type}ModalSuccessMessage`)
+      .classList.remove("hidden");
+    document.getElementById(`${type}ModalErrorMessage`).classList.add("hidden");
+
+    updateSubmitButtonState();
+
+    console.log("Updated authentication state:", {
+      CURRENT_AUTH_METHOD,
+      OAUTH_SOURCE_VERIFIED,
+      OAUTH_DEST_VERIFIED,
+      SOURCE_USERNAME,
+      DEST_USERNAME,
+    });
+  }
+
+  handleModalAuthError(type, error) {
+    console.error("Modal authentication error:", error);
+    document.getElementById(`${type}ModalErrorText`).textContent =
+      error.message || "Authentication failed";
+    document
+      .getElementById(`${type}ModalErrorMessage`)
+      .classList.remove("hidden");
+    document
+      .getElementById(`${type}ModalSuccessMessage`)
+      .classList.add("hidden");
+  }
+
+  showModalLoading(type) {
+    document.getElementById(`${type}ModalVerifyBtn`).style.display = "none";
+    document.getElementById(`${type}ModalLoadBtn`).style.display = "block";
+  }
+
+  hideModalLoading(type) {
+    document.getElementById(`${type}ModalVerifyBtn`).style.display = "block";
+    document.getElementById(`${type}ModalLoadBtn`).style.display = "none";
+  }
+}
+
 // Initialize the page
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("DOM Content Loaded - Initializing application");
+
   // Set default selections
   document.getElementById("subredditNone").checked = true;
   document.getElementById("postsNone").checked = true;
@@ -1345,6 +1954,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateSubmitButtonState();
 
-  // Initialize dark mode manager
-  new DarkModeManager();
+  // Initialize managers
+  try {
+    new DarkModeManager();
+    console.log("DarkModeManager initialized");
+
+    new TabManager();
+    console.log("TabManager initialized");
+
+    new OAuthModalManager();
+    console.log("OAuthModalManager initialized");
+  } catch (error) {
+    console.error("Error initializing managers:", error);
+  }
 });

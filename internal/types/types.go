@@ -1,11 +1,16 @@
 package types
 
 // MigrationRequestType defines the structure for the migration request body.
-// It includes cookies for old and new accounts, and user preferences for migration.
+// It includes authentication data for old and new accounts, and user preferences for migration.
 type MigrationRequestType struct {
-	OldAccountCookie string          `json:"old_account_cookie"`
-	NewAccountCookie string          `json:"new_account_cookie"`
-	Preferences      PreferencesType `json:"preferences"`
+	AuthMethod         string          `json:"auth_method,omitempty"`          // "cookie" or "oauth"
+	OldAccountCookie   string          `json:"old_account_cookie,omitempty"`   // For cookie-based auth
+	NewAccountCookie   string          `json:"new_account_cookie,omitempty"`   // For cookie-based auth
+	OldAccountToken    string          `json:"old_account_token,omitempty"`    // For OAuth-based auth
+	NewAccountToken    string          `json:"new_account_token,omitempty"`    // For OAuth-based auth
+	OldAccountUsername string          `json:"old_account_username,omitempty"` // For OAuth-based auth
+	NewAccountUsername string          `json:"new_account_username,omitempty"` // For OAuth-based auth
+	Preferences        PreferencesType `json:"preferences"`
 }
 
 // PreferencesType defines the user's choices for the migration process.
@@ -22,31 +27,31 @@ type PreferencesType struct {
 type MigrationResponseType struct {
 	Success bool             `json:"success"`
 	Message string           `json:"message"`
-	Data    MigrationDetails `json:"data"` // Renamed from MigrationData for clarity
+	Data    MigrationDetails `json:"data"`
 }
 
 // MigrationDetails holds the detailed results of migration operations.
 // This structure is embedded within MigrationResponseType.
-type MigrationDetails struct { // Renamed from MigrationData
+type MigrationDetails struct {
 	SubscribeSubreddit   ManageSubredditResponseType `json:"subscribeSubreddit"`
 	UnsubscribeSubreddit ManageSubredditResponseType `json:"unsubscribeSubreddit"`
-	SavePost             ManagePostResponseType      `json:"savePost"`   // Renamed from manage_post_type
-	UnsavePost           ManagePostResponseType      `json:"unsavePost"` // Renamed from manage_post_type
+	SavePost             ManagePostResponseType      `json:"savePost"`
+	UnsavePost           ManagePostResponseType      `json:"unsavePost"`
 }
 
 // SubredditActionType defines the action to be performed on a subreddit (subscribe or unsubscribe).
-type SubredditActionType string // Renamed from subscribe_type
+type SubredditActionType string
 
 const (
 	// SubscribeAction indicates an action to subscribe to a subreddit.
-	SubscribeAction SubredditActionType = "sub" // Renamed from subscribe
+	SubscribeAction SubredditActionType = "sub"
 	// UnsubscribeAction indicates an action to unsubscribe from a subreddit.
-	UnsubscribeAction SubredditActionType = "unsub" // Renamed from unsubscribe
+	UnsubscribeAction SubredditActionType = "unsub"
 )
 
 // ManageSubredditResponseType defines the structure for the response of managing subreddits.
 // It includes error status, HTTP status code, counts of successful and failed operations, and a list of failed subreddits.
-type ManageSubredditResponseType struct { // Renamed from manage_subreddit_response_type
+type ManageSubredditResponseType struct {
 	Error            bool
 	StatusCode       int
 	SuccessCount     int
@@ -55,25 +60,25 @@ type ManageSubredditResponseType struct { // Renamed from manage_subreddit_respo
 }
 
 // PostActionType defines the action to be performed on a post (save or unsave).
-type PostActionType string // Renamed from post_save_type
+type PostActionType string
 
 const (
 	// SaveAction indicates an action to save a post.
-	SaveAction PostActionType = "save" // Renamed from SAVE
+	SaveAction PostActionType = "save"
 	// UnsaveAction indicates an action to unsave a post.
-	UnsaveAction PostActionType = "unsave" // Renamed from UNSAVE
+	UnsaveAction PostActionType = "unsave"
 )
 
 // ManagePostResponseType defines the structure for the response of managing posts.
 // It includes counts of successful and failed operations.
-type ManagePostResponseType struct { // Renamed from manage_post_type
+type ManagePostResponseType struct {
 	SuccessCount int
 	FailedCount  int
 }
 
 // RedditNameType holds lists of subreddit and user display names and full names.
 // This is used internally to pass around collections of names fetched from Reddit.
-type RedditNameType struct { // Renamed from reddit_name_type
+type RedditNameType struct {
 	FullNamesList       []string
 	DisplayNamesList    []string
 	UserDisplayNameList []string
@@ -81,7 +86,7 @@ type RedditNameType struct { // Renamed from reddit_name_type
 
 // FullNameListType defines the structure for a list of items (subreddits or posts) from Reddit API.
 // It's used for unmarshalling JSON responses that contain a list of children objects.
-type FullNameListType struct { // Renamed from full_name_list_type
+type FullNameListType struct {
 	Kind string `json:"kind"`
 	Data struct {
 		After    string          `json:"after"`
@@ -100,24 +105,23 @@ type FullListChild struct {
 
 // VerifyCookieType defines the structure for the request body when verifying a cookie.
 // It contains the cookie string to be verified.
-type VerifyCookieType struct { // Renamed from verify_cookie_type
+type VerifyCookieType struct {
 	Cookie string `json:"cookie"`
 }
 
-// ProfileResponseType defines the structure for the response from Reddit's /api/me.json endpoint.
+// ProfileResponseType defines the structure for the response from Reddit's /api/v1/me endpoint.
 // It contains basic profile information of the authenticated user.
-type ProfileResponseType struct { // Renamed from profile_response_type
-	Type string `json:"type"`
+type ProfileResponseType struct {
 	Data struct {
 		Name       string `json:"name"`
-		IsEmployee bool   `json:"is_employee"` // Corrected json tag
-		IsFriend   bool   `json:"is_friend"`   // Corrected json tag
+		IsEmployee bool   `json:"is_employee"`
+		IsFriend   bool   `json:"is_friend"`
 	} `json:"data"`
 }
 
 // TokenResponseType defines the structure for the response when verifying a token/cookie.
 // It indicates success, a message, and the username associated with the token/cookie if valid.
-type TokenResponseType struct { // Renamed from token_response_type
+type TokenResponseType struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Data    struct {
@@ -127,7 +131,7 @@ type TokenResponseType struct { // Renamed from token_response_type
 
 // ErrorResponseType defines a generic error response structure from the Reddit API.
 // It usually contains an error code and a descriptive message.
-type ErrorResponseType struct { // Renamed from error_response_type
+type ErrorResponseType struct {
 	Error   string `json:"error"`
 	Message string `json:"message"`
 }
@@ -184,7 +188,10 @@ type SubredditInfo struct {
 
 // GetSavedPostsRequest defines the request structure for fetching saved posts with details
 type GetSavedPostsRequest struct {
-	Cookie string `json:"cookie"`
+	AuthMethod  string `json:"auth_method,omitempty"`  // "cookie" or "oauth"
+	Cookie      string `json:"cookie,omitempty"`       // For cookie-based auth
+	AccessToken string `json:"access_token,omitempty"` // For OAuth-based auth
+	Username    string `json:"username,omitempty"`     // For OAuth-based auth
 }
 
 // GetSavedPostsResponse defines the response structure for saved posts with full details
@@ -197,7 +204,10 @@ type GetSavedPostsResponse struct {
 
 // GetSubredditsRequest defines the request structure for fetching subreddits with details
 type GetSubredditsRequest struct {
-	Cookie string `json:"cookie"`
+	AuthMethod  string `json:"auth_method,omitempty"`  // "cookie" or "oauth"
+	Cookie      string `json:"cookie,omitempty"`       // For cookie-based auth
+	AccessToken string `json:"access_token,omitempty"` // For OAuth-based auth
+	Username    string `json:"username,omitempty"`     // For OAuth-based auth
 }
 
 // GetSubredditsResponse defines the response structure for subreddits with full details
@@ -210,10 +220,15 @@ type GetSubredditsResponse struct {
 
 // CustomMigrationRequest defines the structure for custom selection migration
 type CustomMigrationRequest struct {
-	OldAccountCookie    string   `json:"old_account_cookie"`
-	NewAccountCookie    string   `json:"new_account_cookie"`
-	SelectedSubreddits  []string `json:"selected_subreddits"` // List of display names
-	SelectedPosts       []string `json:"selected_posts"`      // List of full names (t3_xxxxx)
+	AuthMethod          string   `json:"auth_method,omitempty"`          // "cookie" or "oauth"
+	OldAccountCookie    string   `json:"old_account_cookie,omitempty"`   // For cookie-based auth
+	NewAccountCookie    string   `json:"new_account_cookie,omitempty"`   // For cookie-based auth
+	OldAccountToken     string   `json:"old_account_token,omitempty"`    // For OAuth-based auth
+	NewAccountToken     string   `json:"new_account_token,omitempty"`    // For OAuth-based auth
+	OldAccountUsername  string   `json:"old_account_username,omitempty"` // For OAuth-based auth
+	NewAccountUsername  string   `json:"new_account_username,omitempty"` // For OAuth-based auth
+	SelectedSubreddits  []string `json:"selected_subreddits"`            // List of display names
+	SelectedPosts       []string `json:"selected_posts"`                 // List of full names (t3_xxxxx)
 	DeleteOldSubreddits bool     `json:"delete_old_subreddits"`
 	DeleteOldPosts      bool     `json:"delete_old_posts"`
 }
@@ -323,7 +338,10 @@ type DetailedSubredditData struct {
 
 // AccountCountsRequest defines the request structure for getting account counts
 type AccountCountsRequest struct {
-	Cookie string `json:"cookie"`
+	AuthMethod  string `json:"auth_method,omitempty"`  // "cookie" or "oauth"
+	Cookie      string `json:"cookie,omitempty"`       // For cookie-based auth
+	AccessToken string `json:"access_token,omitempty"` // For OAuth-based auth
+	Username    string `json:"username,omitempty"`     // For OAuth-based auth
 }
 
 // AccountCountsResponse defines the response structure for account counts
