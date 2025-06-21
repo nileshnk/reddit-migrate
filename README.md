@@ -11,15 +11,17 @@ Easily transfer your Reddit account data to a new account - including saved post
 ## Features
 
 - **Simple Interface**: User-friendly web interface - no command line required
-- **Bulk Transfer**: Migrate hundreds of saved posts and subreddit subscriptions in minutes
+- **Dual Authentication**: Support for both OAuth and Cookie-based authentication methods
+- **Bulk Transfer**: Migrate hundreds of saved posts and subreddit subscriptions
+- **Smart Migration**: Automatically filters out duplicates and existing items to avoid conflicts
 - **Privacy First**: Runs locally on your computer - your data never leaves your machine
 - **Cross-Platform**: Available for Windows, Mac, and Linux
 
 ## What Gets Migrated
 
-✅ **Subreddit Subscriptions** - Transfer all your joined communities  
-✅ **Saved Posts** - Move your saved posts collection  
-✅ **User Follows** - Migrate followed user accounts
+**Subreddit Subscriptions** - Transfer all your joined communities  
+**Saved Posts** - Move your saved posts collection  
+**User Follows** - Migrate followed user accounts
 
 ## Quick Start
 
@@ -43,13 +45,23 @@ Easily transfer your Reddit account data to a new account - including saved post
 
 The app will open in your browser at `http://localhost:5005`
 
-> **Security Note**: This tool requires Reddit cookies which contain sensitive data. Never share these cookies with anyone. The tool runs entirely on your local machine.
+> **Security Note**: This tool requires either Reddit OAuth credentials or cookies which contain sensitive data. Never share these credentials with anyone. The tool runs entirely on your local machine for maximum privacy.
 
 ## Usage Guide
 
-### Step 1: Get Your Reddit Cookies
+### Authentication Methods
 
-You'll need cookies from both your old and new Reddit accounts:
+Choose between two authentication methods:
+
+#### Method 1: OAuth Authentication (Recommended)
+
+1. **Create Reddit App**: Go to [Reddit App Preferences](https://www.reddit.com/prefs/apps)
+2. **Click "Create App"** and select "web app"
+3. **Set redirect URI** to: `http://localhost:5005/api/oauth/callback`
+4. **Copy Client ID and Secret** from your created app
+5. **Enter credentials** in the OAuth tab and follow the authentication flow
+
+#### Method 2: Cookie Authentication (Alternative)
 
 1. Log in to Reddit in your browser
 2. Open Developer Tools (F12 or right-click → Inspect)
@@ -61,12 +73,12 @@ You'll need cookies from both your old and new Reddit accounts:
 
 [See visual guide](./docs/assets/cookie-retrieval.gif)
 
-### Step 2: Run the Migration
+### Run the Migration
 
-1. Paste the cookies for both accounts in the app
-2. Click "Verify" to check the cookies are valid
-3. Select what you want to migrate
-4. Click "Submit" to start the migration
+1. **Authenticate** both accounts using your preferred method
+2. **Verify** the accounts are properly connected
+3. **Select** what you want to migrate
+4. **Submit** to start the migration
 
 > **Note**: Large migrations (50+ saved posts) may take several minutes due to Reddit's rate limiting. Keep the browser tab open until completion.
 
@@ -100,17 +112,34 @@ docker build -t reddit-migrate-img .
 docker run -d -p 127.0.0.1:5005:5005 --name reddit-migrate reddit-migrate-img
 ```
 
+## Recent Updates
+
+### Latest Features (v0.2.3)
+
+- **OAuth Authentication**: Added official Reddit OAuth support as the recommended authentication method
+- **Smart Migration**: Enhanced migration logic to filter out duplicates and existing items automatically
+- **Improved Saved Posts**: Fixed chronological ordering - oldest posts are now properly preserved at the bottom
+- **Better UX**: Dual-tab interface supporting both OAuth and Cookie authentication methods
+
+### Previous Updates
+
+- **Enhanced UI**: Modern, responsive interface with Reddit-themed styling
+- **Rate Limiting**: Intelligent handling of Reddit's API rate limits
+- **Error Handling**: Improved error messages and recovery mechanisms
+
 ## Demo
 
 Watch it in action: [YouTube Demo](https://youtu.be/pHGYuwZ1Jp0)
 
 ## How It Works
 
-Reddit-Migrate uses Reddit's official APIs. It extracts the access token from your Reddit cookies and uses it for Bearer token authentication to transfer data between accounts.
+Reddit-Migrate uses Reddit's official APIs with support for both OAuth and cookie-based authentication to transfer data between accounts.
 
-- **Cookie Verification**: Validates cookies by checking for access tokens and testing API responses
+- **OAuth Authentication**: Uses Reddit's official OAuth flow for secure API access with proper scopes
+- **Cookie Authentication**: Extracts access tokens from Reddit cookies as an alternative method
+- **Smart Migration**: Automatically detects existing items and only migrates new content to avoid duplicates
 - **Subreddit Migration**: Fetches all subscribed subreddits and subscribes to them in batches of 100
-- **Saved Posts**: Retrieves saved posts and saves them individually (subject to rate limits)
+- **Saved Posts**: Retrieves saved posts in proper chronological order and saves them individually
 - **User Follows**: Transfers followed user accounts to the new account
 
 The tool runs entirely locally on your machine - no data is sent to external servers.
