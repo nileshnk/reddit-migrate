@@ -4,9 +4,12 @@ WORKDIR /app
 
 COPY . .
 
-RUN go mod tidy
+RUN go mod tidy && \
+    cd cmd/reddit-migrate && \
+    go build . && \
+    mv reddit-migrate ../../
 
 ENV GO_ADDR=":5005"
-ENTRYPOINT [ "go", "run", "." ]
+ENTRYPOINT ["./reddit-migrate"]
 
 EXPOSE 5005
