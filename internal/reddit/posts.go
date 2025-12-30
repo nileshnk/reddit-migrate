@@ -122,7 +122,7 @@ func ManageSavedPosts(token string, postIDs []string, actionType types.PostActio
 	}
 
 	config.InfoLogger.Printf("ManageSavedPosts: Finished %s %d posts. Success: %d, Failed: %d.", actionType, numPosts, successCount, failedCount)
-	return types.ManagePostResponseType{SuccessCount: successCount, FailedCount: failedCount} // TODO: Use actual type
+	return types.ManagePostResponseType{SuccessCount: successCount, FailedCount: failedCount}
 }
 
 // FetchSavedPostsFullNames retrieves a list of full names for all posts saved by the user.

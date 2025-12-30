@@ -8,6 +8,10 @@ Easily transfer your Reddit account data to a new account - including saved post
 
 ![Home](./docs/assets/app_home.png)
 
+## Demo
+
+Watch it in action: [YouTube Demo](https://youtu.be/pHGYuwZ1Jp0)
+
 ## Features
 
 - **Simple Interface**: User-friendly web interface - no command line required
@@ -95,10 +99,10 @@ cd reddit-migrate
 go mod tidy
 
 # Run the application
-go run .
+go run ./cmd/reddit-migrate/main.go
 
 # Or build a binary
-go build -o reddit-migrate
+go build -o reddit-migrate ./cmd/reddit-migrate
 ./reddit-migrate
 ```
 
@@ -126,10 +130,6 @@ docker run -d -p 127.0.0.1:5005:5005 --name reddit-migrate reddit-migrate-img
 - **Enhanced UI**: Modern, responsive interface with Reddit-themed styling
 - **Rate Limiting**: Intelligent handling of Reddit's API rate limits
 - **Error Handling**: Improved error messages and recovery mechanisms
-
-## Demo
-
-Watch it in action: [YouTube Demo](https://youtu.be/pHGYuwZ1Jp0)
 
 ## How It Works
 

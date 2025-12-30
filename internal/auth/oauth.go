@@ -456,7 +456,6 @@ func OAuthInitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Initialize OAuth with provided credentials
-	// TODO: Make this dynamic based on server address
 	InitOAuth(req.ClientID, req.ClientSecret, config.RedditOauthRedirectUri)
 
 	// Generate state for this OAuth session

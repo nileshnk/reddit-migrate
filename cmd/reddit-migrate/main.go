@@ -144,7 +144,6 @@ func mainRouter(r chi.Router) {
 	config.InfoLogger.Printf("Serving static files from %s", staticFilesPath)
 
 	// Register API routes under the "/api" prefix.
-	// TODO: Update this to call the new api.Router function from the internal/api package
 	r.Route("/api", api.Router) // This will need to be changed
 	config.InfoLogger.Println("API routes registered under /api")
 }

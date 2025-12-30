@@ -274,7 +274,6 @@ func processSubreddits(oldToken, newToken, oldUser, newUser string, prefs types.
 
 // migrateSubredditsWithRetry attempts to subscribe to subreddits with a retry mechanism.
 func migrateSubredditsWithRetry(token string, displayNames []string, username string) types.ManageSubredditResponseType { // Adjusted type
-	// TODO: These should come from config
 	subredditChunkSize := config.DefaultSubredditChunkSize // Initial chunk size for subscribing.
 	maxRetryAttempts := config.MaxSubredditRetryAttempts   // Maximum number of retry attempts.
 

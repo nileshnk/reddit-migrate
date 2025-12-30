@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-// TODO: Replace with a proper logging solution that can be injected or globally accessed.
-// For now, using a simplified placeholder.
 var ErrorLogger *log.Logger = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lmicroseconds)
 var InfoLogger *log.Logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lmicroseconds)
 var DebugLogger *log.Logger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lmicroseconds)
