@@ -24,16 +24,19 @@ let DEST_AUTH_METHOD = "oauth"; // "oauth" or "direct"
 // New selection state variables
 let SUBREDDIT_SELECTION = "none"; // "all", "custom", "none"
 let POSTS_SELECTION = "none"; // "all", "custom", "none"
+let COMMENTS_SELECTION = "none"; // "all", "custom", "none"
 let SELECTED_SUBREDDITS = [];
 let SELECTED_POSTS = [];
+let SELECTED_COMMENTS = [];
 let ALL_SUBREDDITS = [];
 let ALL_POSTS = [];
+let ALL_COMMENTS = [];
 
 let OLD_ACCESS_TOKEN = "";
 let NEW_ACCESS_TOKEN = "";
 
 // Modal state
-let currentModalType = null; // "subreddits" or "posts"
+let currentModalType = null; // "subreddits", "posts", or "comments"
 let filteredItems = [];
 
 // Dark Mode Management
@@ -138,6 +141,9 @@ class SelectionModal {
     } else if (type === "posts") {
       this.modalTitle.textContent = "Select Saved Posts";
       await this.loadPosts(token);
+    } else if (type === "comments") {
+      this.modalTitle.textContent = "Select Saved Comments";
+      await this.loadComments(token);
     }
   }
 
@@ -345,6 +351,228 @@ class SelectionModal {
     }
 
     this.hideLoading();
+  }
+
+  async loadComments(token) {
+    this.showLoading();
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/saved-comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(getAuthRequestBody()),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        if (
+          response.status === 401 ||
+          response.status === 403 ||
+          errorText.toLowerCase().includes("token") ||
+          errorText.toLowerCase().includes("expired") ||
+          errorText.toLowerCase().includes("invalid") ||
+          errorText.toLowerCase().includes("unauthorized")
+        ) {
+          throw new Error("COOKIE_EXPIRED");
+        }
+        throw new Error(`Server error: ${errorText}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        throw new Error(`Server returned non-JSON response: ${text}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        ALL_COMMENTS = data.comments || [];
+        filteredItems = [...ALL_COMMENTS];
+        this.renderComments();
+      } else {
+        if (
+          data.message &&
+          (data.message.toLowerCase().includes("token") ||
+            data.message.toLowerCase().includes("expired") ||
+            data.message.toLowerCase().includes("invalid"))
+        ) {
+          throw new Error("COOKIE_EXPIRED");
+        }
+        throw new Error(data.message || "Failed to load comments");
+      }
+    } catch (error) {
+      console.error("Error loading comments:", error);
+
+      if (error.message === "COOKIE_EXPIRED") {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-6xl text-amber-400 mb-4 block">cookie</span>
+            <p class="text-amber-400 font-semibold mb-2 text-lg">Cookie Expired or Invalid</p>
+            <p class="text-slate-400 text-sm mb-4">Your Reddit authentication cookie has expired or is invalid.</p>
+            <div class="bg-slate-700/30 rounded-lg p-4 text-left max-w-md mx-auto">
+              <p class="text-slate-300 text-sm font-semibold mb-2">To get a new cookie:</p>
+              <ol class="text-slate-400 text-xs space-y-1 list-decimal list-inside">
+                <li>Open Reddit in a new tab and log in</li>
+                <li>Open browser Developer Tools (F12)</li>
+                <li>Go to Application/Storage → Cookies</li>
+                <li>Find and copy the entire cookie string</li>
+                <li>Paste it in the cookie field above</li>
+              </ol>
+            </div>
+            <button onclick="location.reload()" class="mt-4 btn-primary px-6 py-2 text-white font-semibold rounded-lg flex items-center space-x-2 mx-auto">
+              <span class="material-icons">refresh</span>
+              <span>Refresh Page</span>
+            </button>
+          </div>
+        `;
+      } else {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-5xl text-red-400 mb-4 block">error_outline</span>
+            <p class="text-red-400 font-semibold mb-2">Error Loading Comments</p>
+            <p class="text-slate-400 text-sm">${error.message}</p>
+            <p class="text-slate-500 text-xs mt-4">Please verify your cookie is valid and try again.</p>
+          </div>
+        `;
+      }
+    }
+
+    this.hideLoading();
+  }
+
+  renderComments() {
+    this.totalCount.textContent = filteredItems.length;
+
+    if (filteredItems.length === 0) {
+      const searchTerm = this.searchInput?.value?.trim() || "";
+
+      if (searchTerm) {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-5xl text-red-400 mb-4 block">search</span>
+            <p class="text-red-400 font-semibold mb-2">No Search Results</p>
+            <p class="text-slate-400 text-sm mb-4">No saved comments found for "<span class="font-semibold">${searchTerm}</span>".</p>
+            <button onclick="selectionModal.clearSearch()" class="btn-primary px-6 py-2 text-white font-semibold rounded-lg flex items-center space-x-2 mx-auto">
+              <span class="material-icons">clear</span>
+              <span>Clear Search</span>
+            </button>
+          </div>
+        `;
+      } else {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-5xl text-red-400 mb-4 block">comment</span>
+            <p class="text-red-400 font-semibold mb-2">No Saved Comments Found</p>
+            <p class="text-slate-400 text-sm mb-4">You don't seem to have any saved comments.</p>
+          </div>
+        `;
+      }
+    } else {
+      const html = filteredItems
+        .map((comment) => {
+          const isSelected = SELECTED_COMMENTS.includes(comment.full_name);
+          const timeAgo = this.formatTimeAgo(comment.created_utc);
+
+          let commentUrl;
+          if (comment.permalink && comment.permalink.startsWith("http")) {
+            commentUrl = comment.permalink;
+          } else if (comment.permalink) {
+            commentUrl = `https://reddit.com${comment.permalink}`;
+          } else {
+            commentUrl = "#";
+          }
+
+          const bodySnippet = comment.body_text
+            ? comment.body_text.substring(0, 200) +
+              (comment.body_text.length > 200 ? "..." : "")
+            : "[deleted]";
+
+          return `
+                <div class="group p-4 border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer item-row transition-colors duration-150" data-id="${comment.full_name}">
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0 flex items-center">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only item-checkbox" data-id="${comment.full_name}" ${isSelected ? "checked" : ""}>
+                                <div class="checkbox-visual w-5 h-5 bg-white border-2 border-gray-300 rounded flex items-center justify-center transition-all duration-200 group-hover:border-red-400">
+                                    <svg class="checkmark w-3 h-3 text-white hidden" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-400 dark:text-gray-500">
+                                <span class="material-icons text-sm">comment</span>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            ${
+                              comment.link_title
+                                ? `<div class="text-xs text-slate-400 mb-1 truncate">
+                                     on: <span class="font-medium">${comment.link_title}</span>
+                                   </div>`
+                                : ""
+                            }
+
+                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-2">
+                                <a href="${commentUrl}"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="text-sm text-gray-700 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150 line-clamp-3"
+                                   onclick="event.stopPropagation()">
+                                    ${bodySnippet}
+                                </a>
+                            </div>
+
+                            <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+                                <a href="https://reddit.com/r/${comment.subreddit}"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150 font-medium"
+                                   onclick="event.stopPropagation()">
+                                    r/${comment.subreddit}
+                                </a>
+                                <span>&bull;</span>
+                                <a href="https://reddit.com/u/${comment.author}"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150"
+                                   onclick="event.stopPropagation()">
+                                    u/${comment.author}
+                                </a>
+                                <span>&bull;</span>
+                                <span>${timeAgo}</span>
+                                <span>&bull;</span>
+                                <span class="inline-flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z"></path>
+                                    </svg>
+                                    ${formatNumber(comment.score)}
+                                </span>
+                                ${
+                                  comment.over_18
+                                    ? '<span class="px-2 py-1 text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full">NSFW</span>'
+                                    : ""
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        })
+        .join("");
+
+      this.itemsList.innerHTML = html;
+      this.updateSelectedCount();
+      this.attachCheckboxListeners();
+      this.attachRowClickListeners();
+      this.updateCheckboxVisuals();
+    }
   }
 
   renderSubreddits() {
@@ -709,13 +937,27 @@ class SelectionModal {
       } else {
         SELECTED_POSTS = SELECTED_POSTS.filter((item) => item !== id);
       }
+    } else if (currentModalType === "comments") {
+      if (isChecked) {
+        if (!SELECTED_COMMENTS.includes(id)) {
+          SELECTED_COMMENTS.push(id);
+        }
+      } else {
+        SELECTED_COMMENTS = SELECTED_COMMENTS.filter((item) => item !== id);
+      }
     }
     this.updateSelectedCount();
   }
 
   updateSelectedCount() {
-    const currentSelection =
-      currentModalType === "subreddits" ? SELECTED_SUBREDDITS : SELECTED_POSTS;
+    let currentSelection;
+    if (currentModalType === "subreddits") {
+      currentSelection = SELECTED_SUBREDDITS;
+    } else if (currentModalType === "posts") {
+      currentSelection = SELECTED_POSTS;
+    } else {
+      currentSelection = SELECTED_COMMENTS;
+    }
     this.selectedCount.textContent = currentSelection.length;
   }
 
@@ -740,6 +982,15 @@ class SelectionModal {
           (post.selftext && post.selftext.toLowerCase().includes(term))
       );
       this.renderPosts();
+    } else if (currentModalType === "comments") {
+      filteredItems = ALL_COMMENTS.filter(
+        (comment) =>
+          (comment.body_text && comment.body_text.toLowerCase().includes(term)) ||
+          comment.subreddit.toLowerCase().includes(term) ||
+          comment.author.toLowerCase().includes(term) ||
+          (comment.link_title && comment.link_title.toLowerCase().includes(term))
+      );
+      this.renderComments();
     }
   }
 
@@ -758,6 +1009,13 @@ class SelectionModal {
         }
       });
       this.renderPosts();
+    } else if (currentModalType === "comments") {
+      filteredItems.forEach((comment) => {
+        if (!SELECTED_COMMENTS.includes(comment.full_name)) {
+          SELECTED_COMMENTS.push(comment.full_name);
+        }
+      });
+      this.renderComments();
     }
   }
 
@@ -776,6 +1034,13 @@ class SelectionModal {
         );
       });
       this.renderPosts();
+    } else if (currentModalType === "comments") {
+      filteredItems.forEach((comment) => {
+        SELECTED_COMMENTS = SELECTED_COMMENTS.filter(
+          (item) => item !== comment.full_name
+        );
+      });
+      this.renderComments();
     }
   }
 
@@ -790,6 +1055,9 @@ class SelectionModal {
     } else if (currentModalType === "posts") {
       POSTS_SELECTION = "custom";
       updateSelectionSummary("posts", "custom", SELECTED_POSTS.length);
+    } else if (currentModalType === "comments") {
+      COMMENTS_SELECTION = "custom";
+      updateSelectionSummary("comments", "custom", SELECTED_COMMENTS.length);
     }
     this.close();
   }
@@ -1039,13 +1307,35 @@ function updateSelectionSummary(type, selection, count = 0) {
     } else {
       summaryEl.classList.add("hidden");
     }
+  } else if (type === "comments") {
+    const summaryEl = document.getElementById("commentsSelectionSummary");
+    const countEl = document.getElementById("selectedCommentsCount");
+    const editBtn = document.getElementById("editCommentsSelection");
+
+    if (selection === "all") {
+      summaryEl.classList.remove("hidden");
+      countEl.textContent = "All";
+      editBtn.style.display = "none";
+    } else if (selection === "custom") {
+      summaryEl.classList.remove("hidden");
+      countEl.textContent = count;
+      editBtn.style.display = "inline-block";
+    } else {
+      summaryEl.classList.add("hidden");
+    }
   }
 }
 
 function toggleDeleteOptions(type, show) {
-  const deleteEl = document.getElementById(
-    type === "subreddits" ? "deleteSubreddits" : "deletePosts"
-  );
+  let deleteElId;
+  if (type === "subreddits") {
+    deleteElId = "deleteSubreddits";
+  } else if (type === "posts") {
+    deleteElId = "deletePosts";
+  } else {
+    deleteElId = "deleteComments";
+  }
+  const deleteEl = document.getElementById(deleteElId);
   if (show) {
     deleteEl.classList.remove("hidden");
   } else {
@@ -1128,6 +1418,35 @@ document.querySelectorAll('input[name="postsSelection"]').forEach((radio) => {
   });
 });
 
+document.querySelectorAll('input[name="commentsSelection"]').forEach((radio) => {
+  radio.addEventListener("change", async (e) => {
+    COMMENTS_SELECTION = e.target.value;
+    console.log("Comments selection changed to:", e.target.value);
+
+    if (e.target.value === "all") {
+      updateSelectionSummary("comments", "all");
+      toggleDeleteOptions("comments", true);
+    } else if (e.target.value === "custom") {
+      if (!isSourceAccountVerified()) {
+        console.log(
+          "Source account not verified, blocking custom comments selection"
+        );
+        alert("Please verify your source account first");
+        document.getElementById("commentsNone").checked = true;
+        COMMENTS_SELECTION = "none";
+        return;
+      }
+
+      await selectionModal.open("comments", getSourceAccessToken());
+      toggleDeleteOptions("comments", true);
+    } else {
+      updateSelectionSummary("comments", "none");
+      toggleDeleteOptions("comments", false);
+      SELECTED_COMMENTS = [];
+    }
+  });
+});
+
 // Edit selection button event listeners
 document
   .getElementById("editSubredditSelection")
@@ -1153,6 +1472,18 @@ document
     document.getElementById("postsCustom").checked = true;
     POSTS_SELECTION = "custom";
     await selectionModal.open("posts", getSourceAccessToken());
+  });
+
+document
+  .getElementById("editCommentsSelection")
+  .addEventListener("click", async () => {
+    if (!isSourceAccountVerified()) {
+      alert("Please verify your source account first");
+      return;
+    }
+    document.getElementById("commentsCustom").checked = true;
+    COMMENTS_SELECTION = "custom";
+    await selectionModal.open("comments", getSourceAccessToken());
   });
 
 // Original migration logic (updated)
@@ -1191,12 +1522,14 @@ optionSubmit.addEventListener("click", async (e) => {
     "deleteSubredditsYes"
   ).checked;
   const deletePosts = document.getElementById("deleteSavedPostsYes").checked;
+  const deleteComments = document.getElementById("deleteSavedCommentsYes")?.checked || false;
 
   let requestBody;
   let endpoint;
 
   // Determine if we're using custom selection or traditional all/none
-  if (SUBREDDIT_SELECTION === "custom" || POSTS_SELECTION === "custom") {
+  const hasCustomSelection = SUBREDDIT_SELECTION === "custom" || POSTS_SELECTION === "custom" || COMMENTS_SELECTION === "custom";
+  if (hasCustomSelection) {
     // Use custom migration endpoint
     endpoint = `${API_BASE_URL}/api/migrate-custom`;
     if (CURRENT_AUTH_METHOD === "oauth") {
@@ -1209,8 +1542,10 @@ optionSubmit.addEventListener("click", async (e) => {
         selected_subreddits:
           SUBREDDIT_SELECTION === "custom" ? SELECTED_SUBREDDITS : [],
         selected_posts: POSTS_SELECTION === "custom" ? SELECTED_POSTS : [],
+        selected_comments: COMMENTS_SELECTION === "custom" ? SELECTED_COMMENTS : [],
         delete_old_subreddits: deleteSubreddits,
         delete_old_posts: deletePosts,
+        delete_old_comments: deleteComments,
       };
     } else {
       requestBody = {
@@ -1220,8 +1555,10 @@ optionSubmit.addEventListener("click", async (e) => {
         selected_subreddits:
           SUBREDDIT_SELECTION === "custom" ? SELECTED_SUBREDDITS : [],
         selected_posts: POSTS_SELECTION === "custom" ? SELECTED_POSTS : [],
+        selected_comments: COMMENTS_SELECTION === "custom" ? SELECTED_COMMENTS : [],
         delete_old_subreddits: deleteSubreddits,
         delete_old_posts: deletePosts,
+        delete_old_comments: deleteComments,
       };
     }
   } else {
@@ -1237,7 +1574,9 @@ optionSubmit.addEventListener("click", async (e) => {
         preferences: {
           migrate_subreddit_bool: SUBREDDIT_SELECTION === "all",
           migrate_post_bool: POSTS_SELECTION === "all",
+          migrate_comment_bool: COMMENTS_SELECTION === "all",
           delete_post_bool: deletePosts,
+          delete_comment_bool: deleteComments,
           delete_subreddit_bool: deleteSubreddits,
         },
       };
@@ -1249,7 +1588,9 @@ optionSubmit.addEventListener("click", async (e) => {
         preferences: {
           migrate_subreddit_bool: SUBREDDIT_SELECTION === "all",
           migrate_post_bool: POSTS_SELECTION === "all",
+          migrate_comment_bool: COMMENTS_SELECTION === "all",
           delete_post_bool: deletePosts,
+          delete_comment_bool: deleteComments,
           delete_subreddit_bool: deleteSubreddits,
         },
       };
@@ -1258,7 +1599,7 @@ optionSubmit.addEventListener("click", async (e) => {
 
   console.log("Starting migration with:", {
     endpoint,
-    selections: { subreddits: SUBREDDIT_SELECTION, posts: POSTS_SELECTION },
+    selections: { subreddits: SUBREDDIT_SELECTION, posts: POSTS_SELECTION, comments: COMMENTS_SELECTION },
   });
 
   try {
@@ -1309,6 +1650,9 @@ function displayMigrationResponse(response) {
   const migratingPosts =
     POSTS_SELECTION === "all" ||
     (POSTS_SELECTION === "custom" && SELECTED_POSTS.length > 0);
+  const migratingComments =
+    COMMENTS_SELECTION === "all" ||
+    (COMMENTS_SELECTION === "custom" && SELECTED_COMMENTS.length > 0);
 
   // Create subreddit status if subreddits were migrated
   if (migratingSubreddits && response.data.subscribeSubreddit) {
@@ -1340,8 +1684,23 @@ function displayMigrationResponse(response) {
     migrateResponseData.appendChild(postStatusElement);
   }
 
+  // Create comment status if comments were migrated
+  if (migratingComments && response.data.saveComment) {
+    const commentStatusElement = document.createElement("li");
+    commentStatusElement.className =
+      "flex items-center space-x-3 p-3 bg-emerald-900/20 rounded-lg border border-emerald-500/20";
+    commentStatusElement.innerHTML = `
+      <span class="material-icons text-emerald-400">check_circle</span>
+      <span class="text-sm font-medium text-slate-300">
+        Total comments successfully saved in new account:
+        <span class="text-emerald-400 font-bold">${response.data.saveComment.SuccessCount}</span>
+      </span>
+    `;
+    migrateResponseData.appendChild(commentStatusElement);
+  }
+
   // If nothing was migrated, show a message
-  if (!migratingSubreddits && !migratingPosts) {
+  if (!migratingSubreddits && !migratingPosts && !migratingComments) {
     const noMigrationElement = document.createElement("li");
     noMigrationElement.className =
       "flex items-center space-x-3 p-3 bg-amber-900/20 rounded-lg border border-amber-500/20";
@@ -1949,8 +2308,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // Set default selections
   document.getElementById("subredditNone").checked = true;
   document.getElementById("postsNone").checked = true;
+  document.getElementById("commentsNone").checked = true;
   document.getElementById("deleteSubredditsNo").checked = true;
   document.getElementById("deletePostsNo").checked = true;
+  document.getElementById("deleteCommentsNo").checked = true;
 
   updateSubmitButtonState();
 

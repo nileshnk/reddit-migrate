@@ -835,6 +835,59 @@
                         </div>
                     </div>
                 </fieldset>
+
+                <!-- Saved Comments Migration -->
+                <fieldset class="glass-card rounded-xl p-6" id="saved-comments-options">
+                    <legend class="text-lg font-semibold text-slate-200 mb-4 flex items-center">
+                        <span class="material-icons mr-2" style="color: #0079D3;">comment</span>
+                        Migrate Saved Comments
+                    </legend>
+                    <div class="flex items-center space-x-8 mb-4">
+                        <div class="flex items-center">
+                            <input type="radio" id="commentsAll" name="commentsSelection" value="all" class="custom-radio" />
+                            <label for="commentsAll" class="ml-3 text-sm font-medium text-slate-300">All</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="radio" id="commentsCustom" name="commentsSelection" value="custom"
+                                class="custom-radio" />
+                            <label for="commentsCustom" class="ml-3 text-sm font-medium text-slate-300">Custom</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="radio" id="commentsNone" name="commentsSelection" value="none"
+                                class="custom-radio" />
+                            <label for="commentsNone" class="ml-3 text-sm font-medium text-slate-300">None</label>
+                        </div>
+                    </div>
+                    <div id="commentsSelectionSummary"
+                        class="hidden flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                        <span class="text-sm text-slate-400 flex items-center">
+                            <span class="material-icons mr-2 text-sm">info</span>
+                            <span id="selectedCommentsCount">0</span><span>&nbsp;comments selected</span>
+                        </span>
+                        <button id="editCommentsSelection"
+                            class="btn-secondary px-4 py-2 text-white text-sm font-semibold rounded-lg">
+                            Edit Selection
+                        </button>
+                    </div>
+
+                    <div class="mt-4 hidden" id="deleteComments">
+                        <label class="block text-sm font-semibold text-slate-300 mb-3">Delete Old Account Saved
+                            Comments:</label>
+                        <div class="flex items-center space-x-6">
+                            <div class="flex items-center">
+                                <input type="radio" id="deleteSavedCommentsYes" name="deleteComments" value="yes"
+                                    class="custom-radio" />
+                                <label for="deleteSavedCommentsYes"
+                                    class="ml-3 text-sm font-medium text-slate-300">Yes</label>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="radio" id="deleteCommentsNo" name="deleteComments" value="no"
+                                    class="custom-radio" />
+                                <label for="deleteCommentsNo" class="ml-3 text-sm font-medium text-slate-300">No</label>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
             </div>
 
             <!-- Submit Button -->

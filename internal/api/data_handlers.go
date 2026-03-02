@@ -162,6 +162,59 @@ func SavedPostsHandler(w http.ResponseWriter, r *http.Request) {
 	config.InfoLogger.Printf("Successfully sent %d saved posts to %s", len(posts), r.RemoteAddr)
 }
 
+// SavedCommentsHandler handles the /api/saved-comments endpoint
+func SavedCommentsHandler(w http.ResponseWriter, r *http.Request) {
+	config.DebugLogger.Printf("Received request for /api/saved-comments from %s", r.RemoteAddr)
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		config.ErrorLogger.Printf("Invalid content type for /api/saved-comments from %s: %s", r.RemoteAddr, r.Header.Get("Content-Type"))
+		http.Error(w, "Content Type must be application/json", http.StatusUnsupportedMediaType)
+		return
+	}
+
+	var requestBody types.GetSavedCommentsRequest
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&requestBody); err != nil {
+		config.ErrorLogger.Printf("Error decoding /api/saved-comments request from %s: %v", r.RemoteAddr, err)
+		http.Error(w, "Bad Request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Extract authentication data
+	token, username, err := extractAuthData(requestBody.AuthMethod, requestBody.Cookie, requestBody.AccessToken, requestBody.Username)
+	if err != nil {
+		config.ErrorLogger.Printf("Failed to extract auth data for /api/saved-comments from %s: %v", r.RemoteAddr, err)
+		http.Error(w, "Authentication failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Fetch detailed saved comments information
+	comments, err := reddit.FetchSavedCommentsWithDetails(token, username)
+	if err != nil {
+		config.ErrorLogger.Printf("Error fetching saved comments for %s: %v", r.RemoteAddr, err)
+		http.Error(w, "Failed to fetch saved comments: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := types.GetSavedCommentsResponse{
+		Success:  true,
+		Message:  "Saved comments fetched successfully",
+		Comments: comments,
+		Count:    len(comments),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		config.ErrorLogger.Printf("Error encoding saved comments response for %s: %v", r.RemoteAddr, err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	config.InfoLogger.Printf("Successfully sent %d saved comments to %s", len(comments), r.RemoteAddr)
+}
+
 // AccountCountsHandler handles the /api/account-counts endpoint
 func AccountCountsHandler(w http.ResponseWriter, r *http.Request) {
 	config.DebugLogger.Printf("Received request for /api/account-counts from %s", r.RemoteAddr)
@@ -203,12 +256,19 @@ func AccountCountsHandler(w http.ResponseWriter, r *http.Request) {
 		postsCount = -1 // Indicate error
 	}
 
+	commentsCount, err := reddit.GetSavedCommentsCount(token, username)
+	if err != nil {
+		config.ErrorLogger.Printf("Error getting saved comments count for %s: %v", r.RemoteAddr, err)
+		commentsCount = -1 // Indicate error
+	}
+
 	response := types.AccountCountsResponse{
-		Success:         true,
-		Message:         "Account counts retrieved successfully",
-		Username:        username,
-		SubredditCount:  subredditCount,
-		SavedPostsCount: postsCount,
+		Success:            true,
+		Message:            "Account counts retrieved successfully",
+		Username:           username,
+		SubredditCount:     subredditCount,
+		SavedPostsCount:    postsCount,
+		SavedCommentsCount: commentsCount,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -218,5 +278,5 @@ func AccountCountsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	config.InfoLogger.Printf("Successfully sent account counts to %s: %d subreddits, %d posts", r.RemoteAddr, subredditCount, postsCount)
+	config.InfoLogger.Printf("Successfully sent account counts to %s: %d subreddits, %d posts, %d comments", r.RemoteAddr, subredditCount, postsCount, commentsCount)
 }

@@ -42,6 +42,9 @@ func Router(router chi.Router) {
 	router.Post("/saved-posts", SavedPostsHandler)
 	config.InfoLogger.Println("Registered /api/saved-posts POST endpoint")
 
+	router.Post("/saved-comments", SavedCommentsHandler)
+	config.InfoLogger.Println("Registered /api/saved-comments POST endpoint")
+
 	router.Post("/account-counts", AccountCountsHandler)
 	config.InfoLogger.Println("Registered /api/account-counts POST endpoint")
 

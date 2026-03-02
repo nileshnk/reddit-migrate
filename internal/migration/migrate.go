@@ -179,14 +179,20 @@ func initializeMigration(req types.MigrationRequestType) types.MigrationResponse
 	if req.Preferences.MigratePostBool || req.Preferences.DeletePostBool {
 		if err := processPosts(oldAccountToken, newAccountToken, oldAccountUsername, newAccountUsername, req.Preferences, &finalResponse.Data); err != nil {
 			config.ErrorLogger.Printf("Error processing posts: %v", err)
-			// Similar to subreddits, messages handled internally for partial success.
+		}
+	}
+
+	// Handle comment migration/deletion.
+	if req.Preferences.MigrateCommentBool || req.Preferences.DeleteCommentBool {
+		if err := processComments(oldAccountToken, newAccountToken, oldAccountUsername, newAccountUsername, req.Preferences, &finalResponse.Data); err != nil {
+			config.ErrorLogger.Printf("Error processing comments: %v", err)
 		}
 	}
 
 	// Determine overall success and message.
-	// A more sophisticated check might be needed if partial successes are not considered overall success.
 	if finalResponse.Data.SubscribeSubreddit.Error || finalResponse.Data.UnsubscribeSubreddit.Error ||
-		finalResponse.Data.SavePost.FailedCount > 0 || finalResponse.Data.UnsavePost.FailedCount > 0 {
+		finalResponse.Data.SavePost.FailedCount > 0 || finalResponse.Data.UnsavePost.FailedCount > 0 ||
+		finalResponse.Data.SaveComment.FailedCount > 0 || finalResponse.Data.UnsaveComment.FailedCount > 0 {
 		finalResponse.Success = false
 		finalResponse.Message = "Migration completed with some errors. Check individual operation statuses."
 		config.InfoLogger.Println("Migration process completed with some errors.")
@@ -362,6 +368,49 @@ func processPosts(oldToken, newToken, oldUser, newUser string, prefs types.Prefe
 	return nil
 }
 
+// processComments handles the migration and/or deletion of saved comments.
+func processComments(oldToken, newToken, oldUser, newUser string, prefs types.PreferencesType, responseData *types.MigrationDetails) error {
+	config.InfoLogger.Printf("Fetching saved comment full names from old account %s...", oldUser)
+
+	oldSavedCommentsFullNamesList, err := reddit.FetchSavedCommentFullNames(oldToken, oldUser)
+	if err != nil {
+		return fmt.Errorf("failed to fetch saved comment names from %s: %w", oldUser, err)
+	}
+
+	newSavedCommentsFullNamesList, err := reddit.FetchSavedCommentFullNames(newToken, newUser)
+	if err != nil {
+		return fmt.Errorf("failed to fetch saved comment names from %s: %w", newUser, err)
+	}
+
+	// Filter out comments that are already saved in the new account
+	commentsToMigrate := filterSlice(oldSavedCommentsFullNamesList, newSavedCommentsFullNamesList)
+
+	config.InfoLogger.Printf("Found %d unique comments in old account that aren't in new account", len(commentsToMigrate))
+
+	// Reverse the order so that oldest comments are saved first to maintain chronological order
+	for i, j := 0, len(commentsToMigrate)-1; i < j; i, j = i+1, j-1 {
+		commentsToMigrate[i], commentsToMigrate[j] = commentsToMigrate[j], commentsToMigrate[i]
+	}
+
+	concurrency := config.DefaultPostConcurrency
+
+	// ManageSavedPosts works for comments too — POST /api/save accepts both t3_ and t1_ IDs
+	if prefs.MigrateCommentBool {
+		config.InfoLogger.Printf("Starting saved comment migration for %s -> %s (%d comments).", oldUser, newUser, len(commentsToMigrate))
+		saveResult := reddit.ManageSavedPosts(newToken, commentsToMigrate, types.SaveAction, concurrency)
+		config.InfoLogger.Printf("Saved %d comments to %s (failed: %d).", saveResult.SuccessCount, newUser, saveResult.FailedCount)
+		responseData.SaveComment = saveResult
+	}
+
+	if prefs.DeleteCommentBool {
+		config.InfoLogger.Printf("Starting saved comment deletion (unsaving) from %s (%d comments).", oldUser, len(commentsToMigrate))
+		unsaveResult := reddit.ManageSavedPosts(oldToken, commentsToMigrate, types.UnsaveAction, concurrency)
+		config.InfoLogger.Printf("Unsaved %d comments from %s (failed: %d).", unsaveResult.SuccessCount, oldUser, unsaveResult.FailedCount)
+		responseData.UnsaveComment = unsaveResult
+	}
+	return nil
+}
+
 // errorResponse sends a JSON error message to the client with a given HTTP status code.
 func errorResponse(w http.ResponseWriter, message string, httpStatusCode int) {
 	w.Header().Set("Content-Type", "application/json")
@@ -386,8 +435,8 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 	var finalResponse types.MigrationResponseType
 	finalResponse.Success = false // Default to false
 
-	config.InfoLogger.Printf("Starting custom migration process with %d subreddits and %d posts",
-		len(req.SelectedSubreddits), len(req.SelectedPosts))
+	config.InfoLogger.Printf("Starting custom migration process with %d subreddits, %d posts, and %d comments",
+		len(req.SelectedSubreddits), len(req.SelectedPosts), len(req.SelectedComments))
 
 	// Extract authentication data for old account
 	var oldAccountToken, oldAccountUsername string
@@ -531,11 +580,50 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 		config.InfoLogger.Println("No posts selected for migration")
 	}
 
+	// Handle selected comments migration
+	if len(req.SelectedComments) > 0 {
+		config.InfoLogger.Printf("Migrating %d selected comments", len(req.SelectedComments))
+
+		// Fetch saved comments from new account to avoid duplicates
+		config.InfoLogger.Printf("Fetching saved comments from new account %s to avoid duplicates...", newAccountUsername)
+		newSavedComments, err := reddit.FetchSavedCommentFullNames(newAccountToken, newAccountUsername)
+		commentsToMigrate := req.SelectedComments
+		if err != nil {
+			config.ErrorLogger.Printf("Could not fetch saved comments from new account. Proceeding with all %d selected comments. Error: %v", len(req.SelectedComments), err)
+		} else {
+			commentsToMigrate = filterSlice(req.SelectedComments, newSavedComments)
+			config.InfoLogger.Printf("Filtered selection: %d comments to migrate after removing %d duplicates.", len(commentsToMigrate), len(req.SelectedComments)-len(commentsToMigrate))
+		}
+
+		if len(commentsToMigrate) > 0 {
+			// Reverse order for chronological preservation
+			for i, j := 0, len(commentsToMigrate)-1; i < j; i, j = i+1, j-1 {
+				commentsToMigrate[i], commentsToMigrate[j] = commentsToMigrate[j], commentsToMigrate[i]
+			}
+
+			concurrency := config.DefaultPostConcurrency
+			saveResult := reddit.ManageSavedPosts(newAccountToken, commentsToMigrate, types.SaveAction, concurrency)
+			finalResponse.Data.SaveComment = saveResult
+
+			if req.DeleteOldComments {
+				config.InfoLogger.Printf("Deleting %d selected comments from old account", len(commentsToMigrate))
+				unsaveResult := reddit.ManageSavedPosts(oldAccountToken, commentsToMigrate, types.UnsaveAction, concurrency)
+				finalResponse.Data.UnsaveComment = unsaveResult
+			}
+		} else {
+			config.InfoLogger.Println("No new comments to migrate from selection.")
+		}
+	} else {
+		config.InfoLogger.Println("No comments selected for migration")
+	}
+
 	// Determine overall success and message
 	hasErrors := finalResponse.Data.SubscribeSubreddit.Error ||
 		finalResponse.Data.UnsubscribeSubreddit.Error ||
 		finalResponse.Data.SavePost.FailedCount > 0 ||
-		finalResponse.Data.UnsavePost.FailedCount > 0
+		finalResponse.Data.UnsavePost.FailedCount > 0 ||
+		finalResponse.Data.SaveComment.FailedCount > 0 ||
+		finalResponse.Data.UnsaveComment.FailedCount > 0
 
 	if hasErrors {
 		finalResponse.Success = false
@@ -547,8 +635,8 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 		config.InfoLogger.Println("Custom migration process completed successfully.")
 	}
 
-	config.InfoLogger.Printf("Custom migration summary - Subreddits subscribed: %d, Posts saved: %d",
-		finalResponse.Data.SubscribeSubreddit.SuccessCount, finalResponse.Data.SavePost.SuccessCount)
+	config.InfoLogger.Printf("Custom migration summary - Subreddits subscribed: %d, Posts saved: %d, Comments saved: %d",
+		finalResponse.Data.SubscribeSubreddit.SuccessCount, finalResponse.Data.SavePost.SuccessCount, finalResponse.Data.SaveComment.SuccessCount)
 
 	return finalResponse
 }

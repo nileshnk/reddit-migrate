@@ -18,7 +18,9 @@ type MigrationRequestType struct {
 type PreferencesType struct {
 	MigrateSubredditBool bool `json:"migrate_subreddit_bool"`
 	MigratePostBool      bool `json:"migrate_post_bool"`
+	MigrateCommentBool   bool `json:"migrate_comment_bool"`
 	DeletePostBool       bool `json:"delete_post_bool"`
+	DeleteCommentBool    bool `json:"delete_comment_bool"`
 	DeleteSubredditBool  bool `json:"delete_subreddit_bool"`
 }
 
@@ -37,6 +39,8 @@ type MigrationDetails struct {
 	UnsubscribeSubreddit ManageSubredditResponseType `json:"unsubscribeSubreddit"`
 	SavePost             ManagePostResponseType      `json:"savePost"`
 	UnsavePost           ManagePostResponseType      `json:"unsavePost"`
+	SaveComment          ManagePostResponseType      `json:"saveComment"`
+	UnsaveComment        ManagePostResponseType      `json:"unsaveComment"`
 }
 
 // SubredditActionType defines the action to be performed on a subreddit (subscribe or unsubscribe).
@@ -229,8 +233,10 @@ type CustomMigrationRequest struct {
 	NewAccountUsername  string   `json:"new_account_username,omitempty"` // For OAuth-based auth
 	SelectedSubreddits  []string `json:"selected_subreddits"`            // List of display names
 	SelectedPosts       []string `json:"selected_posts"`                 // List of full names (t3_xxxxx)
+	SelectedComments    []string `json:"selected_comments"`              // List of full names (t1_xxxxx)
 	DeleteOldSubreddits bool     `json:"delete_old_subreddits"`
 	DeleteOldPosts      bool     `json:"delete_old_posts"`
+	DeleteOldComments   bool     `json:"delete_old_comments"`
 }
 
 // DetailedPostData represents the full Reddit post data structure for parsing API responses
@@ -346,9 +352,63 @@ type AccountCountsRequest struct {
 
 // AccountCountsResponse defines the response structure for account counts
 type AccountCountsResponse struct {
-	Success         bool   `json:"success"`
-	Message         string `json:"message"`
-	Username        string `json:"username"`
-	SubredditCount  int    `json:"subreddit_count"`
-	SavedPostsCount int    `json:"saved_posts_count"`
+	Success            bool   `json:"success"`
+	Message            string `json:"message"`
+	Username           string `json:"username"`
+	SubredditCount     int    `json:"subreddit_count"`
+	SavedPostsCount    int    `json:"saved_posts_count"`
+	SavedCommentsCount int    `json:"saved_comments_count"`
+}
+
+// SavedCommentInfo contains detailed information about a saved comment for UI display
+type SavedCommentInfo struct {
+	ID        string `json:"id"`        // Reddit comment ID (without t1_ prefix)
+	FullName  string `json:"full_name"` // Full Reddit name (t1_xxxxx)
+	Body      string `json:"body"`      // Comment text (HTML)
+	BodyText  string `json:"body_text"` // Plain text snippet
+	Author    string `json:"author"`
+	Subreddit string `json:"subreddit"`
+	Score     int    `json:"score"`
+	Created   int64  `json:"created_utc"`
+	Permalink string `json:"permalink"`
+	LinkTitle string `json:"link_title"` // Title of parent post
+	LinkURL   string `json:"link_url"`   // URL of parent post
+	NSFW      bool   `json:"over_18"`
+}
+
+// DetailedCommentData represents the full Reddit comment data structure for parsing API responses
+type DetailedCommentData struct {
+	Kind string `json:"kind"`
+	Data struct {
+		ID                    string  `json:"id"`
+		Name                  string  `json:"name"`
+		Body                  string  `json:"body"`
+		BodyHTML              string  `json:"body_html"`
+		Author                string  `json:"author"`
+		Subreddit             string  `json:"subreddit"`
+		SubredditNamePrefixed string  `json:"subreddit_name_prefixed"`
+		Score                 int     `json:"score"`
+		CreatedUTC            float64 `json:"created_utc"`
+		Permalink             string  `json:"permalink"`
+		LinkTitle             string  `json:"link_title"`
+		LinkURL               string  `json:"link_url"`
+		LinkPermalink         string  `json:"link_permalink"`
+		Over18                bool    `json:"over_18"`
+	} `json:"data"`
+}
+
+// GetSavedCommentsRequest defines the request structure for fetching saved comments with details
+type GetSavedCommentsRequest struct {
+	AuthMethod  string `json:"auth_method,omitempty"`  // "cookie" or "oauth"
+	Cookie      string `json:"cookie,omitempty"`       // For cookie-based auth
+	AccessToken string `json:"access_token,omitempty"` // For OAuth-based auth
+	Username    string `json:"username,omitempty"`     // For OAuth-based auth
+}
+
+// GetSavedCommentsResponse defines the response structure for saved comments with full details
+type GetSavedCommentsResponse struct {
+	Success  bool               `json:"success"`
+	Message  string             `json:"message"`
+	Comments []SavedCommentInfo `json:"comments"`
+	Count    int                `json:"count"`
 }
