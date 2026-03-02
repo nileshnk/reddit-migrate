@@ -412,3 +412,22 @@ type GetSavedCommentsResponse struct {
 	Comments []SavedCommentInfo `json:"comments"`
 	Count    int                `json:"count"`
 }
+
+// ExportRequest defines the request structure for the export endpoint
+type ExportRequest struct {
+	AuthMethod  string   `json:"auth_method,omitempty"`  // "cookie" or "oauth"
+	Cookie      string   `json:"cookie,omitempty"`       // For cookie-based auth
+	AccessToken string   `json:"access_token,omitempty"` // For OAuth-based auth
+	Username    string   `json:"username,omitempty"`     // For OAuth-based auth
+	Sections    []string `json:"sections,omitempty"`     // Which sections to export (empty = all)
+}
+
+// ExportData contains all exported account data
+type ExportData struct {
+	ExportedAt    string             `json:"exported_at"`
+	Username      string             `json:"username"`
+	Subreddits    []SubredditInfo    `json:"subreddits,omitempty"`
+	SavedPosts    []SavedPostInfo    `json:"saved_posts,omitempty"`
+	SavedComments []SavedCommentInfo `json:"saved_comments,omitempty"`
+	Errors        []string           `json:"errors,omitempty"`
+}

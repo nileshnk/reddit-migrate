@@ -48,6 +48,9 @@ func Router(router chi.Router) {
 	router.Post("/account-counts", AccountCountsHandler)
 	config.InfoLogger.Println("Registered /api/account-counts POST endpoint")
 
+	router.Post("/export", ExportHandler)
+	config.InfoLogger.Println("Registered /api/export POST endpoint")
+
 	// Migration endpoints
 	router.Post("/migrate", migration.MigrationHandler)
 	config.InfoLogger.Println("Registered /api/migrate POST endpoint")

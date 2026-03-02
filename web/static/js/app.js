@@ -4,6 +4,7 @@ import { updateSubmitButtonState, initCookieAuthListeners, OAuthModalManager } f
 import { DarkModeManager, TabManager, initUIListeners } from "./ui.js";
 import { SelectionModal, initSelectionListeners } from "./modal.js";
 import { initMigrationHandler } from "./migration.js";
+import { initExportHandler } from "./export.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM Content Loaded - Initializing application");
@@ -46,6 +47,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Initialize migration handler
     initMigrationHandler();
     console.log("Migration handler initialized");
+
+    // Initialize export handler
+    initExportHandler();
+    console.log("Export handler initialized");
   } catch (error) {
     console.error("Error initializing application:", error);
   }
