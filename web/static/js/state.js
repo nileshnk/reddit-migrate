@@ -23,19 +23,22 @@ export let DEST_AUTH_METHOD = "oauth"; // "oauth" or "direct"
 export let SUBREDDIT_SELECTION = "none"; // "all", "custom", "none"
 export let POSTS_SELECTION = "none"; // "all", "custom", "none"
 export let COMMENTS_SELECTION = "none"; // "all", "custom", "none"
+export let MULTIREDDIT_SELECTION = "none"; // "all", "custom", "none"
 export let SELECTED_SUBREDDITS = [];
 export let SELECTED_POSTS = [];
 export let SELECTED_COMMENTS = [];
+export let SELECTED_MULTIREDDITS = [];
 export let ALL_SUBREDDITS = [];
 export let ALL_POSTS = [];
 export let ALL_COMMENTS = [];
+export let ALL_MULTIREDDITS = [];
 
 // Cookie token storage
 export let SOURCE_COOKIE_TOKEN = "";
 export let DEST_COOKIE_TOKEN = "";
 
 // Modal state
-export let currentModalType = null; // "subreddits", "posts", or "comments"
+export let currentModalType = null; // "subreddits", "posts", "comments", or "multireddits"
 export let filteredItems = [];
 
 // Setters — needed because ES module exports are read-only bindings
@@ -53,12 +56,15 @@ export function setDestAuthMethod(v) { DEST_AUTH_METHOD = v; }
 export function setSubredditSelection(v) { SUBREDDIT_SELECTION = v; }
 export function setPostsSelection(v) { POSTS_SELECTION = v; }
 export function setCommentsSelection(v) { COMMENTS_SELECTION = v; }
+export function setMultiredditSelection(v) { MULTIREDDIT_SELECTION = v; }
 export function setSelectedSubreddits(v) { SELECTED_SUBREDDITS = v; }
 export function setSelectedPosts(v) { SELECTED_POSTS = v; }
 export function setSelectedComments(v) { SELECTED_COMMENTS = v; }
+export function setSelectedMultireddits(v) { SELECTED_MULTIREDDITS = v; }
 export function setAllSubreddits(v) { ALL_SUBREDDITS = v; }
 export function setAllPosts(v) { ALL_POSTS = v; }
 export function setAllComments(v) { ALL_COMMENTS = v; }
+export function setAllMultireddits(v) { ALL_MULTIREDDITS = v; }
 export function setSourceCookieToken(v) { SOURCE_COOKIE_TOKEN = v; }
 export function setDestCookieToken(v) { DEST_COOKIE_TOKEN = v; }
 export function setCurrentModalType(v) { currentModalType = v; }

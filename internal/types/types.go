@@ -16,12 +16,13 @@ type MigrationRequestType struct {
 // PreferencesType defines the user's choices for the migration process.
 // Each boolean field indicates whether a specific migration or deletion action should be performed.
 type PreferencesType struct {
-	MigrateSubredditBool bool `json:"migrate_subreddit_bool"`
-	MigratePostBool      bool `json:"migrate_post_bool"`
-	MigrateCommentBool   bool `json:"migrate_comment_bool"`
-	DeletePostBool       bool `json:"delete_post_bool"`
-	DeleteCommentBool    bool `json:"delete_comment_bool"`
-	DeleteSubredditBool  bool `json:"delete_subreddit_bool"`
+	MigrateSubredditBool   bool `json:"migrate_subreddit_bool"`
+	MigratePostBool        bool `json:"migrate_post_bool"`
+	MigrateCommentBool     bool `json:"migrate_comment_bool"`
+	MigrateMultiredditBool bool `json:"migrate_multireddit_bool"`
+	DeletePostBool         bool `json:"delete_post_bool"`
+	DeleteCommentBool      bool `json:"delete_comment_bool"`
+	DeleteSubredditBool    bool `json:"delete_subreddit_bool"`
 }
 
 // MigrationResponseType defines the structure of the response sent after a migration attempt.
@@ -35,12 +36,13 @@ type MigrationResponseType struct {
 // MigrationDetails holds the detailed results of migration operations.
 // This structure is embedded within MigrationResponseType.
 type MigrationDetails struct {
-	SubscribeSubreddit   ManageSubredditResponseType `json:"subscribeSubreddit"`
-	UnsubscribeSubreddit ManageSubredditResponseType `json:"unsubscribeSubreddit"`
-	SavePost             ManagePostResponseType      `json:"savePost"`
-	UnsavePost           ManagePostResponseType      `json:"unsavePost"`
-	SaveComment          ManagePostResponseType      `json:"saveComment"`
-	UnsaveComment        ManagePostResponseType      `json:"unsaveComment"`
+	SubscribeSubreddit   ManageSubredditResponseType   `json:"subscribeSubreddit"`
+	UnsubscribeSubreddit ManageSubredditResponseType   `json:"unsubscribeSubreddit"`
+	SavePost             ManagePostResponseType        `json:"savePost"`
+	UnsavePost           ManagePostResponseType        `json:"unsavePost"`
+	SaveComment          ManagePostResponseType        `json:"saveComment"`
+	UnsaveComment        ManagePostResponseType        `json:"unsaveComment"`
+	CreateMultireddit    ManageMultiredditResponseType `json:"createMultireddit"`
 }
 
 // SubredditActionType defines the action to be performed on a subreddit (subscribe or unsubscribe).
@@ -234,6 +236,7 @@ type CustomMigrationRequest struct {
 	SelectedSubreddits      []string `json:"selected_subreddits"`               // List of display names
 	SelectedPosts           []string `json:"selected_posts"`                    // List of full names (t3_xxxxx)
 	SelectedComments        []string `json:"selected_comments"`                 // List of full names (t1_xxxxx)
+	SelectedMultireddits    []string `json:"selected_multireddits"`             // List of multireddit names
 	DeleteSourceSubreddits  bool     `json:"delete_source_subreddits"`
 	DeleteSourcePosts       bool     `json:"delete_source_posts"`
 	DeleteSourceComments    bool     `json:"delete_source_comments"`
@@ -358,6 +361,7 @@ type AccountCountsResponse struct {
 	SubredditCount     int    `json:"subreddit_count"`
 	SavedPostsCount    int    `json:"saved_posts_count"`
 	SavedCommentsCount int    `json:"saved_comments_count"`
+	MultiredditCount   int    `json:"multireddit_count"`
 }
 
 // SavedCommentInfo contains detailed information about a saved comment for UI display
@@ -411,4 +415,40 @@ type GetSavedCommentsResponse struct {
 	Message  string             `json:"message"`
 	Comments []SavedCommentInfo `json:"comments"`
 	Count    int                `json:"count"`
+}
+
+// MultiredditInfo contains detailed information about a multireddit for UI display
+type MultiredditInfo struct {
+	Name        string   `json:"name"`
+	DisplayName string   `json:"display_name"`
+	Path        string   `json:"path"`
+	Description string   `json:"description_md"`
+	Subreddits  []string `json:"subreddits"`
+	IconURL     string   `json:"icon_url"`
+	Visibility  string   `json:"visibility"`
+	Created     float64  `json:"created_utc"`
+	NumSubs     int      `json:"num_subscribers"`
+}
+
+// GetMultiredditsRequest defines the request structure for fetching multireddits
+type GetMultiredditsRequest struct {
+	AuthMethod  string `json:"auth_method,omitempty"`
+	Cookie      string `json:"cookie,omitempty"`
+	AccessToken string `json:"access_token,omitempty"`
+	Username    string `json:"username,omitempty"`
+}
+
+// GetMultiredditsResponse defines the response structure for multireddits
+type GetMultiredditsResponse struct {
+	Success      bool              `json:"success"`
+	Message      string            `json:"message"`
+	Multireddits []MultiredditInfo `json:"multireddits"`
+	Count        int               `json:"count"`
+}
+
+// ManageMultiredditResponseType defines the response for multireddit migration operations
+type ManageMultiredditResponseType struct {
+	SuccessCount int
+	FailedCount  int
+	FailedMultis []string
 }
