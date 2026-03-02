@@ -24,19 +24,19 @@ export function initMigrationHandler() {
 
     // Get tokens based on authentication method
     if (state.CURRENT_AUTH_METHOD === "cookie") {
-      const oldAccAccessToken = document.getElementById("oldAccessToken");
-      const newAccAccessToken = document.getElementById("newAccessToken");
+      const sourceAccInput = document.getElementById("sourceAccessToken");
+      const destAccInput = document.getElementById("destAccessToken");
 
-      oldAccAccessToken.style.backgroundColor = "#e6e6e6";
-      oldAccAccessToken.disabled = true;
-      newAccAccessToken.style.backgroundColor = "#e6e6e6";
-      newAccAccessToken.disabled = true;
+      sourceAccInput.style.backgroundColor = "#e6e6e6";
+      sourceAccInput.disabled = true;
+      destAccInput.style.backgroundColor = "#e6e6e6";
+      destAccInput.disabled = true;
 
-      state.setOldAccessToken(oldAccAccessToken.value);
-      state.setNewAccessToken(newAccAccessToken.value);
+      state.setSourceCookieToken(sourceAccInput.value);
+      state.setDestCookieToken(destAccInput.value);
     } else if (state.CURRENT_AUTH_METHOD === "oauth") {
-      state.setOldAccessToken(state.SOURCE_ACCESS_TOKEN);
-      state.setNewAccessToken(state.DEST_ACCESS_TOKEN);
+      state.setSourceCookieToken(state.SOURCE_ACCESS_TOKEN);
+      state.setDestCookieToken(state.DEST_ACCESS_TOKEN);
     }
 
     const deleteSubreddits = document.getElementById(
@@ -54,30 +54,30 @@ export function initMigrationHandler() {
       if (state.CURRENT_AUTH_METHOD === "oauth") {
         requestBody = {
           auth_method: "oauth",
-          old_account_token: state.OLD_ACCESS_TOKEN,
-          new_account_token: state.NEW_ACCESS_TOKEN,
-          old_account_username: state.SOURCE_USERNAME,
-          new_account_username: state.DEST_USERNAME,
+          source_account_token: state.SOURCE_COOKIE_TOKEN,
+          dest_account_token: state.DEST_COOKIE_TOKEN,
+          source_account_username: state.SOURCE_USERNAME,
+          dest_account_username: state.DEST_USERNAME,
           selected_subreddits:
             state.SUBREDDIT_SELECTION === "custom" ? state.SELECTED_SUBREDDITS : [],
           selected_posts: state.POSTS_SELECTION === "custom" ? state.SELECTED_POSTS : [],
           selected_comments: state.COMMENTS_SELECTION === "custom" ? state.SELECTED_COMMENTS : [],
-          delete_old_subreddits: deleteSubreddits,
-          delete_old_posts: deletePosts,
-          delete_old_comments: deleteComments,
+          delete_source_subreddits: deleteSubreddits,
+          delete_source_posts: deletePosts,
+          delete_source_comments: deleteComments,
         };
       } else {
         requestBody = {
           auth_method: "cookie",
-          old_account_cookie: state.OLD_ACCESS_TOKEN,
-          new_account_cookie: state.NEW_ACCESS_TOKEN,
+          source_account_cookie: state.SOURCE_COOKIE_TOKEN,
+          dest_account_cookie: state.DEST_COOKIE_TOKEN,
           selected_subreddits:
             state.SUBREDDIT_SELECTION === "custom" ? state.SELECTED_SUBREDDITS : [],
           selected_posts: state.POSTS_SELECTION === "custom" ? state.SELECTED_POSTS : [],
           selected_comments: state.COMMENTS_SELECTION === "custom" ? state.SELECTED_COMMENTS : [],
-          delete_old_subreddits: deleteSubreddits,
-          delete_old_posts: deletePosts,
-          delete_old_comments: deleteComments,
+          delete_source_subreddits: deleteSubreddits,
+          delete_source_posts: deletePosts,
+          delete_source_comments: deleteComments,
         };
       }
     } else {
@@ -85,10 +85,10 @@ export function initMigrationHandler() {
       if (state.CURRENT_AUTH_METHOD === "oauth") {
         requestBody = {
           auth_method: "oauth",
-          old_account_token: state.OLD_ACCESS_TOKEN,
-          new_account_token: state.NEW_ACCESS_TOKEN,
-          old_account_username: state.SOURCE_USERNAME,
-          new_account_username: state.DEST_USERNAME,
+          source_account_token: state.SOURCE_COOKIE_TOKEN,
+          dest_account_token: state.DEST_COOKIE_TOKEN,
+          source_account_username: state.SOURCE_USERNAME,
+          dest_account_username: state.DEST_USERNAME,
           preferences: {
             migrate_subreddit_bool: state.SUBREDDIT_SELECTION === "all",
             migrate_post_bool: state.POSTS_SELECTION === "all",
@@ -101,8 +101,8 @@ export function initMigrationHandler() {
       } else {
         requestBody = {
           auth_method: "cookie",
-          old_account_cookie: state.OLD_ACCESS_TOKEN,
-          new_account_cookie: state.NEW_ACCESS_TOKEN,
+          source_account_cookie: state.SOURCE_COOKIE_TOKEN,
+          dest_account_cookie: state.DEST_COOKIE_TOKEN,
           preferences: {
             migrate_subreddit_bool: state.SUBREDDIT_SELECTION === "all",
             migrate_post_bool: state.POSTS_SELECTION === "all",
@@ -145,12 +145,12 @@ export function initMigrationHandler() {
       loadingBtn.style.display = "none";
 
       if (state.CURRENT_AUTH_METHOD === "cookie") {
-        const oldAccAccessToken = document.getElementById("oldAccessToken");
-        const newAccAccessToken = document.getElementById("newAccessToken");
-        oldAccAccessToken.disabled = false;
-        newAccAccessToken.disabled = false;
-        oldAccAccessToken.style.backgroundColor = "";
-        newAccAccessToken.style.backgroundColor = "";
+        const sourceAccInput = document.getElementById("sourceAccessToken");
+        const destAccInput = document.getElementById("destAccessToken");
+        sourceAccInput.disabled = false;
+        destAccInput.disabled = false;
+        sourceAccInput.style.backgroundColor = "";
+        destAccInput.style.backgroundColor = "";
       }
     }
   });
@@ -176,7 +176,7 @@ function displayMigrationResponse(response, migrateResponseData, migrateResponse
     subredditStatusElement.innerHTML = `
       <span class="material-icons text-emerald-400">check_circle</span>
       <span class="text-sm font-medium text-slate-300">
-        Total subreddits successfully subscribed to new account:
+        Total subreddits successfully subscribed to destination account:
         <span class="text-emerald-400 font-bold">${response.data.subscribeSubreddit.SuccessCount}</span>
       </span>
     `;
@@ -190,7 +190,7 @@ function displayMigrationResponse(response, migrateResponseData, migrateResponse
     postStatusElement.innerHTML = `
       <span class="material-icons text-emerald-400">check_circle</span>
       <span class="text-sm font-medium text-slate-300">
-        Total posts successfully saved in new account:
+        Total posts successfully saved in destination account:
         <span class="text-emerald-400 font-bold">${response.data.savePost.SuccessCount}</span>
       </span>
     `;
@@ -204,7 +204,7 @@ function displayMigrationResponse(response, migrateResponseData, migrateResponse
     commentStatusElement.innerHTML = `
       <span class="material-icons text-emerald-400">check_circle</span>
       <span class="text-sm font-medium text-slate-300">
-        Total comments successfully saved in new account:
+        Total comments successfully saved in destination account:
         <span class="text-emerald-400 font-bold">${response.data.saveComment.SuccessCount}</span>
       </span>
     `;

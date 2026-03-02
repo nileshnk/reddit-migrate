@@ -14,8 +14,8 @@ export function getAuthRequestBody() {
       ? state.SOURCE_ACCESS_TOKEN.substring(0, 10) + "..."
       : "none",
     SOURCE_USERNAME: state.SOURCE_USERNAME,
-    OLD_ACCESS_TOKEN: state.OLD_ACCESS_TOKEN
-      ? state.OLD_ACCESS_TOKEN.substring(0, 10) + "..."
+    SOURCE_COOKIE_TOKEN: state.SOURCE_COOKIE_TOKEN
+      ? state.SOURCE_COOKIE_TOKEN.substring(0, 10) + "..."
       : "none",
   });
 
@@ -36,7 +36,7 @@ export function getAuthRequestBody() {
   } else {
     const body = {
       auth_method: "cookie",
-      cookie: state.OLD_ACCESS_TOKEN,
+      cookie: state.SOURCE_COOKIE_TOKEN,
     };
     console.log("Cookie auth request body:", {
       auth_method: body.auth_method,
@@ -49,7 +49,7 @@ export function getAuthRequestBody() {
 // Auth check helpers
 export function isSourceAccountVerified() {
   if (state.CURRENT_AUTH_METHOD === "cookie") {
-    return state.BOOL_OLD_TOKEN_VERIFIED;
+    return state.BOOL_SOURCE_TOKEN_VERIFIED;
   } else if (state.CURRENT_AUTH_METHOD === "oauth") {
     return state.OAUTH_SOURCE_VERIFIED;
   }
@@ -58,7 +58,7 @@ export function isSourceAccountVerified() {
 
 export function isDestAccountVerified() {
   if (state.CURRENT_AUTH_METHOD === "cookie") {
-    return state.BOOL_NEW_TOKEN_VERIFIED;
+    return state.BOOL_DEST_TOKEN_VERIFIED;
   } else if (state.CURRENT_AUTH_METHOD === "oauth") {
     return state.OAUTH_DEST_VERIFIED;
   }
@@ -67,7 +67,7 @@ export function isDestAccountVerified() {
 
 export function getSourceAccessToken() {
   if (state.CURRENT_AUTH_METHOD === "cookie") {
-    return state.OLD_ACCESS_TOKEN;
+    return state.SOURCE_COOKIE_TOKEN;
   } else if (state.CURRENT_AUTH_METHOD === "oauth") {
     return state.SOURCE_ACCESS_TOKEN;
   }
@@ -76,7 +76,7 @@ export function getSourceAccessToken() {
 
 export function getDestAccessToken() {
   if (state.CURRENT_AUTH_METHOD === "cookie") {
-    return state.NEW_ACCESS_TOKEN;
+    return state.DEST_COOKIE_TOKEN;
   } else if (state.CURRENT_AUTH_METHOD === "oauth") {
     return state.DEST_ACCESS_TOKEN;
   }
@@ -192,97 +192,97 @@ export function getCookieObject(cookie) {
 
 // Initialize cookie auth event listeners
 export function initCookieAuthListeners() {
-  const oldTokenVerifyBtn = document.getElementById("oldTokenVerifyBtn");
-  const verifyLoadBtn1 = document.getElementById("verify-load-btn-1");
-  const newTokenVerifyBtn = document.getElementById("newTokenVerifyBtn");
-  const verifyLoadBtn2 = document.getElementById("verify-load-btn-2");
+  const sourceTokenVerifyBtn = document.getElementById("sourceTokenVerifyBtn");
+  const sourceVerifyLoadBtn = document.getElementById("sourceVerifyLoadBtn");
+  const destTokenVerifyBtn = document.getElementById("destTokenVerifyBtn");
+  const destVerifyLoadBtn = document.getElementById("destVerifyLoadBtn");
 
-  oldTokenVerifyBtn.addEventListener("click", async (e) => {
+  sourceTokenVerifyBtn.addEventListener("click", async (e) => {
     e.preventDefault();
-    oldTokenVerifyBtn.style.display = "none";
-    verifyLoadBtn1.style.display = "block";
+    sourceTokenVerifyBtn.style.display = "none";
+    sourceVerifyLoadBtn.style.display = "block";
 
-    const oldAccAccessToken = document.getElementById("oldAccessToken");
-    const oldAccAccessTokenValue = oldAccAccessToken.value;
-    const verifyOldToken = await verifyCookie(oldAccAccessTokenValue);
+    const sourceAccessTokenInput = document.getElementById("sourceAccessToken");
+    const sourceAccessTokenValue = sourceAccessTokenInput.value;
+    const verifySourceToken = await verifyCookie(sourceAccessTokenValue);
 
-    oldTokenVerifyBtn.style.display = "block";
-    verifyLoadBtn1.style.display = "none";
+    sourceTokenVerifyBtn.style.display = "block";
+    sourceVerifyLoadBtn.style.display = "none";
 
-    if (verifyOldToken.success) {
-      state.setBoolOldTokenVerified(true);
-      state.setOldAccessToken(oldAccAccessTokenValue);
+    if (verifySourceToken.success) {
+      state.setBoolSourceTokenVerified(true);
+      state.setSourceCookieToken(sourceAccessTokenValue);
 
-      oldAccAccessToken.disabled = true;
-      oldAccAccessToken.style.borderColor = "#10b981";
+      sourceAccessTokenInput.disabled = true;
+      sourceAccessTokenInput.style.borderColor = "#10b981";
 
-      oldTokenVerifyBtn.className =
+      sourceTokenVerifyBtn.className =
         "btn-verified px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2";
-      oldTokenVerifyBtn.disabled = true;
-      oldTokenVerifyBtn.style.cursor = "default";
-      oldTokenVerifyBtn.innerHTML = `
+      sourceTokenVerifyBtn.disabled = true;
+      sourceTokenVerifyBtn.style.cursor = "default";
+      sourceTokenVerifyBtn.innerHTML = `
         <span class="material-icons text-lg">verified</span>
         <span>Verified</span>
       `;
 
-      document.getElementById("oldTokenVerifySuccessMessage").style.display =
+      document.getElementById("sourceTokenVerifySuccessMessage").style.display =
         "flex";
-      document.getElementById("oldTokenVerifyFailMessage").style.display =
+      document.getElementById("sourceTokenVerifyFailMessage").style.display =
         "none";
-      document.getElementById("oldAccountUserId").innerHTML =
-        verifyOldToken.data.username;
+      document.getElementById("sourceAccountUserId").innerHTML =
+        verifySourceToken.data.username;
 
       updateSubmitButtonState();
     } else {
-      oldAccAccessToken.style.borderColor = "#ef4444";
-      document.getElementById("oldTokenVerifyFailMessage").style.display =
+      sourceAccessTokenInput.style.borderColor = "#ef4444";
+      document.getElementById("sourceTokenVerifyFailMessage").style.display =
         "flex";
-      document.getElementById("oldTokenVerifySuccessMessage").style.display =
+      document.getElementById("sourceTokenVerifySuccessMessage").style.display =
         "none";
     }
   });
 
-  newTokenVerifyBtn.addEventListener("click", async (e) => {
+  destTokenVerifyBtn.addEventListener("click", async (e) => {
     e.preventDefault();
-    newTokenVerifyBtn.style.display = "none";
-    verifyLoadBtn2.style.display = "block";
+    destTokenVerifyBtn.style.display = "none";
+    destVerifyLoadBtn.style.display = "block";
 
-    const newAccAccessToken = document.getElementById("newAccessToken");
-    const newAccAccessTokenValue = newAccAccessToken.value;
-    const verifyNewToken = await verifyCookie(newAccAccessTokenValue);
+    const destAccessTokenInput = document.getElementById("destAccessToken");
+    const destAccessTokenValue = destAccessTokenInput.value;
+    const verifyDestToken = await verifyCookie(destAccessTokenValue);
 
-    newTokenVerifyBtn.style.display = "block";
-    verifyLoadBtn2.style.display = "none";
+    destTokenVerifyBtn.style.display = "block";
+    destVerifyLoadBtn.style.display = "none";
 
-    if (verifyNewToken.success) {
-      state.setBoolNewTokenVerified(true);
-      state.setNewAccessToken(newAccAccessTokenValue);
+    if (verifyDestToken.success) {
+      state.setBoolDestTokenVerified(true);
+      state.setDestCookieToken(destAccessTokenValue);
 
-      newAccAccessToken.disabled = true;
-      newAccAccessToken.style.borderColor = "#10b981";
+      destAccessTokenInput.disabled = true;
+      destAccessTokenInput.style.borderColor = "#10b981";
 
-      newTokenVerifyBtn.className =
+      destTokenVerifyBtn.className =
         "btn-verified px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2";
-      newTokenVerifyBtn.disabled = true;
-      newTokenVerifyBtn.style.cursor = "default";
-      newTokenVerifyBtn.innerHTML = `
+      destTokenVerifyBtn.disabled = true;
+      destTokenVerifyBtn.style.cursor = "default";
+      destTokenVerifyBtn.innerHTML = `
         <span class="material-icons text-lg">verified</span>
         <span>Verified</span>
       `;
 
-      document.getElementById("newTokenVerifySuccessMessage").style.display =
+      document.getElementById("destTokenVerifySuccessMessage").style.display =
         "flex";
-      document.getElementById("newTokenVerifyFailMessage").style.display =
+      document.getElementById("destTokenVerifyFailMessage").style.display =
         "none";
-      document.getElementById("newAccountUserId").innerHTML =
-        verifyNewToken.data.username;
+      document.getElementById("destAccountUserId").innerHTML =
+        verifyDestToken.data.username;
 
       updateSubmitButtonState();
     } else {
-      newAccAccessToken.style.borderColor = "#ef4444";
-      document.getElementById("newTokenVerifyFailMessage").style.display =
+      destAccessTokenInput.style.borderColor = "#ef4444";
+      document.getElementById("destTokenVerifyFailMessage").style.display =
         "flex";
-      document.getElementById("newTokenVerifySuccessMessage").style.display =
+      document.getElementById("destTokenVerifySuccessMessage").style.display =
         "none";
     }
   });

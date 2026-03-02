@@ -1,16 +1,16 @@
 package types
 
 // MigrationRequestType defines the structure for the migration request body.
-// It includes authentication data for old and new accounts, and user preferences for migration.
+// It includes authentication data for source and destination accounts, and user preferences for migration.
 type MigrationRequestType struct {
-	AuthMethod         string          `json:"auth_method,omitempty"`          // "cookie" or "oauth"
-	OldAccountCookie   string          `json:"old_account_cookie,omitempty"`   // For cookie-based auth
-	NewAccountCookie   string          `json:"new_account_cookie,omitempty"`   // For cookie-based auth
-	OldAccountToken    string          `json:"old_account_token,omitempty"`    // For OAuth-based auth
-	NewAccountToken    string          `json:"new_account_token,omitempty"`    // For OAuth-based auth
-	OldAccountUsername string          `json:"old_account_username,omitempty"` // For OAuth-based auth
-	NewAccountUsername string          `json:"new_account_username,omitempty"` // For OAuth-based auth
-	Preferences        PreferencesType `json:"preferences"`
+	AuthMethod             string          `json:"auth_method,omitempty"`              // "cookie" or "oauth"
+	SourceAccountCookie    string          `json:"source_account_cookie,omitempty"`    // For cookie-based auth
+	DestAccountCookie      string          `json:"dest_account_cookie,omitempty"`      // For cookie-based auth
+	SourceAccountToken     string          `json:"source_account_token,omitempty"`     // For OAuth-based auth
+	DestAccountToken       string          `json:"dest_account_token,omitempty"`       // For OAuth-based auth
+	SourceAccountUsername  string          `json:"source_account_username,omitempty"`  // For OAuth-based auth
+	DestAccountUsername    string          `json:"dest_account_username,omitempty"`    // For OAuth-based auth
+	Preferences            PreferencesType `json:"preferences"`
 }
 
 // PreferencesType defines the user's choices for the migration process.
@@ -224,19 +224,19 @@ type GetSubredditsResponse struct {
 
 // CustomMigrationRequest defines the structure for custom selection migration
 type CustomMigrationRequest struct {
-	AuthMethod          string   `json:"auth_method,omitempty"`          // "cookie" or "oauth"
-	OldAccountCookie    string   `json:"old_account_cookie,omitempty"`   // For cookie-based auth
-	NewAccountCookie    string   `json:"new_account_cookie,omitempty"`   // For cookie-based auth
-	OldAccountToken     string   `json:"old_account_token,omitempty"`    // For OAuth-based auth
-	NewAccountToken     string   `json:"new_account_token,omitempty"`    // For OAuth-based auth
-	OldAccountUsername  string   `json:"old_account_username,omitempty"` // For OAuth-based auth
-	NewAccountUsername  string   `json:"new_account_username,omitempty"` // For OAuth-based auth
-	SelectedSubreddits  []string `json:"selected_subreddits"`            // List of display names
-	SelectedPosts       []string `json:"selected_posts"`                 // List of full names (t3_xxxxx)
-	SelectedComments    []string `json:"selected_comments"`              // List of full names (t1_xxxxx)
-	DeleteOldSubreddits bool     `json:"delete_old_subreddits"`
-	DeleteOldPosts      bool     `json:"delete_old_posts"`
-	DeleteOldComments   bool     `json:"delete_old_comments"`
+	AuthMethod              string   `json:"auth_method,omitempty"`              // "cookie" or "oauth"
+	SourceAccountCookie     string   `json:"source_account_cookie,omitempty"`    // For cookie-based auth
+	DestAccountCookie       string   `json:"dest_account_cookie,omitempty"`      // For cookie-based auth
+	SourceAccountToken      string   `json:"source_account_token,omitempty"`     // For OAuth-based auth
+	DestAccountToken        string   `json:"dest_account_token,omitempty"`       // For OAuth-based auth
+	SourceAccountUsername   string   `json:"source_account_username,omitempty"`  // For OAuth-based auth
+	DestAccountUsername     string   `json:"dest_account_username,omitempty"`    // For OAuth-based auth
+	SelectedSubreddits      []string `json:"selected_subreddits"`               // List of display names
+	SelectedPosts           []string `json:"selected_posts"`                    // List of full names (t3_xxxxx)
+	SelectedComments        []string `json:"selected_comments"`                 // List of full names (t1_xxxxx)
+	DeleteSourceSubreddits  bool     `json:"delete_source_subreddits"`
+	DeleteSourcePosts       bool     `json:"delete_source_posts"`
+	DeleteSourceComments    bool     `json:"delete_source_comments"`
 }
 
 // DetailedPostData represents the full Reddit post data structure for parsing API responses

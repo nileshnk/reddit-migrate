@@ -14,7 +14,7 @@ import (
 )
 
 // MigrationHandler is the HTTP handler for the /migrate endpoint.
-// It orchestrates the entire migration process based on the provided old and new account cookies and user preferences.
+// It orchestrates the entire migration process based on the provided source and destination account credentials and user preferences.
 func MigrationHandler(w http.ResponseWriter, r *http.Request) {
 	config.DebugLogger.Printf("Received migration request from %s", r.RemoteAddr)
 
@@ -37,15 +37,15 @@ func MigrationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if requestBody.AuthMethod == "oauth" {
-		config.InfoLogger.Printf("OAuth migration request validated for %s. Old token ends: ...%s, New token ends: ...%s",
+		config.InfoLogger.Printf("OAuth migration request validated for %s. Source token ends: ...%s, Dest token ends: ...%s",
 			r.RemoteAddr,
-			auth.SafeSuffix(requestBody.OldAccountToken, 6),
-			auth.SafeSuffix(requestBody.NewAccountToken, 6))
+			auth.SafeSuffix(requestBody.SourceAccountToken, 6),
+			auth.SafeSuffix(requestBody.DestAccountToken, 6))
 	} else {
-		config.InfoLogger.Printf("Cookie migration request validated for %s. Old cookie ends: ...%s, New cookie ends: ...%s",
+		config.InfoLogger.Printf("Cookie migration request validated for %s. Source cookie ends: ...%s, Dest cookie ends: ...%s",
 			r.RemoteAddr,
-			auth.SafeSuffix(requestBody.OldAccountCookie, 6),
-			auth.SafeSuffix(requestBody.NewAccountCookie, 6))
+			auth.SafeSuffix(requestBody.SourceAccountCookie, 6),
+			auth.SafeSuffix(requestBody.DestAccountCookie, 6))
 	}
 	config.DebugLogger.Printf("Migration preferences: %+v", requestBody.Preferences)
 
@@ -93,82 +93,82 @@ func initializeMigration(req types.MigrationRequestType) types.MigrationResponse
 
 	config.InfoLogger.Println("Starting migration process...")
 
-	// Extract authentication data for old account
-	var oldAccountToken, oldAccountUsername string
+	// Extract authentication data for source account
+	var sourceAccountToken, sourceAccountUsername string
 	var err error
 
 	if req.AuthMethod == "oauth" {
-		oldAccountToken = req.OldAccountToken
+		sourceAccountToken = req.SourceAccountToken
 		// Use provided username if available, otherwise get from OAuth token
-		if req.OldAccountUsername != "" {
-			oldAccountUsername = req.OldAccountUsername
+		if req.SourceAccountUsername != "" {
+			sourceAccountUsername = req.SourceAccountUsername
 		} else {
 			// Get username from OAuth token
-			userInfo, err := auth.GetUserInfoWithToken(oldAccountToken)
+			userInfo, err := auth.GetUserInfoWithToken(sourceAccountToken)
 			if err != nil {
-				config.ErrorLogger.Printf("Failed to verify old account OAuth token: %v", err)
-				finalResponse.Message = fmt.Sprintf("Failed to verify old account OAuth token: %v", err)
+				config.ErrorLogger.Printf("Failed to verify source account OAuth token: %v", err)
+				finalResponse.Message = fmt.Sprintf("Failed to verify source account OAuth token: %v", err)
 				return finalResponse
 			}
-			oldAccountUsername = userInfo.Data.Name
+			sourceAccountUsername = userInfo.Data.Name
 		}
 	} else {
 		// Cookie-based authentication (default/backward compatibility)
-		oldAccountUsername, err = auth.GetUsernameFromCookie(req.OldAccountCookie)
+		sourceAccountUsername, err = auth.GetUsernameFromCookie(req.SourceAccountCookie)
 		if err != nil {
-			config.ErrorLogger.Printf("Failed to verify old account cookie: %v", err)
-			finalResponse.Message = fmt.Sprintf("Failed to verify old account cookie: %v", err)
+			config.ErrorLogger.Printf("Failed to verify source account cookie: %v", err)
+			finalResponse.Message = fmt.Sprintf("Failed to verify source account cookie: %v", err)
 			return finalResponse
 		}
-		oldAccountToken = auth.ParseTokenFromCookie(req.OldAccountCookie)
-		if oldAccountToken == "" {
-			config.ErrorLogger.Println("Failed to parse OAuth token from old account cookie.")
-			finalResponse.Message = "Failed to parse OAuth token from old account cookie. Ensure 'token_v2' is present."
+		sourceAccountToken = auth.ParseTokenFromCookie(req.SourceAccountCookie)
+		if sourceAccountToken == "" {
+			config.ErrorLogger.Println("Failed to parse OAuth token from source account cookie.")
+			finalResponse.Message = "Failed to parse OAuth token from source account cookie. Ensure 'token_v2' is present."
 			return finalResponse
 		}
 	}
 
-	// Extract authentication data for new account
-	var newAccountToken, newAccountUsername string
+	// Extract authentication data for destination account
+	var destAccountToken, destAccountUsername string
 
 	if req.AuthMethod == "oauth" {
-		newAccountToken = req.NewAccountToken
+		destAccountToken = req.DestAccountToken
 		// Use provided username if available, otherwise get from OAuth token
-		if req.NewAccountUsername != "" {
-			newAccountUsername = req.NewAccountUsername
+		if req.DestAccountUsername != "" {
+			destAccountUsername = req.DestAccountUsername
 		} else {
 			// Get username from OAuth token
-			userInfo, err := auth.GetUserInfoWithToken(newAccountToken)
+			userInfo, err := auth.GetUserInfoWithToken(destAccountToken)
 			if err != nil {
-				config.ErrorLogger.Printf("Failed to verify new account OAuth token: %v", err)
-				finalResponse.Message = fmt.Sprintf("Failed to verify new account OAuth token: %v", err)
+				config.ErrorLogger.Printf("Failed to verify destination account OAuth token: %v", err)
+				finalResponse.Message = fmt.Sprintf("Failed to verify destination account OAuth token: %v", err)
 				return finalResponse
 			}
-			newAccountUsername = userInfo.Data.Name
+			destAccountUsername = userInfo.Data.Name
 		}
 	} else {
 		// Cookie-based authentication (default/backward compatibility)
-		newAccountUsername, err = auth.GetUsernameFromCookie(req.NewAccountCookie)
+		destAccountUsername, err = auth.GetUsernameFromCookie(req.DestAccountCookie)
 		if err != nil {
-			config.ErrorLogger.Printf("Failed to verify new account cookie: %v", err)
-			finalResponse.Message = fmt.Sprintf("Failed to verify new account cookie: %v", err)
+			config.ErrorLogger.Printf("Failed to verify destination account cookie: %v", err)
+			finalResponse.Message = fmt.Sprintf("Failed to verify destination account cookie: %v", err)
 			return finalResponse
 		}
-		newAccountToken = auth.ParseTokenFromCookie(req.NewAccountCookie)
-		if newAccountToken == "" {
-			config.ErrorLogger.Println("Failed to parse OAuth token from new account cookie.")
-			finalResponse.Message = "Failed to parse OAuth token from new account cookie. Ensure 'token_v2' is present."
+		destAccountToken = auth.ParseTokenFromCookie(req.DestAccountCookie)
+		if destAccountToken == "" {
+			config.ErrorLogger.Println("Failed to parse OAuth token from destination account cookie.")
+			finalResponse.Message = "Failed to parse OAuth token from destination account cookie. Ensure 'token_v2' is present."
 			return finalResponse
 		}
 	}
 
-	config.InfoLogger.Printf("Verified old account: %s, new account: %s", oldAccountUsername, newAccountUsername)
-	config.DebugLogger.Printf("Old account token (suffix): ...%s", auth.SafeSuffix(oldAccountToken, 6))
-	config.DebugLogger.Printf("New account token (suffix): ...%s", auth.SafeSuffix(newAccountToken, 6))
+	config.InfoLogger.Printf("Verified source account: %s, destination account: %s", sourceAccountUsername, destAccountUsername)
+	config.DebugLogger.Printf("Source account token (suffix): ...%s", auth.SafeSuffix(sourceAccountToken, 6))
+	config.DebugLogger.Printf("Destination account token (suffix): ...%s", auth.SafeSuffix(destAccountToken, 6))
 
 	// Handle subreddit migration/deletion.
 	if req.Preferences.MigrateSubredditBool || req.Preferences.DeleteSubredditBool {
-		if err := processSubreddits(oldAccountToken, newAccountToken, oldAccountUsername, newAccountUsername, req.Preferences, &finalResponse.Data); err != nil {
+		if err := processSubreddits(sourceAccountToken, destAccountToken, sourceAccountUsername, destAccountUsername, req.Preferences, &finalResponse.Data); err != nil {
 			config.ErrorLogger.Printf("Error processing subreddits: %v", err)
 			// Message is set within processSubreddits or its sub-functions for partial success.
 			// If a critical error occurs, it might stop here.
@@ -177,14 +177,14 @@ func initializeMigration(req types.MigrationRequestType) types.MigrationResponse
 
 	// Handle post migration/deletion.
 	if req.Preferences.MigratePostBool || req.Preferences.DeletePostBool {
-		if err := processPosts(oldAccountToken, newAccountToken, oldAccountUsername, newAccountUsername, req.Preferences, &finalResponse.Data); err != nil {
+		if err := processPosts(sourceAccountToken, destAccountToken, sourceAccountUsername, destAccountUsername, req.Preferences, &finalResponse.Data); err != nil {
 			config.ErrorLogger.Printf("Error processing posts: %v", err)
 		}
 	}
 
 	// Handle comment migration/deletion.
 	if req.Preferences.MigrateCommentBool || req.Preferences.DeleteCommentBool {
-		if err := processComments(oldAccountToken, newAccountToken, oldAccountUsername, newAccountUsername, req.Preferences, &finalResponse.Data); err != nil {
+		if err := processComments(sourceAccountToken, destAccountToken, sourceAccountUsername, destAccountUsername, req.Preferences, &finalResponse.Data); err != nil {
 			config.ErrorLogger.Printf("Error processing comments: %v", err)
 		}
 	}
@@ -222,57 +222,55 @@ func filterSlice(source []string, toRemoveItems []string) []string {
 }
 
 // processSubreddits handles the migration and/or deletion of subreddits.
-func processSubreddits(oldToken, newToken, oldUser, newUser string, prefs types.PreferencesType, responseData *types.MigrationDetails) error { // Adjusted types
-	config.InfoLogger.Println("Fetching all subreddit and followed user names from old account...")
-	// Use reddit.FetchSubredditFullNames
-	oldSubredditNameList, err := reddit.FetchSubredditFullNames(oldToken)
+func processSubreddits(sourceToken, destToken, sourceUser, destUser string, prefs types.PreferencesType, responseData *types.MigrationDetails) error {
+	config.InfoLogger.Println("Fetching all subreddit and followed user names from source account...")
+	sourceSubredditNameList, err := reddit.FetchSubredditFullNames(sourceToken)
 	if err != nil {
-		return fmt.Errorf("failed to fetch subreddit names from old account: %w", err)
+		return fmt.Errorf("failed to fetch subreddit names from source account: %w", err)
 	}
 	config.InfoLogger.Printf("Fetched %d subreddits and %d followed users from %s.",
-		len(oldSubredditNameList.DisplayNamesList),
-		len(oldSubredditNameList.UserDisplayNameList), oldUser)
+		len(sourceSubredditNameList.DisplayNamesList),
+		len(sourceSubredditNameList.UserDisplayNameList), sourceUser)
 
-	// Migrate (subscribe) subreddits to the new account.
+	// Migrate (subscribe) subreddits to the destination account.
 	if prefs.MigrateSubredditBool {
-		config.InfoLogger.Printf("Fetching subreddits from new account %s to filter out duplicates...", newUser)
-		newSubredditNameList, err := reddit.FetchSubredditFullNames(newToken)
+		config.InfoLogger.Printf("Fetching subreddits from destination account %s to filter out duplicates...", destUser)
+		destSubredditNameList, err := reddit.FetchSubredditFullNames(destToken)
 
-		subredditsToMigrate := oldSubredditNameList.DisplayNamesList
-		followedToMigrate := oldSubredditNameList.UserDisplayNameList
+		subredditsToMigrate := sourceSubredditNameList.DisplayNamesList
+		followedToMigrate := sourceSubredditNameList.UserDisplayNameList
 
 		if err != nil {
-			config.ErrorLogger.Printf("Could not fetch subreddits from new account. Proceeding with all subreddits and followed users. Error: %v", err)
+			config.ErrorLogger.Printf("Could not fetch subreddits from destination account. Proceeding with all subreddits and followed users. Error: %v", err)
 		} else {
-			subredditsToMigrate = filterSlice(oldSubredditNameList.DisplayNamesList, newSubredditNameList.DisplayNamesList)
+			subredditsToMigrate = filterSlice(sourceSubredditNameList.DisplayNamesList, destSubredditNameList.DisplayNamesList)
 			config.InfoLogger.Printf("Filtered selection: %d subreddits to migrate after removing duplicates.", len(subredditsToMigrate))
 
-			followedToMigrate = filterSlice(oldSubredditNameList.UserDisplayNameList, newSubredditNameList.UserDisplayNameList)
+			followedToMigrate = filterSlice(sourceSubredditNameList.UserDisplayNameList, destSubredditNameList.UserDisplayNameList)
 			config.InfoLogger.Printf("Filtered selection: %d followed users to migrate after removing duplicates.", len(followedToMigrate))
 		}
 
 		if len(subredditsToMigrate) > 0 {
-			config.InfoLogger.Printf("Starting subreddit migration for %s -> %s.", oldUser, newUser)
-			responseData.SubscribeSubreddit = migrateSubredditsWithRetry(newToken, subredditsToMigrate, newUser)
+			config.InfoLogger.Printf("Starting subreddit migration for %s -> %s.", sourceUser, destUser)
+			responseData.SubscribeSubreddit = migrateSubredditsWithRetry(destToken, subredditsToMigrate, destUser)
 		} else {
-			config.InfoLogger.Printf("No new subreddits to migrate for %s.", newUser)
+			config.InfoLogger.Printf("No new subreddits to migrate for %s.", destUser)
 		}
 
 		if len(followedToMigrate) > 0 {
-			config.InfoLogger.Printf("Starting followed user migration for %s -> %s.", oldUser, newUser)
-			followedUsersResult := reddit.ManageFollowedUsers(newToken, followedToMigrate, types.SubscribeAction)
-			config.InfoLogger.Printf("Followed %d users for %s (failed: %d).", followedUsersResult.SuccessCount, newUser, followedUsersResult.FailedCount)
+			config.InfoLogger.Printf("Starting followed user migration for %s -> %s.", sourceUser, destUser)
+			followedUsersResult := reddit.ManageFollowedUsers(destToken, followedToMigrate, types.SubscribeAction)
+			config.InfoLogger.Printf("Followed %d users for %s (failed: %d).", followedUsersResult.SuccessCount, destUser, followedUsersResult.FailedCount)
 		} else {
-			config.InfoLogger.Printf("No followed users to migrate for %s.", oldUser)
+			config.InfoLogger.Printf("No followed users to migrate for %s.", sourceUser)
 		}
 	}
 
-	// Delete (unsubscribe) subreddits from the old account.
+	// Delete (unsubscribe) subreddits from the source account.
 	if prefs.DeleteSubredditBool {
-		config.InfoLogger.Printf("Starting subreddit deletion (unsubscribing) from %s.", oldUser)
-		// Use reddit.ManageSubreddits
-		unsubscribeData := reddit.ManageSubreddits(oldToken, oldSubredditNameList.DisplayNamesList, types.UnsubscribeAction, 500)
-		config.InfoLogger.Printf("Unsubscribed %d subreddits from %s (failed: %d).", unsubscribeData.SuccessCount, oldUser, unsubscribeData.FailedCount)
+		config.InfoLogger.Printf("Starting subreddit deletion (unsubscribing) from %s.", sourceUser)
+		unsubscribeData := reddit.ManageSubreddits(sourceToken, sourceSubredditNameList.DisplayNamesList, types.UnsubscribeAction, 500)
+		config.InfoLogger.Printf("Unsubscribed %d subreddits from %s (failed: %d).", unsubscribeData.SuccessCount, sourceUser, unsubscribeData.FailedCount)
 		responseData.UnsubscribeSubreddit = unsubscribeData
 	}
 	return nil
@@ -318,74 +316,72 @@ func migrateSubredditsWithRetry(token string, displayNames []string, username st
 }
 
 // processPosts handles the migration and/or deletion of saved posts.
-func processPosts(oldToken, newToken, oldUser, newUser string, prefs types.PreferencesType, responseData *types.MigrationDetails) error { // Adjusted types
-	config.InfoLogger.Printf("Fetching saved post full names from old account %s...", oldUser)
+func processPosts(sourceToken, destToken, sourceUser, destUser string, prefs types.PreferencesType, responseData *types.MigrationDetails) error {
+	config.InfoLogger.Printf("Fetching saved post full names from source account %s...", sourceUser)
 
-	oldSavedPostsFullNamesList, err := reddit.FetchSavedPostsFullNames(oldToken, oldUser)
+	sourceSavedPostsFullNamesList, err := reddit.FetchSavedPostsFullNames(sourceToken, sourceUser)
 	if err != nil {
-		return fmt.Errorf("failed to fetch saved post names from %s: %w", oldUser, err)
+		return fmt.Errorf("failed to fetch saved post names from %s: %w", sourceUser, err)
 	}
 
-	config.InfoLogger.Printf("Fetching saved post full names from old account %s...", oldUser)
+	config.InfoLogger.Printf("Fetching saved post full names from destination account %s...", destUser)
 
-	newSavedPostsFullNamesList, err := reddit.FetchSavedPostsFullNames(newToken, newUser)
+	destSavedPostsFullNamesList, err := reddit.FetchSavedPostsFullNames(destToken, destUser)
 	if err != nil {
-		return fmt.Errorf("failed to fetch saved post names from %s: %w", newToken, err)
+		return fmt.Errorf("failed to fetch saved post names from %s: %w", destUser, err)
 	}
 
-	config.InfoLogger.Printf("Analyzing and selecting only posts that are not added in the new account: %s from old account: %s...", newUser, oldUser)
+	config.InfoLogger.Printf("Analyzing and selecting only posts not in destination account %s from source account %s...", destUser, sourceUser)
 
-	// Filter out posts that are already saved in the new account
-	savedPostsFullNamesList := filterSlice(oldSavedPostsFullNamesList, newSavedPostsFullNamesList)
+	// Filter out posts that are already saved in the destination account
+	savedPostsFullNamesList := filterSlice(sourceSavedPostsFullNamesList, destSavedPostsFullNamesList)
 
-	fmt.Println(savedPostsFullNamesList)
+	config.InfoLogger.Printf("Found %d unique posts in source account that aren't in destination account", len(savedPostsFullNamesList))
 
-	config.InfoLogger.Printf("Found %d unique posts in old account that aren't in new account", len(savedPostsFullNamesList))
-
-	// Reverse the order so that oldest posts are saved first to maintain chronological order in new account
+	// Reverse the order so that oldest posts are saved first to maintain chronological order in destination account
 	// Reddit API returns newest posts first, but we want oldest posts to be saved first so they appear at bottom
 	for i, j := 0, len(savedPostsFullNamesList)-1; i < j; i, j = i+1, j-1 {
 		savedPostsFullNamesList[i], savedPostsFullNamesList[j] = savedPostsFullNamesList[j], savedPostsFullNamesList[i]
 	}
 
-	config.InfoLogger.Printf("Fetched %d saved posts from %s.", len(savedPostsFullNamesList), oldUser)
+	config.InfoLogger.Printf("Fetched %d saved posts from %s.", len(savedPostsFullNamesList), sourceUser)
 
-	concurrencyForPosts := config.DefaultPostConcurrency // Concurrency level for post operations.
+	concurrencyForPosts := config.DefaultPostConcurrency
 
-	if prefs.MigratePostBool { // Adjusted field name
-		config.InfoLogger.Printf("Starting saved post migration for %s -> %s (%d posts).", oldUser, newUser, len(savedPostsFullNamesList))
-		savePostsResponse := reddit.ManageSavedPosts(newToken, savedPostsFullNamesList, types.SaveAction, concurrencyForPosts)
-		config.InfoLogger.Printf("Saved %d posts to %s (failed: %d).", savePostsResponse.SuccessCount, newUser, savePostsResponse.FailedCount)
+	if prefs.MigratePostBool {
+		config.InfoLogger.Printf("Starting saved post migration for %s -> %s (%d posts).", sourceUser, destUser, len(savedPostsFullNamesList))
+		savePostsResponse := reddit.ManageSavedPosts(destToken, savedPostsFullNamesList, types.SaveAction, concurrencyForPosts)
+		config.InfoLogger.Printf("Saved %d posts to %s (failed: %d).", savePostsResponse.SuccessCount, destUser, savePostsResponse.FailedCount)
 		responseData.SavePost = savePostsResponse
 	}
 
-	if prefs.DeletePostBool { // Adjusted field name
-		config.InfoLogger.Printf("Starting saved post deletion (unsaving) from %s (%d posts).", oldUser, len(savedPostsFullNamesList))
-		unsavePostsResponse := reddit.ManageSavedPosts(oldToken, savedPostsFullNamesList, types.UnsaveAction, concurrencyForPosts)
-		config.InfoLogger.Printf("Unsaved %d posts from %s (failed: %d).", unsavePostsResponse.SuccessCount, oldUser, unsavePostsResponse.FailedCount)
+	if prefs.DeletePostBool {
+		config.InfoLogger.Printf("Starting saved post deletion (unsaving) from %s (%d posts).", sourceUser, len(savedPostsFullNamesList))
+		unsavePostsResponse := reddit.ManageSavedPosts(sourceToken, savedPostsFullNamesList, types.UnsaveAction, concurrencyForPosts)
+		config.InfoLogger.Printf("Unsaved %d posts from %s (failed: %d).", unsavePostsResponse.SuccessCount, sourceUser, unsavePostsResponse.FailedCount)
 		responseData.UnsavePost = unsavePostsResponse
 	}
 	return nil
 }
 
 // processComments handles the migration and/or deletion of saved comments.
-func processComments(oldToken, newToken, oldUser, newUser string, prefs types.PreferencesType, responseData *types.MigrationDetails) error {
-	config.InfoLogger.Printf("Fetching saved comment full names from old account %s...", oldUser)
+func processComments(sourceToken, destToken, sourceUser, destUser string, prefs types.PreferencesType, responseData *types.MigrationDetails) error {
+	config.InfoLogger.Printf("Fetching saved comment full names from source account %s...", sourceUser)
 
-	oldSavedCommentsFullNamesList, err := reddit.FetchSavedCommentFullNames(oldToken, oldUser)
+	sourceSavedCommentsFullNamesList, err := reddit.FetchSavedCommentFullNames(sourceToken, sourceUser)
 	if err != nil {
-		return fmt.Errorf("failed to fetch saved comment names from %s: %w", oldUser, err)
+		return fmt.Errorf("failed to fetch saved comment names from %s: %w", sourceUser, err)
 	}
 
-	newSavedCommentsFullNamesList, err := reddit.FetchSavedCommentFullNames(newToken, newUser)
+	destSavedCommentsFullNamesList, err := reddit.FetchSavedCommentFullNames(destToken, destUser)
 	if err != nil {
-		return fmt.Errorf("failed to fetch saved comment names from %s: %w", newUser, err)
+		return fmt.Errorf("failed to fetch saved comment names from %s: %w", destUser, err)
 	}
 
-	// Filter out comments that are already saved in the new account
-	commentsToMigrate := filterSlice(oldSavedCommentsFullNamesList, newSavedCommentsFullNamesList)
+	// Filter out comments that are already saved in the destination account
+	commentsToMigrate := filterSlice(sourceSavedCommentsFullNamesList, destSavedCommentsFullNamesList)
 
-	config.InfoLogger.Printf("Found %d unique comments in old account that aren't in new account", len(commentsToMigrate))
+	config.InfoLogger.Printf("Found %d unique comments in source account that aren't in destination account", len(commentsToMigrate))
 
 	// Reverse the order so that oldest comments are saved first to maintain chronological order
 	for i, j := 0, len(commentsToMigrate)-1; i < j; i, j = i+1, j-1 {
@@ -396,16 +392,16 @@ func processComments(oldToken, newToken, oldUser, newUser string, prefs types.Pr
 
 	// ManageSavedPosts works for comments too — POST /api/save accepts both t3_ and t1_ IDs
 	if prefs.MigrateCommentBool {
-		config.InfoLogger.Printf("Starting saved comment migration for %s -> %s (%d comments).", oldUser, newUser, len(commentsToMigrate))
-		saveResult := reddit.ManageSavedPosts(newToken, commentsToMigrate, types.SaveAction, concurrency)
-		config.InfoLogger.Printf("Saved %d comments to %s (failed: %d).", saveResult.SuccessCount, newUser, saveResult.FailedCount)
+		config.InfoLogger.Printf("Starting saved comment migration for %s -> %s (%d comments).", sourceUser, destUser, len(commentsToMigrate))
+		saveResult := reddit.ManageSavedPosts(destToken, commentsToMigrate, types.SaveAction, concurrency)
+		config.InfoLogger.Printf("Saved %d comments to %s (failed: %d).", saveResult.SuccessCount, destUser, saveResult.FailedCount)
 		responseData.SaveComment = saveResult
 	}
 
 	if prefs.DeleteCommentBool {
-		config.InfoLogger.Printf("Starting saved comment deletion (unsaving) from %s (%d comments).", oldUser, len(commentsToMigrate))
-		unsaveResult := reddit.ManageSavedPosts(oldToken, commentsToMigrate, types.UnsaveAction, concurrency)
-		config.InfoLogger.Printf("Unsaved %d comments from %s (failed: %d).", unsaveResult.SuccessCount, oldUser, unsaveResult.FailedCount)
+		config.InfoLogger.Printf("Starting saved comment deletion (unsaving) from %s (%d comments).", sourceUser, len(commentsToMigrate))
+		unsaveResult := reddit.ManageSavedPosts(sourceToken, commentsToMigrate, types.UnsaveAction, concurrency)
+		config.InfoLogger.Printf("Unsaved %d comments from %s (failed: %d).", unsaveResult.SuccessCount, sourceUser, unsaveResult.FailedCount)
 		responseData.UnsaveComment = unsaveResult
 	}
 	return nil
@@ -438,100 +434,100 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 	config.InfoLogger.Printf("Starting custom migration process with %d subreddits, %d posts, and %d comments",
 		len(req.SelectedSubreddits), len(req.SelectedPosts), len(req.SelectedComments))
 
-	// Extract authentication data for old account
-	var oldAccountToken, oldAccountUsername string
+	// Extract authentication data for source account
+	var sourceAccountToken, sourceAccountUsername string
 	var err error
 
 	if req.AuthMethod == "oauth" {
-		oldAccountToken = req.OldAccountToken
+		sourceAccountToken = req.SourceAccountToken
 		// Use provided username if available, otherwise get from OAuth token
-		if req.OldAccountUsername != "" {
-			oldAccountUsername = req.OldAccountUsername
+		if req.SourceAccountUsername != "" {
+			sourceAccountUsername = req.SourceAccountUsername
 		} else {
 			// Get username from OAuth token
-			userInfo, err := auth.GetUserInfoWithToken(oldAccountToken)
+			userInfo, err := auth.GetUserInfoWithToken(sourceAccountToken)
 			if err != nil {
-				config.ErrorLogger.Printf("Failed to verify old account OAuth token: %v", err)
-				finalResponse.Message = fmt.Sprintf("Failed to verify old account OAuth token: %v", err)
+				config.ErrorLogger.Printf("Failed to verify source account OAuth token: %v", err)
+				finalResponse.Message = fmt.Sprintf("Failed to verify source account OAuth token: %v", err)
 				return finalResponse
 			}
-			oldAccountUsername = userInfo.Data.Name
+			sourceAccountUsername = userInfo.Data.Name
 		}
 	} else {
 		// Cookie-based authentication (default/backward compatibility)
-		oldAccountUsername, err = auth.GetUsernameFromCookie(req.OldAccountCookie)
+		sourceAccountUsername, err = auth.GetUsernameFromCookie(req.SourceAccountCookie)
 		if err != nil {
-			config.ErrorLogger.Printf("Failed to verify old account cookie: %v", err)
-			finalResponse.Message = fmt.Sprintf("Failed to verify old account cookie: %v", err)
+			config.ErrorLogger.Printf("Failed to verify source account cookie: %v", err)
+			finalResponse.Message = fmt.Sprintf("Failed to verify source account cookie: %v", err)
 			return finalResponse
 		}
-		oldAccountToken = auth.ParseTokenFromCookie(req.OldAccountCookie)
-		if oldAccountToken == "" {
-			config.ErrorLogger.Println("Failed to parse OAuth token from old account cookie.")
-			finalResponse.Message = "Failed to parse OAuth token from old account cookie. Ensure 'token_v2' is present."
+		sourceAccountToken = auth.ParseTokenFromCookie(req.SourceAccountCookie)
+		if sourceAccountToken == "" {
+			config.ErrorLogger.Println("Failed to parse OAuth token from source account cookie.")
+			finalResponse.Message = "Failed to parse OAuth token from source account cookie. Ensure 'token_v2' is present."
 			return finalResponse
 		}
 	}
 
-	// Extract authentication data for new account
-	var newAccountToken, newAccountUsername string
+	// Extract authentication data for destination account
+	var destAccountToken, destAccountUsername string
 
 	if req.AuthMethod == "oauth" {
-		newAccountToken = req.NewAccountToken
+		destAccountToken = req.DestAccountToken
 		// Use provided username if available, otherwise get from OAuth token
-		if req.NewAccountUsername != "" {
-			newAccountUsername = req.NewAccountUsername
+		if req.DestAccountUsername != "" {
+			destAccountUsername = req.DestAccountUsername
 		} else {
 			// Get username from OAuth token
-			userInfo, err := auth.GetUserInfoWithToken(newAccountToken)
+			userInfo, err := auth.GetUserInfoWithToken(destAccountToken)
 			if err != nil {
-				config.ErrorLogger.Printf("Failed to verify new account OAuth token: %v", err)
-				finalResponse.Message = fmt.Sprintf("Failed to verify new account OAuth token: %v", err)
+				config.ErrorLogger.Printf("Failed to verify destination account OAuth token: %v", err)
+				finalResponse.Message = fmt.Sprintf("Failed to verify destination account OAuth token: %v", err)
 				return finalResponse
 			}
-			newAccountUsername = userInfo.Data.Name
+			destAccountUsername = userInfo.Data.Name
 		}
 	} else {
 		// Cookie-based authentication (default/backward compatibility)
-		newAccountUsername, err = auth.GetUsernameFromCookie(req.NewAccountCookie)
+		destAccountUsername, err = auth.GetUsernameFromCookie(req.DestAccountCookie)
 		if err != nil {
-			config.ErrorLogger.Printf("Failed to verify new account cookie: %v", err)
-			finalResponse.Message = fmt.Sprintf("Failed to verify new account cookie: %v", err)
+			config.ErrorLogger.Printf("Failed to verify destination account cookie: %v", err)
+			finalResponse.Message = fmt.Sprintf("Failed to verify destination account cookie: %v", err)
 			return finalResponse
 		}
-		newAccountToken = auth.ParseTokenFromCookie(req.NewAccountCookie)
-		if newAccountToken == "" {
-			config.ErrorLogger.Println("Failed to parse OAuth token from new account cookie.")
-			finalResponse.Message = "Failed to parse OAuth token from new account cookie. Ensure 'token_v2' is present."
+		destAccountToken = auth.ParseTokenFromCookie(req.DestAccountCookie)
+		if destAccountToken == "" {
+			config.ErrorLogger.Println("Failed to parse OAuth token from destination account cookie.")
+			finalResponse.Message = "Failed to parse OAuth token from destination account cookie. Ensure 'token_v2' is present."
 			return finalResponse
 		}
 	}
 
-	config.InfoLogger.Printf("Verified accounts for custom migration: %s -> %s", oldAccountUsername, newAccountUsername)
+	config.InfoLogger.Printf("Verified accounts for custom migration: %s -> %s", sourceAccountUsername, destAccountUsername)
 
 	// Handle selected subreddits migration
 	if len(req.SelectedSubreddits) > 0 {
 		config.InfoLogger.Printf("Migrating %d selected subreddits", len(req.SelectedSubreddits))
-		config.InfoLogger.Printf("Fetching subreddits from new account %s to filter out duplicates...", newAccountUsername)
-		newSubredditNameList, err := reddit.FetchSubredditFullNames(newAccountToken)
+		config.InfoLogger.Printf("Fetching subreddits from destination account %s to filter out duplicates...", destAccountUsername)
+		destSubredditNameList, err := reddit.FetchSubredditFullNames(destAccountToken)
 
 		subredditsToMigrate := req.SelectedSubreddits
 
 		if err != nil {
-			config.ErrorLogger.Printf("Could not fetch subreddits from new account. Proceeding with all %d selected subreddits. Error: %v", len(req.SelectedSubreddits), err)
+			config.ErrorLogger.Printf("Could not fetch subreddits from destination account. Proceeding with all %d selected subreddits. Error: %v", len(req.SelectedSubreddits), err)
 		} else {
-			subredditsToMigrate = filterSlice(req.SelectedSubreddits, newSubredditNameList.DisplayNamesList)
+			subredditsToMigrate = filterSlice(req.SelectedSubreddits, destSubredditNameList.DisplayNamesList)
 			config.InfoLogger.Printf("Filtered selection: %d subreddits to migrate after removing %d duplicates.", len(subredditsToMigrate), len(req.SelectedSubreddits)-len(subredditsToMigrate))
 		}
 
 		if len(subredditsToMigrate) > 0 {
-			subscribeResult := reddit.ManageSubreddits(newAccountToken, subredditsToMigrate, types.SubscribeAction, 100)
+			subscribeResult := reddit.ManageSubreddits(destAccountToken, subredditsToMigrate, types.SubscribeAction, 100)
 			finalResponse.Data.SubscribeSubreddit = subscribeResult
 
 			// Handle deletion if requested
-			if req.DeleteOldSubreddits {
-				config.InfoLogger.Printf("Deleting %d selected subreddits from old account", len(subredditsToMigrate))
-				unsubscribeResult := reddit.ManageSubreddits(oldAccountToken, subredditsToMigrate, types.UnsubscribeAction, 100)
+			if req.DeleteSourceSubreddits {
+				config.InfoLogger.Printf("Deleting %d selected subreddits from source account", len(subredditsToMigrate))
+				unsubscribeResult := reddit.ManageSubreddits(sourceAccountToken, subredditsToMigrate, types.UnsubscribeAction, 100)
 				finalResponse.Data.UnsubscribeSubreddit = unsubscribeResult
 			}
 		} else {
@@ -545,32 +541,31 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 	if len(req.SelectedPosts) > 0 {
 		config.InfoLogger.Printf("Migrating %d selected posts", len(req.SelectedPosts))
 
-		// Fetch saved posts from new account to avoid duplicates
-		config.InfoLogger.Printf("Fetching saved posts from new account %s to avoid duplicates...", newAccountUsername)
-		newSavedPosts, err := reddit.FetchSavedPostsFullNames(newAccountToken, newAccountUsername)
+		// Fetch saved posts from destination account to avoid duplicates
+		config.InfoLogger.Printf("Fetching saved posts from destination account %s to avoid duplicates...", destAccountUsername)
+		destSavedPosts, err := reddit.FetchSavedPostsFullNames(destAccountToken, destAccountUsername)
 		postsToMigrate := req.SelectedPosts
 		if err != nil {
-			config.ErrorLogger.Printf("Could not fetch saved posts from new account. Proceeding with all %d selected posts. Error: %v", len(req.SelectedPosts), err)
+			config.ErrorLogger.Printf("Could not fetch saved posts from destination account. Proceeding with all %d selected posts. Error: %v", len(req.SelectedPosts), err)
 		} else {
-			postsToMigrate = filterSlice(req.SelectedPosts, newSavedPosts)
+			postsToMigrate = filterSlice(req.SelectedPosts, destSavedPosts)
 			config.InfoLogger.Printf("Filtered selection: %d posts to migrate after removing %d duplicates.", len(postsToMigrate), len(req.SelectedPosts)-len(postsToMigrate))
 		}
 
 		if len(postsToMigrate) > 0 {
-			// Reverse the order so that oldest posts are saved first to maintain chronological order in new account
-			// Reddit API returns newest posts first, but we want oldest posts to be saved first so they appear at bottom
+			// Reverse the order so that oldest posts are saved first to maintain chronological order in destination account
 			for i, j := 0, len(postsToMigrate)-1; i < j; i, j = i+1, j-1 {
 				postsToMigrate[i], postsToMigrate[j] = postsToMigrate[j], postsToMigrate[i]
 			}
 
 			concurrencyForPosts := config.DefaultPostConcurrency
-			saveResult := reddit.ManageSavedPosts(newAccountToken, postsToMigrate, types.SaveAction, concurrencyForPosts)
+			saveResult := reddit.ManageSavedPosts(destAccountToken, postsToMigrate, types.SaveAction, concurrencyForPosts)
 			finalResponse.Data.SavePost = saveResult
 
 			// Handle deletion if requested
-			if req.DeleteOldPosts {
-				config.InfoLogger.Printf("Deleting %d selected posts from old account", len(postsToMigrate))
-				unsaveResult := reddit.ManageSavedPosts(oldAccountToken, postsToMigrate, types.UnsaveAction, concurrencyForPosts)
+			if req.DeleteSourcePosts {
+				config.InfoLogger.Printf("Deleting %d selected posts from source account", len(postsToMigrate))
+				unsaveResult := reddit.ManageSavedPosts(sourceAccountToken, postsToMigrate, types.UnsaveAction, concurrencyForPosts)
 				finalResponse.Data.UnsavePost = unsaveResult
 			}
 		} else {
@@ -584,14 +579,14 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 	if len(req.SelectedComments) > 0 {
 		config.InfoLogger.Printf("Migrating %d selected comments", len(req.SelectedComments))
 
-		// Fetch saved comments from new account to avoid duplicates
-		config.InfoLogger.Printf("Fetching saved comments from new account %s to avoid duplicates...", newAccountUsername)
-		newSavedComments, err := reddit.FetchSavedCommentFullNames(newAccountToken, newAccountUsername)
+		// Fetch saved comments from destination account to avoid duplicates
+		config.InfoLogger.Printf("Fetching saved comments from destination account %s to avoid duplicates...", destAccountUsername)
+		destSavedComments, err := reddit.FetchSavedCommentFullNames(destAccountToken, destAccountUsername)
 		commentsToMigrate := req.SelectedComments
 		if err != nil {
-			config.ErrorLogger.Printf("Could not fetch saved comments from new account. Proceeding with all %d selected comments. Error: %v", len(req.SelectedComments), err)
+			config.ErrorLogger.Printf("Could not fetch saved comments from destination account. Proceeding with all %d selected comments. Error: %v", len(req.SelectedComments), err)
 		} else {
-			commentsToMigrate = filterSlice(req.SelectedComments, newSavedComments)
+			commentsToMigrate = filterSlice(req.SelectedComments, destSavedComments)
 			config.InfoLogger.Printf("Filtered selection: %d comments to migrate after removing %d duplicates.", len(commentsToMigrate), len(req.SelectedComments)-len(commentsToMigrate))
 		}
 
@@ -602,12 +597,12 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 			}
 
 			concurrency := config.DefaultPostConcurrency
-			saveResult := reddit.ManageSavedPosts(newAccountToken, commentsToMigrate, types.SaveAction, concurrency)
+			saveResult := reddit.ManageSavedPosts(destAccountToken, commentsToMigrate, types.SaveAction, concurrency)
 			finalResponse.Data.SaveComment = saveResult
 
-			if req.DeleteOldComments {
-				config.InfoLogger.Printf("Deleting %d selected comments from old account", len(commentsToMigrate))
-				unsaveResult := reddit.ManageSavedPosts(oldAccountToken, commentsToMigrate, types.UnsaveAction, concurrency)
+			if req.DeleteSourceComments {
+				config.InfoLogger.Printf("Deleting %d selected comments from source account", len(commentsToMigrate))
+				unsaveResult := reddit.ManageSavedPosts(sourceAccountToken, commentsToMigrate, types.UnsaveAction, concurrency)
 				finalResponse.Data.UnsaveComment = unsaveResult
 			}
 		} else {

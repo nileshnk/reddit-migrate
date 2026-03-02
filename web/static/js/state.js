@@ -3,8 +3,8 @@
 
 export const API_BASE_URL = "";
 
-export let BOOL_OLD_TOKEN_VERIFIED = false;
-export let BOOL_NEW_TOKEN_VERIFIED = false;
+export let BOOL_SOURCE_TOKEN_VERIFIED = false;
+export let BOOL_DEST_TOKEN_VERIFIED = false;
 
 // Authentication method tracking
 export let CURRENT_AUTH_METHOD = "cookie"; // "cookie" or "oauth"
@@ -30,17 +30,17 @@ export let ALL_SUBREDDITS = [];
 export let ALL_POSTS = [];
 export let ALL_COMMENTS = [];
 
-// Token storage
-export let OLD_ACCESS_TOKEN = "";
-export let NEW_ACCESS_TOKEN = "";
+// Cookie token storage
+export let SOURCE_COOKIE_TOKEN = "";
+export let DEST_COOKIE_TOKEN = "";
 
 // Modal state
 export let currentModalType = null; // "subreddits", "posts", or "comments"
 export let filteredItems = [];
 
 // Setters — needed because ES module exports are read-only bindings
-export function setBoolOldTokenVerified(v) { BOOL_OLD_TOKEN_VERIFIED = v; }
-export function setBoolNewTokenVerified(v) { BOOL_NEW_TOKEN_VERIFIED = v; }
+export function setBoolSourceTokenVerified(v) { BOOL_SOURCE_TOKEN_VERIFIED = v; }
+export function setBoolDestTokenVerified(v) { BOOL_DEST_TOKEN_VERIFIED = v; }
 export function setCurrentAuthMethod(v) { CURRENT_AUTH_METHOD = v; }
 export function setOAuthSourceVerified(v) { OAUTH_SOURCE_VERIFIED = v; }
 export function setOAuthDestVerified(v) { OAUTH_DEST_VERIFIED = v; }
@@ -59,7 +59,7 @@ export function setSelectedComments(v) { SELECTED_COMMENTS = v; }
 export function setAllSubreddits(v) { ALL_SUBREDDITS = v; }
 export function setAllPosts(v) { ALL_POSTS = v; }
 export function setAllComments(v) { ALL_COMMENTS = v; }
-export function setOldAccessToken(v) { OLD_ACCESS_TOKEN = v; }
-export function setNewAccessToken(v) { NEW_ACCESS_TOKEN = v; }
+export function setSourceCookieToken(v) { SOURCE_COOKIE_TOKEN = v; }
+export function setDestCookieToken(v) { DEST_COOKIE_TOKEN = v; }
 export function setCurrentModalType(v) { currentModalType = v; }
 export function setFilteredItems(v) { filteredItems = v; }

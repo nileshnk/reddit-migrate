@@ -507,7 +507,7 @@
                 Reddit Data Migration
             </h1>
             <p class="text-slate-400 text-center max-w-md">
-                Seamlessly transfer your Reddit data to a new account with this easy migration tool.
+                Seamlessly transfer your Reddit data to another account with this easy migration tool.
             </p>
         </div>
 
@@ -531,9 +531,9 @@
 
             <!-- Cookie Authentication Content -->
             <div id="cookieAuthContent" class="auth-content">
-                <!-- Old Account Section -->
+                <!-- Source Account Section -->
                 <div class="mb-6">
-                    <label for="oldAccessToken"
+                    <label for="sourceAccessToken"
                         class="block text-base font-semibold text-slate-200 mb-3 flex items-center justify-between">
                         <span class="flex items-center">
                             <span class="material-icons mr-2" style="color: #FF4500;">account_circle</span>
@@ -547,45 +547,45 @@
                     </label>
                     <div class="flex items-center space-x-3">
                         <div class="relative flex-grow">
-                            <input type="password" id="oldAccessToken" name="oldAccessToken"
+                            <input type="password" id="sourceAccessToken" name="sourceAccessToken"
                                 class="w-full form-input rounded-xl px-4 py-3 pr-12 text-slate-200 placeholder-slate-400"
                                 placeholder="Enter your source account cookie" />
                             <button type="button"
                                 class="password-toggle-btn absolute inset-y-0 right-0 pr-3 flex items-center"
-                                onclick="togglePasswordVisibility('oldAccessToken', 'oldAccessTokenEye')">
+                                onclick="togglePasswordVisibility('sourceAccessToken', 'sourceAccessTokenEye')">
                                 <span class="material-icons text-slate-400 hover:text-slate-200 cursor-pointer"
-                                    id="oldAccessTokenEye">visibility</span>
+                                    id="sourceAccessTokenEye">visibility</span>
                             </button>
                         </div>
                         <button
                             class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
-                            id="oldTokenVerifyBtn">
+                            id="sourceTokenVerifyBtn">
                             <span class="material-icons text-lg">security</span>
                             <span>Verify</span>
                         </button>
                         <button
                             class="hidden btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
-                            id="verify-load-btn-1">
+                            id="sourceVerifyLoadBtn">
                             <span class="material-icons animate-spin">refresh</span>
                             <span>Verifying</span>
                         </button>
                     </div>
-                    <p class="mt-3 text-sm text-emerald-400 hidden flex items-center" id="oldTokenVerifySuccessMessage">
+                    <p class="mt-3 text-sm text-emerald-400 hidden flex items-center" id="sourceTokenVerifySuccessMessage">
                         <span class="material-icons mr-2 text-base">check_circle</span>
                         <span class="font-medium">Cookie Verified</span>
                         <span class="text-slate-400 mx-2">|</span>
                         <span>User Name: </span>
-                        <span class="font-semibold text-slate-200" id="oldAccountUserId"></span>
+                        <span class="font-semibold text-slate-200" id="sourceAccountUserId"></span>
                     </p>
-                    <p class="mt-3 text-sm text-red-400 hidden flex items-center" id="oldTokenVerifyFailMessage">
+                    <p class="mt-3 text-sm text-red-400 hidden flex items-center" id="sourceTokenVerifyFailMessage">
                         <span class="material-icons mr-2 text-base">error</span>
                         <span class="font-medium">Cookie Invalid</span>
                     </p>
                 </div>
 
-                <!-- New Account Section -->
+                <!-- Destination Account Section -->
                 <div class="mb-8">
-                    <label for="newAccessToken"
+                    <label for="destAccessToken"
                         class="block text-base font-semibold text-slate-200 mb-3 flex items-center justify-between">
                         <span class="flex items-center">
                             <span class="material-icons mr-2" style="color: #0079D3;">account_circle</span>
@@ -599,37 +599,37 @@
                     </label>
                     <div class="flex items-center space-x-3">
                         <div class="relative flex-grow">
-                            <input type="password" id="newAccessToken" name="newAccessToken"
+                            <input type="password" id="destAccessToken" name="destAccessToken"
                                 class="w-full form-input rounded-xl px-4 py-3 pr-12 text-slate-200 placeholder-slate-400"
                                 placeholder="Enter your destination account cookie" />
                             <button type="button"
                                 class="password-toggle-btn absolute inset-y-0 right-0 pr-3 flex items-center"
-                                onclick="togglePasswordVisibility('newAccessToken', 'newAccessTokenEye')">
+                                onclick="togglePasswordVisibility('destAccessToken', 'destAccessTokenEye')">
                                 <span class="material-icons text-slate-400 hover:text-slate-200 cursor-pointer"
-                                    id="newAccessTokenEye">visibility</span>
+                                    id="destAccessTokenEye">visibility</span>
                             </button>
                         </div>
                         <button
                             class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
-                            id="newTokenVerifyBtn">
+                            id="destTokenVerifyBtn">
                             <span class="material-icons text-lg">security</span>
                             <span>Verify</span>
                         </button>
                         <button
                             class="hidden btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
-                            id="verify-load-btn-2">
+                            id="destVerifyLoadBtn">
                             <span class="material-icons animate-spin">refresh</span>
                             <span>Verifying</span>
                         </button>
                     </div>
-                    <p class="mt-3 text-sm text-emerald-400 hidden flex items-center" id="newTokenVerifySuccessMessage">
+                    <p class="mt-3 text-sm text-emerald-400 hidden flex items-center" id="destTokenVerifySuccessMessage">
                         <span class="material-icons mr-2 text-base">check_circle</span>
                         <span class="font-medium">Cookie Verified</span>
                         <span class="text-slate-400 mx-2">|</span>
                         <span>User Name: </span>
-                        <span class="font-semibold text-slate-200" id="newAccountUserId"></span>
+                        <span class="font-semibold text-slate-200" id="destAccountUserId"></span>
                     </p>
-                    <p class="mt-3 text-sm text-red-400 hidden flex items-center" id="newTokenVerifyFailMessage">
+                    <p class="mt-3 text-sm text-red-400 hidden flex items-center" id="destTokenVerifyFailMessage">
                         <span class="material-icons mr-2 text-base">error</span>
                         <span class="font-medium">Cookie Invalid</span>
                     </p>
@@ -747,7 +747,7 @@
                     </div>
 
                     <div id="deleteSubreddits" class="mt-4 hidden">
-                        <label class="block text-sm font-semibold text-slate-300 mb-3">Delete Old Account
+                        <label class="block text-sm font-semibold text-slate-300 mb-3">Delete Source Account
                             Subreddits:</label>
                         <div class="flex items-center space-x-6">
                             <div class="flex items-center">
@@ -818,7 +818,7 @@
                     </div>
 
                     <div class="mt-4 hidden" id="deletePosts">
-                        <label class="block text-sm font-semibold text-slate-300 mb-3">Delete Old Account Saved
+                        <label class="block text-sm font-semibold text-slate-300 mb-3">Delete Source Account Saved
                             Posts:</label>
                         <div class="flex items-center space-x-6">
                             <div class="flex items-center">
@@ -871,7 +871,7 @@
                     </div>
 
                     <div class="mt-4 hidden" id="deleteComments">
-                        <label class="block text-sm font-semibold text-slate-300 mb-3">Delete Old Account Saved
+                        <label class="block text-sm font-semibold text-slate-300 mb-3">Delete Source Account Saved
                             Comments:</label>
                         <div class="flex items-center space-x-6">
                             <div class="flex items-center">
