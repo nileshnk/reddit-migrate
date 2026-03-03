@@ -45,6 +45,9 @@ func Router(router chi.Router) {
 	router.Post("/saved-comments", SavedCommentsHandler)
 	config.InfoLogger.Println("Registered /api/saved-comments POST endpoint")
 
+	router.Post("/multireddits", MultiredditsHandler)
+	config.InfoLogger.Println("Registered /api/multireddits POST endpoint")
+
 	router.Post("/account-counts", AccountCountsHandler)
 	config.InfoLogger.Println("Registered /api/account-counts POST endpoint")
 

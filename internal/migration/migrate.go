@@ -189,10 +189,18 @@ func initializeMigration(req types.MigrationRequestType) types.MigrationResponse
 		}
 	}
 
+	// Handle multireddit migration.
+	if req.Preferences.MigrateMultiredditBool {
+		if err := processMultireddits(sourceAccountToken, destAccountToken, destAccountUsername, &finalResponse.Data); err != nil {
+			config.ErrorLogger.Printf("Error processing multireddits: %v", err)
+		}
+	}
+
 	// Determine overall success and message.
 	if finalResponse.Data.SubscribeSubreddit.Error || finalResponse.Data.UnsubscribeSubreddit.Error ||
 		finalResponse.Data.SavePost.FailedCount > 0 || finalResponse.Data.UnsavePost.FailedCount > 0 ||
-		finalResponse.Data.SaveComment.FailedCount > 0 || finalResponse.Data.UnsaveComment.FailedCount > 0 {
+		finalResponse.Data.SaveComment.FailedCount > 0 || finalResponse.Data.UnsaveComment.FailedCount > 0 ||
+		finalResponse.Data.CreateMultireddit.FailedCount > 0 {
 		finalResponse.Success = false
 		finalResponse.Message = "Migration completed with some errors. Check individual operation statuses."
 		config.InfoLogger.Println("Migration process completed with some errors.")
@@ -407,6 +415,48 @@ func processComments(sourceToken, destToken, sourceUser, destUser string, prefs 
 	return nil
 }
 
+// processMultireddits handles the migration of multireddits from source to destination account.
+func processMultireddits(sourceToken, destToken, destUser string, responseData *types.MigrationDetails) error {
+	config.InfoLogger.Println("Fetching multireddits from source account...")
+
+	sourceMultis, err := reddit.FetchMultireddits(sourceToken)
+	if err != nil {
+		return fmt.Errorf("failed to fetch multireddits from source account: %w", err)
+	}
+
+	if len(sourceMultis) == 0 {
+		config.InfoLogger.Println("No multireddits found in source account.")
+		return nil
+	}
+
+	// Fetch destination multireddits to filter duplicates by name
+	destMultis, err := reddit.FetchMultireddits(destToken)
+	multisToCreate := sourceMultis
+	if err != nil {
+		config.ErrorLogger.Printf("Could not fetch multireddits from destination account. Proceeding with all %d multireddits. Error: %v", len(sourceMultis), err)
+	} else {
+		destMultiNames := make(map[string]bool)
+		for _, m := range destMultis {
+			destMultiNames[m.Name] = true
+		}
+		var filtered []types.MultiredditInfo
+		for _, m := range sourceMultis {
+			if !destMultiNames[m.Name] {
+				filtered = append(filtered, m)
+			}
+		}
+		multisToCreate = filtered
+		config.InfoLogger.Printf("Filtered: %d multireddits to create after removing %d duplicates.", len(multisToCreate), len(sourceMultis)-len(multisToCreate))
+	}
+
+	if len(multisToCreate) > 0 {
+		result := reddit.ManageMultireddits(destToken, destUser, multisToCreate)
+		responseData.CreateMultireddit = result
+	}
+
+	return nil
+}
+
 // errorResponse sends a JSON error message to the client with a given HTTP status code.
 func errorResponse(w http.ResponseWriter, message string, httpStatusCode int) {
 	w.Header().Set("Content-Type", "application/json")
@@ -612,13 +662,62 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 		config.InfoLogger.Println("No comments selected for migration")
 	}
 
+	// Handle selected multireddits migration
+	if len(req.SelectedMultireddits) > 0 {
+		config.InfoLogger.Printf("Migrating %d selected multireddits", len(req.SelectedMultireddits))
+
+		// Fetch full multireddit data from source to get subreddit lists
+		sourceMultis, err := reddit.FetchMultireddits(sourceAccountToken)
+		if err != nil {
+			config.ErrorLogger.Printf("Failed to fetch multireddit details from source: %v", err)
+		} else {
+			// Filter to only selected multireddits
+			selectedSet := make(map[string]bool)
+			for _, name := range req.SelectedMultireddits {
+				selectedSet[name] = true
+			}
+			var multisToCreate []types.MultiredditInfo
+			for _, m := range sourceMultis {
+				if selectedSet[m.Name] {
+					multisToCreate = append(multisToCreate, m)
+				}
+			}
+
+			// Filter out duplicates on destination
+			destMultis, err := reddit.FetchMultireddits(destAccountToken)
+			if err != nil {
+				config.ErrorLogger.Printf("Could not fetch multireddits from destination. Proceeding with all %d selected. Error: %v", len(multisToCreate), err)
+			} else {
+				destNames := make(map[string]bool)
+				for _, m := range destMultis {
+					destNames[m.Name] = true
+				}
+				var filtered []types.MultiredditInfo
+				for _, m := range multisToCreate {
+					if !destNames[m.Name] {
+						filtered = append(filtered, m)
+					}
+				}
+				multisToCreate = filtered
+			}
+
+			if len(multisToCreate) > 0 {
+				result := reddit.ManageMultireddits(destAccountToken, destAccountUsername, multisToCreate)
+				finalResponse.Data.CreateMultireddit = result
+			}
+		}
+	} else {
+		config.InfoLogger.Println("No multireddits selected for migration")
+	}
+
 	// Determine overall success and message
 	hasErrors := finalResponse.Data.SubscribeSubreddit.Error ||
 		finalResponse.Data.UnsubscribeSubreddit.Error ||
 		finalResponse.Data.SavePost.FailedCount > 0 ||
 		finalResponse.Data.UnsavePost.FailedCount > 0 ||
 		finalResponse.Data.SaveComment.FailedCount > 0 ||
-		finalResponse.Data.UnsaveComment.FailedCount > 0
+		finalResponse.Data.UnsaveComment.FailedCount > 0 ||
+		finalResponse.Data.CreateMultireddit.FailedCount > 0
 
 	if hasErrors {
 		finalResponse.Success = false

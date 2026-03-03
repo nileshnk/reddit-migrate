@@ -54,6 +54,22 @@ export function updateSelectionSummary(type, selection, count = 0) {
     } else {
       summaryEl.classList.add("hidden");
     }
+  } else if (type === "multireddits") {
+    const summaryEl = document.getElementById("multiredditSelectionSummary");
+    const countEl = document.getElementById("selectedMultiredditCount");
+    const editBtn = document.getElementById("editMultiredditSelection");
+
+    if (selection === "all") {
+      summaryEl.classList.remove("hidden");
+      countEl.textContent = "All";
+      editBtn.style.display = "none";
+    } else if (selection === "custom") {
+      summaryEl.classList.remove("hidden");
+      countEl.textContent = count;
+      editBtn.style.display = "inline-block";
+    } else {
+      summaryEl.classList.add("hidden");
+    }
   }
 }
 
@@ -123,6 +139,9 @@ export class SelectionModal {
     } else if (type === "comments") {
       this.modalTitle.textContent = "Select Saved Comments";
       await this.loadComments(token);
+    } else if (type === "multireddits") {
+      this.modalTitle.textContent = "Select Multireddits";
+      await this.loadMultireddits(token);
     }
   }
 
@@ -548,6 +567,150 @@ export class SelectionModal {
     }
   }
 
+  async loadMultireddits(token) {
+    this.showLoading();
+
+    try {
+      const response = await fetch(`${state.API_BASE_URL}/api/multireddits`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(getAuthRequestBody()),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        if (
+          response.status === 401 || response.status === 403 ||
+          errorText.toLowerCase().includes("token") ||
+          errorText.toLowerCase().includes("expired")
+        ) {
+          throw new Error("COOKIE_EXPIRED");
+        }
+        throw new Error(`Server error: ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        state.setAllMultireddits(data.multireddits || []);
+        state.setFilteredItems([...state.ALL_MULTIREDDITS]);
+        this.renderMultireddits();
+      } else {
+        throw new Error(data.message || "Failed to load multireddits");
+      }
+    } catch (error) {
+      console.error("Error loading multireddits:", error);
+
+      if (error.message === "COOKIE_EXPIRED") {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-6xl text-amber-400 mb-4 block">cookie</span>
+            <p class="text-amber-400 font-semibold mb-2 text-lg">Cookie Expired or Invalid</p>
+            <p class="text-slate-400 text-sm mb-4">Your Reddit authentication cookie has expired or is invalid.</p>
+          </div>
+        `;
+      } else {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-5xl text-red-400 mb-4 block">error_outline</span>
+            <p class="text-red-400 font-semibold mb-2">Error Loading Multireddits</p>
+            <p class="text-slate-400 text-sm">${error.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    this.hideLoading();
+  }
+
+  renderMultireddits() {
+    this.totalCount.textContent = state.filteredItems.length;
+
+    if (state.filteredItems.length === 0) {
+      const searchTerm = this.searchInput?.value?.trim() || "";
+
+      if (searchTerm) {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-5xl text-red-400 mb-4 block">search</span>
+            <p class="text-red-400 font-semibold mb-2">No Search Results</p>
+            <p class="text-slate-400 text-sm mb-4">No multireddits found for "<span class="font-semibold">${searchTerm}</span>".</p>
+            <button onclick="window._selectionModal.clearSearch()" class="btn-primary px-6 py-2 text-white font-semibold rounded-lg flex items-center space-x-2 mx-auto">
+              <span class="material-icons">clear</span>
+              <span>Clear Search</span>
+            </button>
+          </div>
+        `;
+      } else {
+        this.itemsList.innerHTML = `
+          <div class="p-8 text-center">
+            <span class="material-icons text-5xl text-red-400 mb-4 block">playlist_add</span>
+            <p class="text-red-400 font-semibold mb-2">No Multireddits Found</p>
+            <p class="text-slate-400 text-sm mb-4">You don't have any custom feeds / multireddits.</p>
+          </div>
+        `;
+      }
+    } else {
+      const html = state.filteredItems
+        .map((multi) => {
+          const isSelected = state.SELECTED_MULTIREDDITS.includes(multi.name);
+          const subCount = multi.subreddits ? multi.subreddits.length : 0;
+          const subList = multi.subreddits
+            ? multi.subreddits.slice(0, 5).join(", ") + (multi.subreddits.length > 5 ? ` +${multi.subreddits.length - 5} more` : "")
+            : "No subreddits";
+          const description = multi.description_md
+            ? multi.description_md.substring(0, 100) + (multi.description_md.length > 100 ? "..." : "")
+            : "";
+
+          return `
+                <div class="group p-4 border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer item-row transition-colors duration-150" data-id="${multi.name}">
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0 flex items-center">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only item-checkbox" data-id="${multi.name}" ${isSelected ? "checked" : ""}>
+                                <div class="checkbox-visual w-5 h-5 bg-white border-2 border-gray-300 rounded flex items-center justify-center transition-all duration-200 group-hover:border-red-400">
+                                    <svg class="checkmark w-3 h-3 text-white hidden" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg border-2 border-blue-200 dark:border-blue-700 flex items-center justify-center text-blue-500 dark:text-blue-400">
+                                <span class="material-icons text-sm">playlist_play</span>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                                ${multi.display_name || multi.name}
+                            </h3>
+                            ${description ? `<p class="text-xs text-slate-400 mt-1 line-clamp-2">${description}</p>` : ""}
+                            <div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                <span class="inline-flex items-center">
+                                    <span class="material-icons text-xs mr-1">forum</span>
+                                    ${subCount} subreddit${subCount !== 1 ? "s" : ""}
+                                </span>
+                                <span>&bull;</span>
+                                <span class="truncate">${subList}</span>
+                                ${multi.visibility ? `<span>&bull;</span><span>${multi.visibility}</span>` : ""}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        })
+        .join("");
+
+      this.itemsList.innerHTML = html;
+      this.updateSelectedCount();
+      this.attachCheckboxListeners();
+      this.attachRowClickListeners();
+      this.updateCheckboxVisuals();
+    }
+  }
+
   renderSubreddits() {
     this.totalCount.textContent = state.filteredItems.length;
 
@@ -882,6 +1045,14 @@ export class SelectionModal {
       } else {
         state.setSelectedComments(state.SELECTED_COMMENTS.filter((item) => item !== id));
       }
+    } else if (state.currentModalType === "multireddits") {
+      if (isChecked) {
+        if (!state.SELECTED_MULTIREDDITS.includes(id)) {
+          state.SELECTED_MULTIREDDITS.push(id);
+        }
+      } else {
+        state.setSelectedMultireddits(state.SELECTED_MULTIREDDITS.filter((item) => item !== id));
+      }
     }
     this.updateSelectedCount();
   }
@@ -892,8 +1063,10 @@ export class SelectionModal {
       currentSelection = state.SELECTED_SUBREDDITS;
     } else if (state.currentModalType === "posts") {
       currentSelection = state.SELECTED_POSTS;
-    } else {
+    } else if (state.currentModalType === "comments") {
       currentSelection = state.SELECTED_COMMENTS;
+    } else {
+      currentSelection = state.SELECTED_MULTIREDDITS;
     }
     this.selectedCount.textContent = currentSelection.length;
   }
@@ -928,6 +1101,15 @@ export class SelectionModal {
           (comment.link_title && comment.link_title.toLowerCase().includes(term))
       ));
       this.renderComments();
+    } else if (state.currentModalType === "multireddits") {
+      state.setFilteredItems(state.ALL_MULTIREDDITS.filter(
+        (multi) =>
+          (multi.name && multi.name.toLowerCase().includes(term)) ||
+          (multi.display_name && multi.display_name.toLowerCase().includes(term)) ||
+          (multi.description_md && multi.description_md.toLowerCase().includes(term)) ||
+          (multi.subreddits && multi.subreddits.some(s => s.toLowerCase().includes(term)))
+      ));
+      this.renderMultireddits();
     }
   }
 
@@ -953,6 +1135,13 @@ export class SelectionModal {
         }
       });
       this.renderComments();
+    } else if (state.currentModalType === "multireddits") {
+      state.filteredItems.forEach((multi) => {
+        if (!state.SELECTED_MULTIREDDITS.includes(multi.name)) {
+          state.SELECTED_MULTIREDDITS.push(multi.name);
+        }
+      });
+      this.renderMultireddits();
     }
   }
 
@@ -978,6 +1167,13 @@ export class SelectionModal {
         ));
       });
       this.renderComments();
+    } else if (state.currentModalType === "multireddits") {
+      state.filteredItems.forEach((multi) => {
+        state.setSelectedMultireddits(state.SELECTED_MULTIREDDITS.filter(
+          (item) => item !== multi.name
+        ));
+      });
+      this.renderMultireddits();
     }
   }
 
@@ -995,6 +1191,9 @@ export class SelectionModal {
     } else if (state.currentModalType === "comments") {
       state.setCommentsSelection("custom");
       updateSelectionSummary("comments", "custom", state.SELECTED_COMMENTS.length);
+    } else if (state.currentModalType === "multireddits") {
+      state.setMultiredditSelection("custom");
+      updateSelectionSummary("multireddits", "custom", state.SELECTED_MULTIREDDITS.length);
     }
     this.close();
   }
@@ -1199,5 +1398,40 @@ export function initSelectionListeners(selectionModal) {
       document.getElementById("commentsCustom").checked = true;
       state.setCommentsSelection("custom");
       await selectionModal.open("comments", getSourceAccessToken());
+    });
+
+  // Multireddit selection radio buttons
+  document.querySelectorAll('input[name="multiredditSelection"]').forEach((radio) => {
+    radio.addEventListener("change", async (e) => {
+      state.setMultiredditSelection(e.target.value);
+
+      if (e.target.value === "all") {
+        updateSelectionSummary("multireddits", "all");
+      } else if (e.target.value === "custom") {
+        if (!isSourceAccountVerified()) {
+          alert("Please verify your source account first");
+          document.getElementById("multiredditNone").checked = true;
+          state.setMultiredditSelection("none");
+          return;
+        }
+
+        await selectionModal.open("multireddits", getSourceAccessToken());
+      } else {
+        updateSelectionSummary("multireddits", "none");
+        state.setSelectedMultireddits([]);
+      }
+    });
+  });
+
+  document
+    .getElementById("editMultiredditSelection")
+    .addEventListener("click", async () => {
+      if (!isSourceAccountVerified()) {
+        alert("Please verify your source account first");
+        return;
+      }
+      document.getElementById("multiredditCustom").checked = true;
+      state.setMultiredditSelection("custom");
+      await selectionModal.open("multireddits", getSourceAccessToken());
     });
 }

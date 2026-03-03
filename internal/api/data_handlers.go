@@ -215,6 +215,57 @@ func SavedCommentsHandler(w http.ResponseWriter, r *http.Request) {
 	config.InfoLogger.Printf("Successfully sent %d saved comments to %s", len(comments), r.RemoteAddr)
 }
 
+// MultiredditsHandler handles the /api/multireddits endpoint
+func MultiredditsHandler(w http.ResponseWriter, r *http.Request) {
+	config.DebugLogger.Printf("Received request for /api/multireddits from %s", r.RemoteAddr)
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		config.ErrorLogger.Printf("Invalid content type for /api/multireddits from %s: %s", r.RemoteAddr, r.Header.Get("Content-Type"))
+		http.Error(w, "Content Type must be application/json", http.StatusUnsupportedMediaType)
+		return
+	}
+
+	var requestBody types.GetMultiredditsRequest
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&requestBody); err != nil {
+		config.ErrorLogger.Printf("Error decoding /api/multireddits request from %s: %v", r.RemoteAddr, err)
+		http.Error(w, "Bad Request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	token, _, err := extractAuthData(requestBody.AuthMethod, requestBody.Cookie, requestBody.AccessToken, requestBody.Username)
+	if err != nil {
+		config.ErrorLogger.Printf("Failed to extract auth data for /api/multireddits from %s: %v", r.RemoteAddr, err)
+		http.Error(w, "Authentication failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	multireddits, err := reddit.FetchMultireddits(token)
+	if err != nil {
+		config.ErrorLogger.Printf("Error fetching multireddits for %s: %v", r.RemoteAddr, err)
+		http.Error(w, "Failed to fetch multireddits: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := types.GetMultiredditsResponse{
+		Success:      true,
+		Message:      "Multireddits fetched successfully",
+		Multireddits: multireddits,
+		Count:        len(multireddits),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		config.ErrorLogger.Printf("Error encoding multireddits response for %s: %v", r.RemoteAddr, err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	config.InfoLogger.Printf("Successfully sent %d multireddits to %s", len(multireddits), r.RemoteAddr)
+}
+
 // AccountCountsHandler handles the /api/account-counts endpoint
 func AccountCountsHandler(w http.ResponseWriter, r *http.Request) {
 	config.DebugLogger.Printf("Received request for /api/account-counts from %s", r.RemoteAddr)
@@ -262,6 +313,12 @@ func AccountCountsHandler(w http.ResponseWriter, r *http.Request) {
 		commentsCount = -1 // Indicate error
 	}
 
+	multiredditCount, err := reddit.GetMultiredditCount(token)
+	if err != nil {
+		config.ErrorLogger.Printf("Error getting multireddit count for %s: %v", r.RemoteAddr, err)
+		multiredditCount = -1
+	}
+
 	response := types.AccountCountsResponse{
 		Success:            true,
 		Message:            "Account counts retrieved successfully",
@@ -269,6 +326,7 @@ func AccountCountsHandler(w http.ResponseWriter, r *http.Request) {
 		SubredditCount:     subredditCount,
 		SavedPostsCount:    postsCount,
 		SavedCommentsCount: commentsCount,
+		MultiredditCount:   multiredditCount,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

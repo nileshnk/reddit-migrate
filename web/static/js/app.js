@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("subredditNone").checked = true;
   document.getElementById("postsNone").checked = true;
   document.getElementById("commentsNone").checked = true;
+  document.getElementById("multiredditNone").checked = true;
   document.getElementById("deleteSubredditsNo").checked = true;
   document.getElementById("deletePostsNo").checked = true;
   document.getElementById("deleteCommentsNo").checked = true;
