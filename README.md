@@ -4,7 +4,7 @@
 
 # Reddit-Migrate
 
-Easily transfer your Reddit account data to a new account - including saved posts, subreddit subscriptions, and more.
+Easily transfer your Reddit account data to a new account - including subreddit subscriptions, saved posts, saved comments, multireddits (custom feeds), and more.
 
 ![Home](./docs/assets/app_home.png)
 
@@ -17,15 +17,20 @@ Watch it in action: [YouTube Demo](https://youtu.be/pHGYuwZ1Jp0)
 - **Simple Interface**: User-friendly web interface - no command line required
 - **Dual Authentication**: Support for both OAuth and Cookie-based authentication methods
 - **Bulk Transfer**: Migrate hundreds of saved posts and subreddit subscriptions
+- **Custom Selection**: Choose to migrate all, specific, or none of each data type
+- **Export/Backup**: Download your Reddit data as a JSON file before migrating
 - **Smart Migration**: Automatically filters out duplicates and existing items to avoid conflicts
 - **Privacy First**: Runs locally on your computer - your data never leaves your machine
 - **Cross-Platform**: Available for Windows, Mac, and Linux
 
 ## What Gets Migrated
 
-**Subreddit Subscriptions** - Transfer all your joined communities  
-**Saved Posts** - Move your saved posts collection  
+**Subreddit Subscriptions** - Transfer all your joined communities
+**Saved Posts** - Move your saved posts collection
+**Saved Comments** - Transfer your saved comments
+**Multireddits (Custom Feeds)** - Preserve your curated subreddit groupings
 **User Follows** - Migrate followed user accounts
+**Export/Backup** - Download all your data as a JSON file
 
 ## Quick Start
 
@@ -118,18 +123,20 @@ docker run -d -p 127.0.0.1:5005:5005 --name reddit-migrate reddit-migrate-img
 
 ## Recent Updates
 
-### Latest Features (v0.2.3)
+### What's New in v1.0.0
 
-- **OAuth Authentication**: Added official Reddit OAuth support as the recommended authentication method
-- **Smart Migration**: Enhanced migration logic to filter out duplicates and existing items automatically
-- **Improved Saved Posts**: Fixed chronological ordering - oldest posts are now properly preserved at the bottom
-- **Better UX**: Dual-tab interface supporting both OAuth and Cookie authentication methods
+- **Saved Comments Migration**: Transfer your saved comments between accounts
+- **Multireddits Migration**: Migrate custom feeds with all their subreddit groupings
+- **Export/Backup**: Download your account data (subreddits, saved posts, saved comments, multireddits) as a JSON file
+- **Custom Selection**: Choose All, Custom, or None for each data type — pick exactly what to migrate
+- **Codebase Modernization**: Frontend refactored to ES modules for better maintainability
 
-### Previous Updates
+### Previous Updates (v0.2.3)
 
-- **Enhanced UI**: Modern, responsive interface with Reddit-themed styling
-- **Rate Limiting**: Intelligent handling of Reddit's API rate limits
-- **Error Handling**: Improved error messages and recovery mechanisms
+- **OAuth Authentication**: Official Reddit OAuth support as the recommended authentication method
+- **Smart Migration**: Automatic duplicate filtering — only new content gets migrated
+- **Chronological Ordering**: Saved posts are preserved in the correct order
+- **Dual-tab Interface**: Supporting both OAuth and Cookie authentication methods
 
 ## How It Works
 
@@ -138,9 +145,11 @@ Reddit-Migrate uses Reddit's official APIs with support for both OAuth and cooki
 - **OAuth Authentication**: Uses Reddit's official OAuth flow for secure API access with proper scopes
 - **Cookie Authentication**: Extracts access tokens from Reddit cookies as an alternative method
 - **Smart Migration**: Automatically detects existing items and only migrates new content to avoid duplicates
-- **Subreddit Migration**: Fetches all subscribed subreddits and subscribes to them in batches of 100
-- **Saved Posts**: Retrieves saved posts in proper chronological order and saves them individually
+- **Subreddit Migration**: Fetches all subscribed subreddits and subscribes to them in batches
+- **Saved Posts & Comments**: Retrieves saved items in chronological order using concurrent workers with rate limiting
+- **Multireddits**: Recreates custom feeds on the destination account with all subreddit groupings intact
 - **User Follows**: Transfers followed user accounts to the new account
+- **Export/Backup**: Aggregates selected data sections and returns a downloadable JSON file
 
 The tool runs entirely locally on your machine - no data is sent to external servers.
 
