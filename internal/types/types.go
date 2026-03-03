@@ -3,14 +3,14 @@ package types
 // MigrationRequestType defines the structure for the migration request body.
 // It includes authentication data for source and destination accounts, and user preferences for migration.
 type MigrationRequestType struct {
-	AuthMethod             string          `json:"auth_method,omitempty"`              // "cookie" or "oauth"
-	SourceAccountCookie    string          `json:"source_account_cookie,omitempty"`    // For cookie-based auth
-	DestAccountCookie      string          `json:"dest_account_cookie,omitempty"`      // For cookie-based auth
-	SourceAccountToken     string          `json:"source_account_token,omitempty"`     // For OAuth-based auth
-	DestAccountToken       string          `json:"dest_account_token,omitempty"`       // For OAuth-based auth
-	SourceAccountUsername  string          `json:"source_account_username,omitempty"`  // For OAuth-based auth
-	DestAccountUsername    string          `json:"dest_account_username,omitempty"`    // For OAuth-based auth
-	Preferences            PreferencesType `json:"preferences"`
+	AuthMethod            string          `json:"auth_method,omitempty"`             // "cookie" or "oauth"
+	SourceAccountCookie   string          `json:"source_account_cookie,omitempty"`   // For cookie-based auth
+	DestAccountCookie     string          `json:"dest_account_cookie,omitempty"`     // For cookie-based auth
+	SourceAccountToken    string          `json:"source_account_token,omitempty"`    // For OAuth-based auth
+	DestAccountToken      string          `json:"dest_account_token,omitempty"`      // For OAuth-based auth
+	SourceAccountUsername string          `json:"source_account_username,omitempty"` // For OAuth-based auth
+	DestAccountUsername   string          `json:"dest_account_username,omitempty"`   // For OAuth-based auth
+	Preferences           PreferencesType `json:"preferences"`
 }
 
 // PreferencesType defines the user's choices for the migration process.
@@ -226,20 +226,20 @@ type GetSubredditsResponse struct {
 
 // CustomMigrationRequest defines the structure for custom selection migration
 type CustomMigrationRequest struct {
-	AuthMethod              string   `json:"auth_method,omitempty"`              // "cookie" or "oauth"
-	SourceAccountCookie     string   `json:"source_account_cookie,omitempty"`    // For cookie-based auth
-	DestAccountCookie       string   `json:"dest_account_cookie,omitempty"`      // For cookie-based auth
-	SourceAccountToken      string   `json:"source_account_token,omitempty"`     // For OAuth-based auth
-	DestAccountToken        string   `json:"dest_account_token,omitempty"`       // For OAuth-based auth
-	SourceAccountUsername   string   `json:"source_account_username,omitempty"`  // For OAuth-based auth
-	DestAccountUsername     string   `json:"dest_account_username,omitempty"`    // For OAuth-based auth
-	SelectedSubreddits      []string `json:"selected_subreddits"`               // List of display names
-	SelectedPosts           []string `json:"selected_posts"`                    // List of full names (t3_xxxxx)
-	SelectedComments        []string `json:"selected_comments"`                 // List of full names (t1_xxxxx)
-	SelectedMultireddits    []string `json:"selected_multireddits"`             // List of multireddit names
-	DeleteSourceSubreddits  bool     `json:"delete_source_subreddits"`
-	DeleteSourcePosts       bool     `json:"delete_source_posts"`
-	DeleteSourceComments    bool     `json:"delete_source_comments"`
+	AuthMethod             string   `json:"auth_method,omitempty"`             // "cookie" or "oauth"
+	SourceAccountCookie    string   `json:"source_account_cookie,omitempty"`   // For cookie-based auth
+	DestAccountCookie      string   `json:"dest_account_cookie,omitempty"`     // For cookie-based auth
+	SourceAccountToken     string   `json:"source_account_token,omitempty"`    // For OAuth-based auth
+	DestAccountToken       string   `json:"dest_account_token,omitempty"`      // For OAuth-based auth
+	SourceAccountUsername  string   `json:"source_account_username,omitempty"` // For OAuth-based auth
+	DestAccountUsername    string   `json:"dest_account_username,omitempty"`   // For OAuth-based auth
+	SelectedSubreddits     []string `json:"selected_subreddits"`               // List of display names
+	SelectedPosts          []string `json:"selected_posts"`                    // List of full names (t3_xxxxx)
+	SelectedComments       []string `json:"selected_comments"`                 // List of full names (t1_xxxxx)
+	SelectedMultireddits   []string `json:"selected_multireddits"`             // List of multireddit names
+	DeleteSourceSubreddits bool     `json:"delete_source_subreddits"`
+	DeleteSourcePosts      bool     `json:"delete_source_posts"`
+	DeleteSourceComments   bool     `json:"delete_source_comments"`
 }
 
 // DetailedPostData represents the full Reddit post data structure for parsing API responses
@@ -415,6 +415,26 @@ type GetSavedCommentsResponse struct {
 	Message  string             `json:"message"`
 	Comments []SavedCommentInfo `json:"comments"`
 	Count    int                `json:"count"`
+}
+
+// ExportRequest defines the request structure for the export endpoint
+type ExportRequest struct {
+	AuthMethod  string   `json:"auth_method,omitempty"`  // "cookie" or "oauth"
+	Cookie      string   `json:"cookie,omitempty"`       // For cookie-based auth
+	AccessToken string   `json:"access_token,omitempty"` // For OAuth-based auth
+	Username    string   `json:"username,omitempty"`     // For OAuth-based auth
+	Sections    []string `json:"sections,omitempty"`     // Which sections to export (empty = all)
+}
+
+// ExportData contains all exported account data
+type ExportData struct {
+	ExportedAt    string             `json:"exported_at"`
+	Username      string             `json:"username"`
+	Subreddits    []SubredditInfo    `json:"subreddits,omitempty"`
+	SavedPosts    []SavedPostInfo    `json:"saved_posts,omitempty"`
+	SavedComments []SavedCommentInfo `json:"saved_comments,omitempty"`
+	Multireddits  []MultiredditInfo  `json:"multireddits,omitempty"`
+	Errors        []string           `json:"errors,omitempty"`
 }
 
 // MultiredditInfo contains detailed information about a multireddit for UI display

@@ -5,3 +5,4 @@ tmp/
 builds/
 .vscode/
 __debug_bin*
+reddit-migrate

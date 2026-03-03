@@ -958,6 +958,49 @@
         </div>
     </div>
 
+    <!-- Export/Backup Section -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8" id="export-section">
+        <div class="glass-card rounded-2xl p-8 border border-slate-600">
+            <h2 class="text-xl font-semibold text-slate-200 mb-2 flex items-center">
+                <span class="material-icons mr-2 text-blue-400">download</span>
+                Export / Backup Data
+            </h2>
+            <p class="text-sm text-slate-400 mb-6">Download your Reddit account data as a JSON file for backup or archival purposes.</p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                <label class="flex items-center space-x-2 p-3 rounded-lg bg-slate-700/50 border border-slate-600 cursor-pointer hover:bg-slate-700 transition-colors">
+                    <input type="checkbox" value="subreddits" checked class="w-4 h-4 text-blue-500 rounded border-slate-500 focus:ring-blue-500 bg-slate-700">
+                    <span class="text-sm text-slate-300">Subreddits</span>
+                </label>
+                <label class="flex items-center space-x-2 p-3 rounded-lg bg-slate-700/50 border border-slate-600 cursor-pointer hover:bg-slate-700 transition-colors">
+                    <input type="checkbox" value="saved_posts" checked class="w-4 h-4 text-blue-500 rounded border-slate-500 focus:ring-blue-500 bg-slate-700">
+                    <span class="text-sm text-slate-300">Saved Posts</span>
+                </label>
+                <label class="flex items-center space-x-2 p-3 rounded-lg bg-slate-700/50 border border-slate-600 cursor-pointer hover:bg-slate-700 transition-colors">
+                    <input type="checkbox" value="saved_comments" checked class="w-4 h-4 text-blue-500 rounded border-slate-500 focus:ring-blue-500 bg-slate-700">
+                    <span class="text-sm text-slate-300">Saved Comments</span>
+                </label>
+                <label class="flex items-center space-x-2 p-3 rounded-lg bg-slate-700/50 border border-slate-600 cursor-pointer hover:bg-slate-700 transition-colors">
+                    <input type="checkbox" value="multireddits" checked class="w-4 h-4 text-blue-500 rounded border-slate-500 focus:ring-blue-500 bg-slate-700">
+                    <span class="text-sm text-slate-300">Multireddits</span>
+                </label>
+            </div>
+
+            <button
+                class="w-full btn-primary text-white font-bold py-3 px-6 rounded-xl text-base flex items-center justify-center space-x-2"
+                id="export-btn">
+                <span class="material-icons text-lg">file_download</span>
+                <span>Export as JSON</span>
+            </button>
+            <button
+                class="hidden w-full btn-primary text-white font-bold py-3 px-6 rounded-xl text-base items-center justify-center space-x-2"
+                id="export-loading-btn">
+                <span class="material-icons animate-spin text-lg">refresh</span>
+                <span>Exporting Data...</span>
+            </button>
+        </div>
+    </div>
+
     <!-- Enhanced Footer -->
     <footer class="glass-card border-t border-slate-600 py-8 mt-12">
         <div class="container mx-auto px-4">
