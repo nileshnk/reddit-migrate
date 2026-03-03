@@ -51,6 +51,7 @@ func ExportHandler(w http.ResponseWriter, r *http.Request) {
 		sectionSet["subreddits"] = true
 		sectionSet["saved_posts"] = true
 		sectionSet["saved_comments"] = true
+		sectionSet["multireddits"] = true
 	}
 
 	exportData := types.ExportData{
@@ -88,6 +89,16 @@ func ExportHandler(w http.ResponseWriter, r *http.Request) {
 			exportErrors = append(exportErrors, fmt.Sprintf("saved_comments: %v", err))
 		} else {
 			exportData.SavedComments = comments
+		}
+	}
+
+	if sectionSet["multireddits"] {
+		multireddits, err := reddit.FetchMultireddits(token)
+		if err != nil {
+			config.ErrorLogger.Printf("Error fetching multireddits for export: %v", err)
+			exportErrors = append(exportErrors, fmt.Sprintf("multireddits: %v", err))
+		} else {
+			exportData.Multireddits = multireddits
 		}
 	}
 

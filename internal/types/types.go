@@ -433,6 +433,7 @@ type ExportData struct {
 	Subreddits    []SubredditInfo    `json:"subreddits,omitempty"`
 	SavedPosts    []SavedPostInfo    `json:"saved_posts,omitempty"`
 	SavedComments []SavedCommentInfo `json:"saved_comments,omitempty"`
+	Multireddits  []MultiredditInfo  `json:"multireddits,omitempty"`
 	Errors        []string           `json:"errors,omitempty"`
 }
 
