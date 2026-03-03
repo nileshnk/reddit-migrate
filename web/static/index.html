@@ -888,6 +888,43 @@
                         </div>
                     </div>
                 </fieldset>
+
+                <!-- Multireddits (Custom Feeds) Migration -->
+                <fieldset class="glass-card rounded-xl p-6" id="multireddits-options">
+                    <legend class="text-lg font-semibold text-slate-200 mb-4 flex items-center">
+                        <span class="material-icons mr-2" style="color: #0079D3;">playlist_add</span>
+                        Migrate Multireddits (Custom Feeds)
+                    </legend>
+                    <div class="flex items-center space-x-8 mb-4">
+                        <div class="flex items-center">
+                            <input type="radio" id="multiredditAll" name="multiredditSelection" value="all"
+                                class="custom-radio" />
+                            <label for="multiredditAll" class="ml-3 text-sm font-medium text-slate-300">All</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="radio" id="multiredditCustom" name="multiredditSelection" value="custom"
+                                class="custom-radio" />
+                            <label for="multiredditCustom"
+                                class="ml-3 text-sm font-medium text-slate-300">Custom</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="radio" id="multiredditNone" name="multiredditSelection" value="none"
+                                class="custom-radio" />
+                            <label for="multiredditNone" class="ml-3 text-sm font-medium text-slate-300">None</label>
+                        </div>
+                    </div>
+                    <div id="multiredditSelectionSummary"
+                        class="hidden flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                        <span class="text-sm text-slate-400 flex items-center">
+                            <span class="material-icons mr-2 text-sm">info</span>
+                            <span id="selectedMultiredditsCount">0</span><span>&nbsp;multireddits selected</span>
+                        </span>
+                        <button id="editMultiredditSelection"
+                            class="btn-secondary px-4 py-2 text-white text-sm font-semibold rounded-lg">
+                            Edit Selection
+                        </button>
+                    </div>
+                </fieldset>
             </div>
 
             <!-- Submit Button -->

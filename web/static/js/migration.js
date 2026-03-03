@@ -48,7 +48,7 @@ export function initMigrationHandler() {
     let requestBody;
     let endpoint;
 
-    const hasCustomSelection = state.SUBREDDIT_SELECTION === "custom" || state.POSTS_SELECTION === "custom" || state.COMMENTS_SELECTION === "custom";
+    const hasCustomSelection = state.SUBREDDIT_SELECTION === "custom" || state.POSTS_SELECTION === "custom" || state.COMMENTS_SELECTION === "custom" || state.MULTIREDDIT_SELECTION === "custom";
     if (hasCustomSelection) {
       endpoint = `${state.API_BASE_URL}/api/migrate-custom`;
       if (state.CURRENT_AUTH_METHOD === "oauth") {
@@ -62,6 +62,7 @@ export function initMigrationHandler() {
             state.SUBREDDIT_SELECTION === "custom" ? state.SELECTED_SUBREDDITS : [],
           selected_posts: state.POSTS_SELECTION === "custom" ? state.SELECTED_POSTS : [],
           selected_comments: state.COMMENTS_SELECTION === "custom" ? state.SELECTED_COMMENTS : [],
+          selected_multireddits: state.MULTIREDDIT_SELECTION === "custom" ? state.SELECTED_MULTIREDDITS : [],
           delete_source_subreddits: deleteSubreddits,
           delete_source_posts: deletePosts,
           delete_source_comments: deleteComments,
@@ -75,6 +76,7 @@ export function initMigrationHandler() {
             state.SUBREDDIT_SELECTION === "custom" ? state.SELECTED_SUBREDDITS : [],
           selected_posts: state.POSTS_SELECTION === "custom" ? state.SELECTED_POSTS : [],
           selected_comments: state.COMMENTS_SELECTION === "custom" ? state.SELECTED_COMMENTS : [],
+          selected_multireddits: state.MULTIREDDIT_SELECTION === "custom" ? state.SELECTED_MULTIREDDITS : [],
           delete_source_subreddits: deleteSubreddits,
           delete_source_posts: deletePosts,
           delete_source_comments: deleteComments,
@@ -93,6 +95,7 @@ export function initMigrationHandler() {
             migrate_subreddit_bool: state.SUBREDDIT_SELECTION === "all",
             migrate_post_bool: state.POSTS_SELECTION === "all",
             migrate_comment_bool: state.COMMENTS_SELECTION === "all",
+            migrate_multireddit_bool: state.MULTIREDDIT_SELECTION === "all",
             delete_post_bool: deletePosts,
             delete_comment_bool: deleteComments,
             delete_subreddit_bool: deleteSubreddits,
@@ -107,6 +110,7 @@ export function initMigrationHandler() {
             migrate_subreddit_bool: state.SUBREDDIT_SELECTION === "all",
             migrate_post_bool: state.POSTS_SELECTION === "all",
             migrate_comment_bool: state.COMMENTS_SELECTION === "all",
+            migrate_multireddit_bool: state.MULTIREDDIT_SELECTION === "all",
             delete_post_bool: deletePosts,
             delete_comment_bool: deleteComments,
             delete_subreddit_bool: deleteSubreddits,
@@ -117,7 +121,7 @@ export function initMigrationHandler() {
 
     console.log("Starting migration with:", {
       endpoint,
-      selections: { subreddits: state.SUBREDDIT_SELECTION, posts: state.POSTS_SELECTION, comments: state.COMMENTS_SELECTION },
+      selections: { subreddits: state.SUBREDDIT_SELECTION, posts: state.POSTS_SELECTION, comments: state.COMMENTS_SELECTION, multireddits: state.MULTIREDDIT_SELECTION },
     });
 
     try {
@@ -168,6 +172,9 @@ function displayMigrationResponse(response, migrateResponseData, migrateResponse
   const migratingComments =
     state.COMMENTS_SELECTION === "all" ||
     (state.COMMENTS_SELECTION === "custom" && state.SELECTED_COMMENTS.length > 0);
+  const migratingMultireddits =
+    state.MULTIREDDIT_SELECTION === "all" ||
+    (state.MULTIREDDIT_SELECTION === "custom" && state.SELECTED_MULTIREDDITS.length > 0);
 
   if (migratingSubreddits && response.data.subscribeSubreddit) {
     const subredditStatusElement = document.createElement("li");
@@ -211,7 +218,21 @@ function displayMigrationResponse(response, migrateResponseData, migrateResponse
     migrateResponseData.appendChild(commentStatusElement);
   }
 
-  if (!migratingSubreddits && !migratingPosts && !migratingComments) {
+  if (migratingMultireddits && response.data.createMultireddit) {
+    const multiredditStatusElement = document.createElement("li");
+    multiredditStatusElement.className =
+      "flex items-center space-x-3 p-3 bg-emerald-900/20 rounded-lg border border-emerald-500/20";
+    multiredditStatusElement.innerHTML = `
+      <span class="material-icons text-emerald-400">check_circle</span>
+      <span class="text-sm font-medium text-slate-300">
+        Total multireddits successfully created in destination account:
+        <span class="text-emerald-400 font-bold">${response.data.createMultireddit.SuccessCount}</span>
+      </span>
+    `;
+    migrateResponseData.appendChild(multiredditStatusElement);
+  }
+
+  if (!migratingSubreddits && !migratingPosts && !migratingComments && !migratingMultireddits) {
     const noMigrationElement = document.createElement("li");
     noMigrationElement.className =
       "flex items-center space-x-3 p-3 bg-amber-900/20 rounded-lg border border-amber-500/20";
