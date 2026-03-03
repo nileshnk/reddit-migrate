@@ -1,0 +1,378 @@
+# Reddit-Migrate - Full Project Index for LLMs
+
+> Module: github.com/nileshnk/reddit-migrate
+> Language: Go 1.21 | Frontend: Vanilla JS ES Modules + Tailwind CSS (CDN)
+> Dependency: github.com/go-chi/chi/v5 (only external dependency)
+> Default address: http://localhost:5005
+
+Reddit-Migrate is a local-first web application that transfers Reddit account data between accounts.
+It supports migrating subreddits, saved posts, saved comments, multireddits (custom feeds), and user follows.
+It also supports exporting account data as a downloadable JSON file.
+Two authentication methods are supported: Reddit OAuth and cookie-based authentication.
+
+---
+
+## 1. Directory Structure
+
+```
+cmd/reddit-migrate/
+  main.go                         # Application entry point, chi router setup, static file serving
+
+internal/
+  api/
+    routes.go                     # API route registration (all 16 endpoints)
+    handlers.go                   # HealthCheckHandler
+    data_handlers.go              # SubredditsHandler, SavedPostsHandler, SavedCommentsHandler,
+                                  #   MultiredditsHandler, AccountCountsHandler, extractAuthData()
+    export_handler.go             # ExportHandler (JSON export/backup)
+    migration_handlers.go         # CustomMigrationHandler
+    utils.go                      # ValidateContentType, SendJSONResponse, SendErrorResponse, DecodeJSONRequest
+
+  auth/
+    oauth.go                      # OAuth flow: InitOAuth, OAuthLoginHandler, EnhancedOAuthCallbackHandler,
+                                  #   OAuthInitHandler, OAuthStatusHandler, DirectAuthHandler,
+                                  #   ExchangeCodeForToken, RefreshAccessToken, GetUserInfoWithToken,
+                                  #   GenerateState, GetAuthorizationURL, CreateOAuthClient
+    cookie.go                     # Cookie auth: VerifyTokenResponse, VerifyCookieAndGetResponse,
+                                  #   GetUsernameFromCookie, ParseTokenFromCookie
+
+  config/
+    config.go                     # Configuration: loggers (Info/Error/Debug), LoadConfig(),
+                                  #   GetServerAddress(), environment variable handling,
+                                  #   rate limiter settings, API timeouts
+
+  migration/
+    migrate.go                    # MigrationHandler, HandleCustomMigration, initializeMigration,
+                                  #   processSubreddits, processPosts, processComments, processMultireddits,
+                                  #   migrateSubredditsWithRetry, filterSlice
+
+  ratelimiter/
+    ratelimiter.go                # Token bucket RateLimiter: NewRateLimiter, Wait, Pause, Resume
+
+  reddit/
+    apihelpers.go                 # fetchAllNames (generic paginated Reddit API fetcher)
+    subreddits.go                 # FetchSubredditFullNames, FetchSubredditsWithDetails, GetSubredditCount,
+                                  #   ManageSubreddits, ManageFollowedUsers
+    posts.go                      # FetchSavedPostsFullNames, FetchSavedPostsWithDetails, GetSavedPostsCount,
+                                  #   ManageSavedPosts, TestRedditAPI
+    comments.go                   # FetchSavedCommentFullNames, FetchSavedCommentsWithDetails, GetSavedCommentsCount
+    multireddits.go               # FetchMultireddits, GetMultiredditCount, CreateMultireddit, ManageMultireddits
+
+  types/
+    types.go                      # All request/response types and constants
+
+  worker/
+    postworker.go                 # PostWorker goroutine, processSinglePost (concurrent save/unsave)
+
+web/static/
+  index.html                      # Single-page application HTML (Tailwind CSS via CDN)
+  assets/
+    favicon.png, github-logo.svg, reddit-logo.svg
+
+  js/
+    app.js                        # Entry point: DOMContentLoaded, initializes all managers and handlers
+    state.js                      # Centralized application state (all global variables + setters)
+    auth.js                       # Authentication logic: cookie verification, OAuth modal flow,
+                                  #   updateSubmitButtonState, getAuthRequestBody
+    ui.js                         # DarkModeManager, TabManager, tooltips, help modals
+    modal.js                      # SelectionModal class: load/render/confirm for subreddits, posts,
+                                  #   comments, multireddits (All/Custom/None pattern)
+    migration.js                  # Migration submit handler, displayMigrationResponse
+    export.js                     # Export/backup handler (POST /api/export, download as JSON)
+    utils.js                      # formatNumber, formatTimeAgo, getPostImageUrl, getMediaTypeIcon
+
+scripts/
+  build.sh                        # Cross-platform build script
+  reddit-test-data.js             # Test data generation helper
+
+Dockerfile                        # Multi-stage Docker build
+.github/workflows/release.yml     # GitHub Actions release workflow
+```
+
+---
+
+## 2. API Endpoints
+
+All endpoints are mounted under `/api` via `r.Route("/api", api.Router)` in main.go.
+
+### Authentication
+| Method | Path                  | Handler                          | Description                                    |
+|--------|-----------------------|----------------------------------|------------------------------------------------|
+| POST   | /api/verify-cookie    | auth.VerifyTokenResponse         | Verify Reddit cookie, return username           |
+| POST   | /api/oauth/init       | auth.OAuthInitHandler            | Initialize OAuth flow with client credentials   |
+| GET    | /api/oauth/login      | auth.OAuthLoginHandler           | Redirect to Reddit OAuth authorization page     |
+| GET    | /api/oauth/callback   | auth.EnhancedOAuthCallbackHandler| Handle OAuth callback, exchange code for token  |
+| GET    | /api/oauth/status     | auth.OAuthStatusHandler          | Check OAuth session completion status           |
+| POST   | /api/oauth/direct     | auth.DirectAuthHandler           | Direct username/password authentication         |
+
+### Data Fetching
+| Method | Path                  | Handler                      | Description                                    |
+|--------|-----------------------|------------------------------|------------------------------------------------|
+| POST   | /api/subreddits       | SubredditsHandler            | Fetch subscribed subreddits with details        |
+| POST   | /api/saved-posts      | SavedPostsHandler            | Fetch saved posts with details                  |
+| POST   | /api/saved-comments   | SavedCommentsHandler         | Fetch saved comments with details               |
+| POST   | /api/multireddits     | MultiredditsHandler          | Fetch user's multireddits (custom feeds)        |
+| POST   | /api/account-counts   | AccountCountsHandler         | Get counts of subreddits, posts, comments, multireddits |
+| POST   | /api/export           | ExportHandler                | Export selected data sections as downloadable JSON |
+
+### Migration
+| Method | Path                  | Handler                      | Description                                    |
+|--------|-----------------------|------------------------------|------------------------------------------------|
+| POST   | /api/migrate          | migration.MigrationHandler   | Full migration (all items of selected types)    |
+| POST   | /api/migrate-custom   | CustomMigrationHandler       | Custom migration (specific selected items)      |
+
+### Utility
+| Method | Path                  | Handler                      | Description                                    |
+|--------|-----------------------|------------------------------|------------------------------------------------|
+| GET    | /api/health           | HealthCheckHandler           | Health check endpoint                           |
+
+---
+
+## 3. Key Data Types (internal/types/types.go)
+
+### Core Entity Types
+
+```go
+type SubredditInfo struct {
+    Name          string // Full name (t5_xxxxx)
+    DisplayName   string // e.g. "golang"
+    Title         string
+    Description   string // public_description
+    Subscribers   int
+    IconURL       string
+    BannerURL     string
+    PrimaryColor  string
+    KeyColor      string
+    SubredditType string // "public", "private", "restricted"
+    NSFW          bool
+    Created       int64
+}
+
+type SavedPostInfo struct {
+    ID          string        // Without t3_ prefix
+    FullName    string        // t3_xxxxx
+    Title       string
+    Subreddit   string
+    Author      string
+    URL         string
+    Permalink   string
+    Created     int64
+    Score       int
+    NumComments int
+    PostHint    string        // "image", "link", "self"
+    Domain      string
+    SelfText    string
+    IsVideo     bool
+    IsSelf      bool
+    NSFW        bool
+    Spoiler     bool
+    ImageData   PostImageData
+}
+
+type SavedCommentInfo struct {
+    ID        string // Without t1_ prefix
+    FullName  string // t1_xxxxx
+    Body      string // HTML
+    BodyText  string // Plain text snippet (max 300 chars)
+    Author    string
+    Subreddit string
+    Score     int
+    Created   int64
+    Permalink string
+    LinkTitle string // Title of parent post
+    LinkURL   string // URL of parent post
+    NSFW      bool
+}
+
+type MultiredditInfo struct {
+    Name        string
+    DisplayName string
+    Path        string
+    Description string   // description_md
+    Subreddits  []string // List of subreddit names
+    IconURL     string
+    Visibility  string   // "private", "public"
+    Created     float64
+    NumSubs     int
+}
+```
+
+### Request/Response Types
+
+```go
+// Standard migration (all items of selected types)
+type MigrationRequestType struct {
+    AuthMethod            string          // "cookie" or "oauth"
+    SourceAccountCookie   string          // Cookie auth
+    DestAccountCookie     string          // Cookie auth
+    SourceAccountToken    string          // OAuth auth
+    DestAccountToken      string          // OAuth auth
+    SourceAccountUsername string          // OAuth auth
+    DestAccountUsername   string          // OAuth auth
+    Preferences           PreferencesType
+}
+
+type PreferencesType struct {
+    MigrateSubredditBool   bool
+    MigratePostBool        bool
+    MigrateCommentBool     bool
+    MigrateMultiredditBool bool
+    DeletePostBool         bool
+    DeleteCommentBool      bool
+    DeleteSubredditBool    bool
+}
+
+// Custom migration (specific selected items)
+type CustomMigrationRequest struct {
+    AuthMethod             string
+    SourceAccountCookie    string
+    DestAccountCookie      string
+    SourceAccountToken     string
+    DestAccountToken       string
+    SourceAccountUsername  string
+    DestAccountUsername    string
+    SelectedSubreddits     []string // Display names
+    SelectedPosts          []string // Full names (t3_xxxxx)
+    SelectedComments       []string // Full names (t1_xxxxx)
+    SelectedMultireddits   []string // Multireddit names
+    DeleteSourceSubreddits bool
+    DeleteSourcePosts      bool
+    DeleteSourceComments   bool
+}
+
+// Migration response
+type MigrationResponseType struct {
+    Success bool
+    Message string
+    Data    MigrationDetails
+}
+
+type MigrationDetails struct {
+    SubscribeSubreddit   ManageSubredditResponseType
+    UnsubscribeSubreddit ManageSubredditResponseType
+    SavePost             ManagePostResponseType
+    UnsavePost           ManagePostResponseType
+    SaveComment          ManagePostResponseType
+    UnsaveComment        ManagePostResponseType
+    CreateMultireddit    ManageMultiredditResponseType
+}
+
+// Export
+type ExportRequest struct {
+    AuthMethod  string
+    Cookie      string
+    AccessToken string
+    Username    string
+    Sections    []string // e.g. ["subreddits", "saved_posts", "saved_comments", "multireddits"]
+}
+
+type ExportData struct {
+    ExportedAt    string
+    Username      string
+    Subreddits    []SubredditInfo
+    SavedPosts    []SavedPostInfo
+    SavedComments []SavedCommentInfo
+    Multireddits  []MultiredditInfo
+    Errors        []string
+}
+```
+
+---
+
+## 4. Architecture & Key Patterns
+
+### Authentication Flow
+1. **OAuth**: Frontend calls POST /api/oauth/init with client_id + client_secret -> opens Reddit auth popup -> callback at GET /api/oauth/callback -> token stored in session map -> Frontend polls GET /api/oauth/status
+2. **Cookie**: User pastes browser cookie -> POST /api/verify-cookie calls Reddit's /api/me.json -> returns username
+3. **Auth extraction**: `extractAuthData()` in data_handlers.go normalizes both methods into (token, username) tuple
+
+### Migration Flow
+1. Authenticate + verify both source and destination accounts
+2. User selects data types and items (All/Custom/None per category)
+3. Frontend sends POST to /api/migrate (all) or /api/migrate-custom (selected items)
+4. Backend verifies both accounts, fetches source data, filters duplicates against destination
+5. Performs operations: subscribe subreddits (chunked), save posts/comments (concurrent workers), create multireddits (sequential)
+6. Returns MigrationResponseType with success/failure counts per operation
+
+### Concurrent Worker Pattern (posts/comments)
+- `ManageSavedPosts()` in posts.go creates a worker pool with configurable concurrency
+- Workers consume post IDs from a channel, use rate limiter for API calls
+- Rate limit detection: if 429 received, worker signals pause via rateLimitControl channel
+- Controller goroutine pauses rate limiter, sleeps, tests API, then resumes
+- Same function handles both posts (t3_) and comments (t1_) since Reddit's /api/save accepts both
+
+### Subreddit Migration
+- Subreddits are subscribed in chunks (default 100) via POST /api/subscribe
+- Failed chunks are retried with decreasing chunk sizes (up to 5 attempts)
+- Followed users (subreddit_type == "user") are handled separately via PUT /api/v1/me/friends/{username}
+
+### Multireddit Migration
+- Fetched via GET /api/multi/mine
+- Created via POST /api/multi/user/{username}/m/{multiname} with model JSON containing subreddit list
+- Duplicates filtered by name comparison against destination
+
+### Export/Backup
+- POST /api/export with sections array (defaults to all if empty)
+- Calls existing Fetch*WithDetails functions for each section
+- Returns JSON with Content-Disposition header for file download
+
+### Frontend State Management
+- Centralized in state.js with exported variables and setter functions
+- Selection state: SUBREDDIT_SELECTION, POSTS_SELECTION, COMMENTS_SELECTION, MULTIREDDIT_SELECTION (values: "all", "custom", "none")
+- SelectionModal class in modal.js handles loading, rendering, and confirming item selections
+- Items loaded on-demand when user clicks "Custom" radio button
+
+### Reddit API Pagination
+- All listing endpoints use cursor-based pagination with `after` parameter
+- `fetchAllNames()` in apihelpers.go is the generic paginated fetcher
+- Safety limit of 100 pages to prevent infinite loops
+- Items fetched 100 per page (Reddit API limit)
+
+---
+
+## 5. Configuration (internal/config/config.go)
+
+Environment variables (with defaults):
+- `GO_ADDR` or `--addr=` flag: Server address (default: "localhost:5005")
+- `USER_AGENT`: Reddit API user agent (default: "GoMigrateClient/1.1 by RedditUser")
+- `REDDIT_OAUTH_URL`: OAuth API base URL (default: "https://oauth.reddit.com")
+- `REDDIT_BASE_URL`: Non-OAuth base URL (default: "https://www.reddit.com")
+- `DEFAULT_SUBREDDIT_CHUNK_SIZE`: Subreddits per subscribe request (default: 100)
+- `MAX_SUBREDDIT_RETRY_ATTEMPTS`: Retry attempts for failed chunks (default: 5)
+- `DEFAULT_POST_CONCURRENCY`: Worker goroutines for post/comment operations (default: 10)
+- `DEFAULT_API_TIMEOUT_SECONDS`: HTTP client timeout (default: 30)
+- `RATE_LIMIT_SLEEP_INTERVAL_SECONDS`: Sleep duration when rate limited (default: 30)
+- `RATE_LIMIT_INTERVAL_SECONDS`: Rate limiter token refill interval (default: 30)
+- `MAX_TOKENS_PER_INTERVAL`: Max API requests per interval (default: 50)
+
+---
+
+## 6. OAuth Scopes
+
+The application requests these Reddit OAuth scopes:
+- `identity` - Access user's identity
+- `read` - Access posts and comments
+- `subscribe` - Manage subreddit subscriptions
+- `save` - Save and unsave posts/comments
+- `submit` - Submit posts and comments
+- `vote` - Vote on posts and comments
+- `mysubreddits` - Access user's subreddits
+- `history` - Access user's voting history
+
+---
+
+## 7. Build & Run
+
+```bash
+# Development
+go run ./cmd/reddit-migrate/main.go
+
+# Build binary
+go build -o reddit-migrate ./cmd/reddit-migrate
+
+# Docker
+docker build -t reddit-migrate-img .
+docker run -d -p 127.0.0.1:5005:5005 --name reddit-migrate reddit-migrate-img
+```
+
+Version is injected at build time via `-ldflags "-X main.Version=vX.Y.Z"`.
