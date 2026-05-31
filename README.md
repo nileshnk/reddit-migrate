@@ -1,3 +1,4 @@
+[![CI](https://github.com/Arvuno/reddit-migrate/actions/workflows/ci.yml/badge.svg)](https://github.com/Arvuno/reddit-migrate/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/nileshnk/reddit-migrate/release.yml?label=build)](https://github.com/nileshnk/reddit-migrate/actions)
 [![GitHub all releases](https://img.shields.io/github/downloads/nileshnk/reddit-migrate/total?label=downloads)](https://github.com/nileshnk/reddit-migrate/releases)
