@@ -5,7 +5,7 @@
 
 # Reddit-Migrate
 
-Easily transfer your Reddit account data to a new account - including subreddit subscriptions, saved posts, saved comments, multireddits (custom feeds), and more.
+Easily transfer your Reddit account data to a new account — including subreddit subscriptions, saved posts, saved comments, multireddits (custom feeds), and more.
 
 ![Home](./docs/assets/app_home.png)
 
@@ -26,12 +26,12 @@ Watch it in action: [YouTube Demo](https://youtu.be/pHGYuwZ1Jp0)
 
 ## What Gets Migrated
 
-**Subreddit Subscriptions** - Transfer all your joined communities
-**Saved Posts** - Move your saved posts collection
-**Saved Comments** - Transfer your saved comments
-**Multireddits (Custom Feeds)** - Preserve your curated subreddit groupings
-**User Follows** - Migrate followed user accounts
-**Export/Backup** - Download all your data as a JSON file
+- **Subreddit Subscriptions** - Transfer all your joined communities
+- **Saved Posts** - Move your saved posts collection
+- **Saved Comments** - Transfer your saved comments
+- **Multireddits (Custom Feeds)** - Preserve your curated subreddit groupings
+- **User Follows** - Migrate followed user accounts
+- **Export/Backup** - Download all your data as a JSON file
 
 ## Quick Start
 
@@ -152,12 +152,12 @@ Reddit-Migrate uses Reddit's official APIs with support for both OAuth and cooki
 - **User Follows**: Transfers followed user accounts to the new account
 - **Export/Backup**: Aggregates selected data sections and returns a downloadable JSON file
 
-The tool runs entirely locally on your machine - no data is sent to external servers.
+The tool runs entirely locally on your machine — no data is sent to external servers.
 
 ## Important Notes
 
 - This tool uses Reddit's official OAuth API
-- Intended for personal use only - use your own Reddit API credentials
+- Intended for personal use only — use your own Reddit API credentials
 - Please follow Reddit's [API Terms](https://www.reddit.com/dev/api/) and [Content Policy](https://redditinc.com/policies)
 
 ## Support
