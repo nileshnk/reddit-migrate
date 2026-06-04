@@ -92,6 +92,19 @@ Choose between two authentication methods:
 
 > **Note**: Large migrations (50+ saved posts) may take several minutes due to Reddit's rate limiting. Keep the browser tab open until completion.
 
+### Dry-run mode
+
+Reddit-Migrate does **not** currently support a dedicated dry-run / preview / `--simulate` flag. The CLI in `cmd/reddit-migrate/main.go` accepts no flags, and no dry-run endpoint exists in the internal API. The codebase has no `dry-run`, `preview`, or `simulate` keyword in the migration or API code paths.
+
+Because every migration writes to your destination account immediately on submit, there is no built-in way to see what would change before it happens. To protect your accounts, we recommend the following safe workflow:
+
+1. **Export/Backup first.** On the source account, run the migration with **only** the "Export/Backup" data type selected. This produces a JSON snapshot of your subreddits, saved posts, saved comments, multireddits, and user follows without writing anything to the destination account.
+2. **Inspect the JSON.** Review the downloaded file to confirm the items you expect to migrate are present and correct.
+3. **Use "Custom" selection.** When you perform the real migration, choose the *Custom* option for each data type and deselect anything you don't want to transfer. The app already filters out duplicates and items that already exist on the destination account, so only new content will be added.
+4. **Test on a throwaway account.** If you want extra confidence, run the full migration once against a test Reddit account before pointing it at your real destination.
+
+If a real dry-run mode would be useful to you, please open an issue — it would likely live as a new API endpoint (e.g. `POST /api/migrate/preview`) plus a checkbox in the web UI, returning a diff of what would be added without performing any writes.
+
 ## Development
 
 ### Building from Source
