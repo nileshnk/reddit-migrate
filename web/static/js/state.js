@@ -7,7 +7,8 @@ export let BOOL_SOURCE_TOKEN_VERIFIED = false;
 export let BOOL_DEST_TOKEN_VERIFIED = false;
 
 // Authentication method tracking
-export let CURRENT_AUTH_METHOD = "cookie"; // "cookie" or "oauth"
+export let CURRENT_AUTH_METHOD = "cookie"; // "cookie", "oauth", or "csv_import"
+export let DEST_AUTH_SUBMETHOD = "cookie"; // "cookie" or "oauth" — only used when CURRENT_AUTH_METHOD is "csv_import", since the destination still needs a live account
 export let OAUTH_SOURCE_VERIFIED = false;
 export let OAUTH_DEST_VERIFIED = false;
 export let SOURCE_ACCESS_TOKEN = "";
@@ -45,6 +46,7 @@ export let filteredItems = [];
 export function setBoolSourceTokenVerified(v) { BOOL_SOURCE_TOKEN_VERIFIED = v; }
 export function setBoolDestTokenVerified(v) { BOOL_DEST_TOKEN_VERIFIED = v; }
 export function setCurrentAuthMethod(v) { CURRENT_AUTH_METHOD = v; }
+export function setDestAuthSubmethod(v) { DEST_AUTH_SUBMETHOD = v; }
 export function setOAuthSourceVerified(v) { OAUTH_SOURCE_VERIFIED = v; }
 export function setOAuthDestVerified(v) { OAUTH_DEST_VERIFIED = v; }
 export function setSourceAccessToken(v) { SOURCE_ACCESS_TOKEN = v; }

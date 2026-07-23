@@ -73,7 +73,46 @@ export function updateSelectionSummary(type, selection, count = 0) {
   }
 }
 
+// CSV-imported posts/comments only carry {id, full_name, permalink} — the rich
+// Reddit API fields (title, author, subreddit, score, body...) never existed for
+// them, so they get a simplified row instead of the normal template.
+function renderCsvImportRow(item, isSelected) {
+  return `
+    <div class="group p-4 border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer item-row transition-colors duration-150" data-id="${item.full_name}">
+        <div class="flex items-center space-x-4">
+            <div class="flex-shrink-0 flex items-center">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" class="sr-only item-checkbox" data-id="${item.full_name}" ${isSelected ? "checked" : ""}>
+                    <div class="checkbox-visual w-5 h-5 bg-white border-2 border-gray-300 rounded flex items-center justify-center transition-all duration-200 group-hover:border-red-400">
+                        <svg class="checkmark w-3 h-3 text-white hidden" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                </label>
+            </div>
+            <div class="flex-shrink-0">
+                <span class="px-2 py-1 text-xs bg-slate-600/50 text-slate-300 rounded-full">From CSV</span>
+            </div>
+            <div class="flex-1 min-w-0">
+                <a href="${item.permalink}"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="text-sm text-gray-700 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150 truncate block"
+                   onclick="event.stopPropagation()">
+                    ${item.permalink}
+                </a>
+                <span class="text-xs text-gray-500 dark:text-gray-400">id: ${item.id}</span>
+            </div>
+        </div>
+    </div>
+  `;
+}
+
 export function toggleDeleteOptions(type, show) {
+  // No live source account exists in CSV-import mode, so there's nothing to unsave from.
+  if (state.CURRENT_AUTH_METHOD === "csv_import") {
+    show = false;
+  }
   let deleteElId;
   if (type === "subreddits") {
     deleteElId = "deleteSubreddits";
@@ -256,6 +295,14 @@ export class SelectionModal {
   async loadPosts(token) {
     this.showLoading();
 
+    if (state.CURRENT_AUTH_METHOD === "csv_import") {
+      // Posts were already parsed from the uploaded CSV — nothing to fetch.
+      state.setFilteredItems([...state.ALL_POSTS]);
+      this.renderPosts();
+      this.hideLoading();
+      return;
+    }
+
     try {
       const response = await fetch(`${state.API_BASE_URL}/api/saved-posts`, {
         method: "POST",
@@ -347,6 +394,14 @@ export class SelectionModal {
 
   async loadComments(token) {
     this.showLoading();
+
+    if (state.CURRENT_AUTH_METHOD === "csv_import") {
+      // Comments were already parsed from the uploaded CSV — nothing to fetch.
+      state.setFilteredItems([...state.ALL_COMMENTS]);
+      this.renderComments();
+      this.hideLoading();
+      return;
+    }
 
     try {
       const response = await fetch(`${state.API_BASE_URL}/api/saved-comments`, {
@@ -466,6 +521,11 @@ export class SelectionModal {
       const html = state.filteredItems
         .map((comment) => {
           const isSelected = state.SELECTED_COMMENTS.includes(comment.full_name);
+
+          if (comment.is_csv_import) {
+            return renderCsvImportRow(comment, isSelected);
+          }
+
           const timeAgo = formatTimeAgo(comment.created_utc);
 
           let commentUrl;
@@ -871,6 +931,11 @@ export class SelectionModal {
       const html = state.filteredItems
         .map((post) => {
           const isSelected = state.SELECTED_POSTS.includes(post.full_name);
+
+          if (post.is_csv_import) {
+            return renderCsvImportRow(post, isSelected);
+          }
+
           const imageUrl = getPostImageUrl(post);
           const mediaTypeIcon = getMediaTypeIcon(
             post.image_data.media_type
@@ -1267,6 +1332,13 @@ export function initSelectionListeners(selectionModal) {
       radio.addEventListener("change", async (e) => {
         state.setSubredditSelection(e.target.value);
 
+        if (state.CURRENT_AUTH_METHOD === "csv_import" && e.target.value !== "none") {
+          alert("Subreddit migration isn't available when importing from a CSV export — only saved posts and comments can be imported this way.");
+          document.getElementById("subredditNone").checked = true;
+          state.setSubredditSelection("none");
+          return;
+        }
+
         if (e.target.value === "all") {
           updateSelectionSummary("subreddits", "all");
           toggleDeleteOptions("subreddits", true);
@@ -1367,6 +1439,7 @@ export function initSelectionListeners(selectionModal) {
   document
     .getElementById("editSubredditSelection")
     .addEventListener("click", async () => {
+      if (state.CURRENT_AUTH_METHOD === "csv_import") return;
       if (!isSourceAccountVerified()) {
         alert("Please verify your source account first");
         return;
@@ -1405,6 +1478,13 @@ export function initSelectionListeners(selectionModal) {
     radio.addEventListener("change", async (e) => {
       state.setMultiredditSelection(e.target.value);
 
+      if (state.CURRENT_AUTH_METHOD === "csv_import" && e.target.value !== "none") {
+        alert("Multireddit migration isn't available when importing from a CSV export — only saved posts and comments can be imported this way.");
+        document.getElementById("multiredditNone").checked = true;
+        state.setMultiredditSelection("none");
+        return;
+      }
+
       if (e.target.value === "all") {
         updateSelectionSummary("multireddits", "all");
       } else if (e.target.value === "custom") {
@@ -1426,6 +1506,7 @@ export function initSelectionListeners(selectionModal) {
   document
     .getElementById("editMultiredditSelection")
     .addEventListener("click", async () => {
+      if (state.CURRENT_AUTH_METHOD === "csv_import") return;
       if (!isSourceAccountVerified()) {
         alert("Please verify your source account first");
         return;

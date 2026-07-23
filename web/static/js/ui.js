@@ -55,42 +55,47 @@ export class DarkModeManager {
 // Tab Management
 export class TabManager {
   constructor() {
-    this.cookieTab = document.getElementById("cookieTab");
-    this.oauthTab = document.getElementById("oauthTab");
-    this.cookieContent = document.getElementById("cookieAuthContent");
-    this.oauthContent = document.getElementById("oauthAuthContent");
+    this.tabs = {
+      cookie: {
+        tab: document.getElementById("cookieTab"),
+        content: document.getElementById("cookieAuthContent"),
+      },
+      oauth: {
+        tab: document.getElementById("oauthTab"),
+        content: document.getElementById("oauthAuthContent"),
+      },
+      csv_import: {
+        tab: document.getElementById("csvImportTab"),
+        content: document.getElementById("csvImportAuthContent"),
+      },
+    };
 
-    console.log("TabManager elements:", {
-      cookieTab: this.cookieTab,
-      oauthTab: this.oauthTab,
-      cookieContent: this.cookieContent,
-      oauthContent: this.oauthContent,
-    });
+    // Kept for any code that still reaches these directly.
+    this.cookieTab = this.tabs.cookie.tab;
+    this.oauthTab = this.tabs.oauth.tab;
+    this.cookieContent = this.tabs.cookie.content;
+    this.oauthContent = this.tabs.oauth.content;
+
+    console.log("TabManager elements:", this.tabs);
 
     this.init();
   }
 
   init() {
-    if (
-      !this.cookieTab ||
-      !this.oauthTab ||
-      !this.cookieContent ||
-      !this.oauthContent
-    ) {
-      console.error("Tab elements not found. Check HTML element IDs.");
+    const missing = Object.entries(this.tabs).filter(
+      ([, el]) => !el.tab || !el.content
+    );
+    if (missing.length) {
+      console.error("Tab elements not found. Check HTML element IDs.", missing);
       return;
     }
 
-    this.cookieTab.addEventListener("click", (e) => {
-      e.preventDefault();
-      console.log("Cookie tab clicked");
-      this.switchTab("cookie");
-    });
-
-    this.oauthTab.addEventListener("click", (e) => {
-      e.preventDefault();
-      console.log("OAuth tab clicked");
-      this.switchTab("oauth");
+    Object.entries(this.tabs).forEach(([method, { tab }]) => {
+      tab.addEventListener("click", (e) => {
+        e.preventDefault();
+        console.log(`${method} tab clicked`);
+        this.switchTab(method);
+      });
     });
   }
 
@@ -98,25 +103,14 @@ export class TabManager {
     console.log("Switching to tab:", method);
     setCurrentAuthMethod(method);
 
-    if (method === "cookie") {
-      console.log("Switching to cookie tab");
-      this.cookieTab.classList.add("active");
-      this.oauthTab.classList.remove("active");
-      this.cookieContent.classList.remove("hidden");
-      this.oauthContent.classList.add("hidden");
-    } else {
-      console.log("Switching to oauth tab");
-      this.oauthTab.classList.add("active");
-      this.cookieTab.classList.remove("active");
-      this.oauthContent.classList.remove("hidden");
-      this.cookieContent.classList.add("hidden");
-    }
-
-    console.log("Tab classes after switch:", {
-      cookieTab: this.cookieTab.className,
-      oauthTab: this.oauthTab.className,
-      cookieContent: this.cookieContent.className,
-      oauthContent: this.oauthContent.className,
+    Object.entries(this.tabs).forEach(([tabMethod, { tab, content }]) => {
+      if (tabMethod === method) {
+        tab.classList.add("active");
+        content.classList.remove("hidden");
+      } else {
+        tab.classList.remove("active");
+        content.classList.add("hidden");
+      }
     });
 
     updateSubmitButtonState();
