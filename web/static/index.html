@@ -13,6 +13,10 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.css" rel="stylesheet" />
     <style>
+        html {
+            font-size: 90%;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
         }
@@ -495,7 +499,7 @@
         </button>
     </div>
 
-    <div class="container mx-auto flex min-h-screen flex-col items-center justify-center py-8 px-4">
+    <div class="container mx-auto flex min-h-screen flex-col items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
         <!-- Enhanced Header -->
         <div class="flex flex-col items-center mb-8 animate-slide-in">
             <div class="relative mb-6">
@@ -512,7 +516,7 @@
         </div>
 
         <!-- Enhanced Main Card -->
-        <div class="w-full max-w-2xl glass-card rounded-2xl p-8 shadow-2xl animate-slide-in">
+        <div class="w-full max-w-4xl glass-card rounded-2xl p-8 shadow-2xl animate-slide-in">
             <!-- Authentication Method Tabs -->
             <div class="mb-8">
                 <div class="flex bg-slate-700/30 rounded-xl p-1 mb-6">
@@ -525,6 +529,11 @@
                         class="auth-tab flex-1 py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center space-x-2">
                         <span class="material-icons text-lg">security</span>
                         <span>OAuth Authentication</span>
+                    </button>
+                    <button id="csvImportTab"
+                        class="auth-tab flex-1 py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center space-x-2">
+                        <span class="material-icons text-lg">upload_file</span>
+                        <span>Import CSV ( Cookie Auth )</span>
                     </button>
                 </div>
             </div>
@@ -705,6 +714,131 @@
                             <span>User: </span>
                             <span class="font-semibold text-slate-200" id="destOAuthUsername"></span>
                         </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CSV Import Authentication Content -->
+            <div id="csvImportAuthContent" class="auth-content hidden">
+                <!-- Source: Reddit data export CSVs -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <span class="material-icons mr-2" style="color: #FF4500;">upload_file</span>
+                            <h3 class="text-lg font-semibold text-slate-200">Source: Reddit Data Export</h3>
+                        </div>
+                        <a href="https://www.reddit.com/settings/data-request" target="_blank" rel="noopener noreferrer"
+                            class="text-sm font-normal text-slate-400 hover:text-orange-400 flex items-center space-x-1 transition-colors">
+                            <span class="material-icons text-base">help_outline</span>
+                            <span>How to request your data?</span>
+                        </a>
+                    </div>
+                    <p class="text-sm text-slate-400 mb-4">
+                        Upload the <code class="text-slate-300">saved_posts.csv</code> and/or
+                        <code class="text-slate-300">saved_comments.csv</code> files from your Reddit data export.
+                        No source account login is required.
+                    </p>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label for="csvPostsFile" class="block text-sm font-medium text-slate-300 mb-2">saved_posts.csv</label>
+                            <input type="file" id="csvPostsFile" accept=".csv,text/csv"
+                                class="w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-500 file:text-white hover:file:bg-orange-600 form-input rounded-xl" />
+                        </div>
+                        <div>
+                            <label for="csvCommentsFile" class="block text-sm font-medium text-slate-300 mb-2">saved_comments.csv</label>
+                            <input type="file" id="csvCommentsFile" accept=".csv,text/csv"
+                                class="w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-500 file:text-white hover:file:bg-orange-600 form-input rounded-xl" />
+                        </div>
+                    </div>
+
+                    <p class="mt-3 text-sm text-emerald-400 hidden flex items-center" id="csvParseSummary">
+                        <span class="material-icons mr-2 text-base">check_circle</span>
+                        <span id="csvParseSummaryText"></span>
+                    </p>
+                    <p class="mt-3 text-sm text-red-400 hidden flex items-center" id="csvParseError">
+                        <span class="material-icons mr-2 text-base">error</span>
+                        <span id="csvParseErrorText"></span>
+                    </p>
+                </div>
+
+                <!-- Destination: still requires a live Reddit account -->
+                <div class="mb-8">
+                    <div class="flex items-center mb-4">
+                        <span class="material-icons mr-2" style="color: #0079D3;">account_circle</span>
+                        <h3 class="text-lg font-semibold text-slate-200">Destination Account</h3>
+                    </div>
+
+                    <div class="flex bg-slate-700/30 rounded-xl p-1 mb-4 max-w-xs">
+                        <button id="csvDestCookieSubTab"
+                            class="auth-tab active flex-1 py-2 px-3 rounded-lg font-semibold text-xs transition-all duration-200">
+                            Cookie
+                        </button>
+                        <button id="csvDestOAuthSubTab"
+                            class="auth-tab flex-1 py-2 px-3 rounded-lg font-semibold text-xs transition-all duration-200">
+                            OAuth
+                        </button>
+                    </div>
+
+                    <!-- Nested: destination cookie input -->
+                    <div id="csvDestCookieContent">
+                        <div class="flex items-center space-x-3">
+                            <div class="relative flex-grow">
+                                <input type="password" id="destAccessTokenCsvMode" name="destAccessTokenCsvMode"
+                                    class="w-full form-input rounded-xl px-4 py-3 pr-12 text-slate-200 placeholder-slate-400"
+                                    placeholder="Enter your destination account cookie" />
+                                <button type="button"
+                                    class="password-toggle-btn absolute inset-y-0 right-0 pr-3 flex items-center"
+                                    onclick="togglePasswordVisibility('destAccessTokenCsvMode', 'destAccessTokenCsvModeEye')">
+                                    <span class="material-icons text-slate-400 hover:text-slate-200 cursor-pointer"
+                                        id="destAccessTokenCsvModeEye">visibility</span>
+                                </button>
+                            </div>
+                            <button
+                                class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                                id="destTokenVerifyBtnCsvMode">
+                                <span class="material-icons text-lg">security</span>
+                                <span>Verify</span>
+                            </button>
+                            <button
+                                class="hidden btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                                id="destVerifyLoadBtnCsvMode">
+                                <span class="material-icons animate-spin">refresh</span>
+                                <span>Verifying</span>
+                            </button>
+                        </div>
+                        <p class="mt-3 text-sm text-emerald-400 hidden flex items-center" id="destTokenVerifySuccessMessageCsvMode">
+                            <span class="material-icons mr-2 text-base">check_circle</span>
+                            <span class="font-medium">Cookie Verified</span>
+                            <span class="text-slate-400 mx-2">|</span>
+                            <span>User Name: </span>
+                            <span class="font-semibold text-slate-200" id="destAccountUserIdCsvMode"></span>
+                        </p>
+                        <p class="mt-3 text-sm text-red-400 hidden flex items-center" id="destTokenVerifyFailMessageCsvMode">
+                            <span class="material-icons mr-2 text-base">error</span>
+                            <span class="font-medium">Cookie Invalid</span>
+                        </p>
+                    </div>
+
+                    <!-- Nested: destination OAuth (reuses the existing OAuth modal) -->
+                    <div id="csvDestOAuthContent" class="hidden">
+                        <div class="flex items-center space-x-3">
+                            <button
+                                class="btn-primary px-6 py-3 text-white font-semibold rounded-xl flex items-center space-x-2"
+                                id="destOAuthModalBtnCsvMode">
+                                <span class="material-icons text-lg">login</span>
+                                <span>Configure Destination Account</span>
+                            </button>
+                        </div>
+                        <div id="destOAuthStatusCsvMode" class="mt-4 hidden">
+                            <p class="text-sm text-emerald-400 flex items-center">
+                                <span class="material-icons mr-2 text-base">check_circle</span>
+                                <span class="font-medium">Verified</span>
+                                <span class="text-slate-400 mx-2">|</span>
+                                <span>User: </span>
+                                <span class="font-semibold text-slate-200" id="destOAuthUsernameCsvMode"></span>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

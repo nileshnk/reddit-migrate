@@ -52,12 +52,21 @@ export function isSourceAccountVerified() {
     return state.BOOL_SOURCE_TOKEN_VERIFIED;
   } else if (state.CURRENT_AUTH_METHOD === "oauth") {
     return state.OAUTH_SOURCE_VERIFIED;
+  } else if (state.CURRENT_AUTH_METHOD === "csv_import") {
+    // No live source account — "verified" once at least one CSV has been parsed.
+    return state.ALL_POSTS.length > 0 || state.ALL_COMMENTS.length > 0;
   }
   return false;
 }
 
 export function isDestAccountVerified() {
-  if (state.CURRENT_AUTH_METHOD === "cookie") {
+  if (state.CURRENT_AUTH_METHOD === "csv_import") {
+    // Destination still needs a live account; which flag to check depends on the
+    // nested cookie/oauth choice made for the destination in CSV-import mode.
+    return state.DEST_AUTH_SUBMETHOD === "oauth"
+      ? state.OAUTH_DEST_VERIFIED
+      : state.BOOL_DEST_TOKEN_VERIFIED;
+  } else if (state.CURRENT_AUTH_METHOD === "cookie") {
     return state.BOOL_DEST_TOKEN_VERIFIED;
   } else if (state.CURRENT_AUTH_METHOD === "oauth") {
     return state.OAUTH_DEST_VERIFIED;
@@ -302,6 +311,12 @@ export class OAuthModalManager {
       });
 
     document
+      .getElementById("destOAuthModalBtnCsvMode")
+      ?.addEventListener("click", () => {
+        showOAuthModal("dest");
+      });
+
+    document
       .getElementById("destOAuthModalBtn")
       ?.addEventListener("click", () => {
         showOAuthModal("dest");
@@ -501,7 +516,10 @@ export class OAuthModalManager {
       accessToken: accessToken.substring(0, 10) + "...",
     });
 
-    if (state.CURRENT_AUTH_METHOD !== "oauth") {
+    if (
+      state.CURRENT_AUTH_METHOD !== "oauth" &&
+      state.CURRENT_AUTH_METHOD !== "csv_import"
+    ) {
       console.log("Switching to OAuth mode after successful authentication");
       state.setCurrentAuthMethod("oauth");
 
@@ -518,6 +536,13 @@ export class OAuthModalManager {
       }
     }
 
+    // In CSV-import mode, the destination's cookie/oauth choice is tracked
+    // independently via DEST_AUTH_SUBMETHOD so this successful OAuth verification
+    // isn't misread as a cookie-mode verification for the destination.
+    if (state.CURRENT_AUTH_METHOD === "csv_import" && type === "dest") {
+      state.setDestAuthSubmethod("oauth");
+    }
+
     if (type === "source") {
       state.setOAuthSourceVerified(true);
       state.setSourceAccessToken(accessToken);
@@ -530,8 +555,16 @@ export class OAuthModalManager {
       state.setDestAccessToken(accessToken);
       state.setDestUsername(username);
       console.log("Set DEST_USERNAME to:", username);
-      document.getElementById("destOAuthUsername").textContent = username;
-      document.getElementById("destOAuthStatus").classList.remove("hidden");
+      const usernameElId =
+        state.CURRENT_AUTH_METHOD === "csv_import"
+          ? "destOAuthUsernameCsvMode"
+          : "destOAuthUsername";
+      const statusElId =
+        state.CURRENT_AUTH_METHOD === "csv_import"
+          ? "destOAuthStatusCsvMode"
+          : "destOAuthStatus";
+      document.getElementById(usernameElId).textContent = username;
+      document.getElementById(statusElId).classList.remove("hidden");
     }
 
     document.getElementById(`${type}ModalSuccessUsername`).textContent =

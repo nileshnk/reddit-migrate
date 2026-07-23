@@ -38,6 +38,8 @@ export function initMigrationHandler() {
       state.setSourceCookieToken(state.SOURCE_ACCESS_TOKEN);
       state.setDestCookieToken(state.DEST_ACCESS_TOKEN);
     }
+    // csv_import mode: destination cookie/token was already captured in state by
+    // csvImport.js's dest verification (cookie or OAuth), nothing further to read here.
 
     const deleteSubreddits = document.getElementById(
       "deleteSubredditsYes"
@@ -48,6 +50,38 @@ export function initMigrationHandler() {
     let requestBody;
     let endpoint;
 
+    if (state.CURRENT_AUTH_METHOD === "csv_import") {
+      // No live source account — items came from an uploaded CSV. Only posts/comments
+      // apply (subreddits/multireddits have no CSV equivalent and are never selectable
+      // in this mode), and there's nothing to delete from on the source side.
+      endpoint = `${state.API_BASE_URL}/api/migrate-custom`;
+      if (state.DEST_AUTH_SUBMETHOD === "oauth") {
+        requestBody = {
+          auth_method: "oauth",
+          dest_account_token: state.DEST_ACCESS_TOKEN,
+          dest_account_username: state.DEST_USERNAME,
+          selected_subreddits: [],
+          selected_posts: state.SELECTED_POSTS,
+          selected_comments: state.SELECTED_COMMENTS,
+          selected_multireddits: [],
+          delete_source_subreddits: false,
+          delete_source_posts: false,
+          delete_source_comments: false,
+        };
+      } else {
+        requestBody = {
+          auth_method: "cookie",
+          dest_account_cookie: state.DEST_COOKIE_TOKEN,
+          selected_subreddits: [],
+          selected_posts: state.SELECTED_POSTS,
+          selected_comments: state.SELECTED_COMMENTS,
+          selected_multireddits: [],
+          delete_source_subreddits: false,
+          delete_source_posts: false,
+          delete_source_comments: false,
+        };
+      }
+    } else {
     const hasCustomSelection = state.SUBREDDIT_SELECTION === "custom" || state.POSTS_SELECTION === "custom" || state.COMMENTS_SELECTION === "custom" || state.MULTIREDDIT_SELECTION === "custom";
     if (hasCustomSelection) {
       endpoint = `${state.API_BASE_URL}/api/migrate-custom`;
@@ -117,6 +151,7 @@ export function initMigrationHandler() {
           },
         };
       }
+    }
     }
 
     console.log("Starting migration with:", {

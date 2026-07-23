@@ -5,6 +5,7 @@ import { DarkModeManager, TabManager, initUIListeners } from "./ui.js";
 import { SelectionModal, initSelectionListeners } from "./modal.js";
 import { initMigrationHandler } from "./migration.js";
 import { initExportHandler } from "./export.js";
+import { initCsvImportListeners } from "./csvImport.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM Content Loaded - Initializing application");
@@ -40,6 +41,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Initialize cookie auth listeners
     initCookieAuthListeners();
     console.log("Cookie auth listeners initialized");
+
+    // Initialize CSV import listeners
+    initCsvImportListeners();
+    console.log("CSV import listeners initialized");
 
     // Initialize UI listeners (tooltips, help modals)
     initUIListeners();

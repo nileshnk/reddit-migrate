@@ -488,7 +488,11 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 	var sourceAccountToken, sourceAccountUsername string
 	var err error
 
-	if req.AuthMethod == "oauth" {
+	if req.SourceAccountCookie == "" && req.SourceAccountToken == "" {
+		// No source credentials supplied — items were resolved without a live source account
+		// (e.g. imported from a Reddit data-export CSV). Skip source verification entirely.
+		config.InfoLogger.Println("No source account credentials supplied; proceeding without a live source account.")
+	} else if req.AuthMethod == "oauth" {
 		sourceAccountToken = req.SourceAccountToken
 		// Use provided username if available, otherwise get from OAuth token
 		if req.SourceAccountUsername != "" {
@@ -575,7 +579,7 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 			finalResponse.Data.SubscribeSubreddit = subscribeResult
 
 			// Handle deletion if requested
-			if req.DeleteSourceSubreddits {
+			if req.DeleteSourceSubreddits && sourceAccountToken != "" {
 				config.InfoLogger.Printf("Deleting %d selected subreddits from source account", len(subredditsToMigrate))
 				unsubscribeResult := reddit.ManageSubreddits(sourceAccountToken, subredditsToMigrate, types.UnsubscribeAction, 100)
 				finalResponse.Data.UnsubscribeSubreddit = unsubscribeResult
@@ -613,7 +617,7 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 			finalResponse.Data.SavePost = saveResult
 
 			// Handle deletion if requested
-			if req.DeleteSourcePosts {
+			if req.DeleteSourcePosts && sourceAccountToken != "" {
 				config.InfoLogger.Printf("Deleting %d selected posts from source account", len(postsToMigrate))
 				unsaveResult := reddit.ManageSavedPosts(sourceAccountToken, postsToMigrate, types.UnsaveAction, concurrencyForPosts)
 				finalResponse.Data.UnsavePost = unsaveResult
@@ -650,7 +654,7 @@ func HandleCustomMigration(req types.CustomMigrationRequest) types.MigrationResp
 			saveResult := reddit.ManageSavedPosts(destAccountToken, commentsToMigrate, types.SaveAction, concurrency)
 			finalResponse.Data.SaveComment = saveResult
 
-			if req.DeleteSourceComments {
+			if req.DeleteSourceComments && sourceAccountToken != "" {
 				config.InfoLogger.Printf("Deleting %d selected comments from source account", len(commentsToMigrate))
 				unsaveResult := reddit.ManageSavedPosts(sourceAccountToken, commentsToMigrate, types.UnsaveAction, concurrency)
 				finalResponse.Data.UnsaveComment = unsaveResult
